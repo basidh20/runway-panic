@@ -107,3 +107,22 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# ---- Project additions ----
+# Blender backup files
+*.blend1
+*.blend2
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.idea/
+.vscode/
+
+# Builds & recordings (never commit — LFS quota)
+/[Bb]uilds/
+/[Rr]ecordings/
+*.mp4.meta
