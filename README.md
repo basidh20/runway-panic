@@ -15,7 +15,10 @@ You play an airport wildlife-control officer defending the runway from 4 species
    git config user.name  "Your Name"
    git config user.email "your-github-email@example.com"
    ```
-3. Open the repo root folder in **Unity Hub → Add → Add project from disk** (Unity version: _TBD — team LTS_).
+3. Install **Unity `6000.6.4f1`** (Unity 6.6) in Unity Hub — exactly this version, not a newer/older patch.
+4. Open the repo root folder in **Unity Hub → Add → Add project from disk**. If Hub warns about a version mismatch, pick `6000.6.4f1` — do **not** upgrade.
+
+**Render pipeline:** URP 17.6.0. URP assets and input actions live in `Assets/_Project/Settings/`.
 
 ## Folder structure
 
