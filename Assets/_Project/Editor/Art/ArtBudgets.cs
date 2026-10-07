@@ -11,6 +11,8 @@ namespace RunwayPanic.ArtTools
         public const string ModelsRoot = "Assets/_Project/Art/Models/";
         public const string AnimationsRoot = "Assets/_Project/Art/Animations/";
         public const string TexturesRoot = "Assets/_Project/Art/Textures/";
+        public const string MaterialsRoot = "Assets/_Project/Art/Materials/";
+        public const string MaterialManifestSuffix = ".materials.json";
 
         public readonly struct ModelBudget
         {
@@ -61,6 +63,24 @@ namespace RunwayPanic.ArtTools
                 found = true;
             }
             return found;
+        }
+
+        /// <summary>
+        /// Materials sit in the folder that mirrors the model's: Models/Weapons/SM_Gun_Tier1.fbx -> Materials/Weapons/M_Gun_Polymer.mat.
+        /// </summary>
+        public static string MaterialPathFor(string modelPath, string materialName)
+        {
+            string subFolder = SubFolderOf(modelPath, ModelsRoot);
+            return MaterialsRoot + (subFolder.Length > 0 ? subFolder + "/" : "") + materialName + ".mat";
+        }
+
+        /// <summary>Models/Weapons/X.fbx with root Models/ -> "Weapons" (empty if the file sits directly in root).</summary>
+        public static string SubFolderOf(string assetPath, string root)
+        {
+            if (!assetPath.StartsWith(root)) return "";
+            string relative = assetPath.Substring(root.Length);
+            int slash = relative.IndexOf('/');
+            return slash < 0 ? "" : relative.Substring(0, slash);
         }
 
         public static bool IsPalette(string textureName) => textureName.Contains("Palette");

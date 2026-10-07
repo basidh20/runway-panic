@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,8 +15,11 @@ namespace RunwayPanic.ArtTools
         // Clip names containing any of these loop; everything else (Dive, Hit, Death, Jump...) plays once.
         static readonly string[] LoopKeywords = { "idle", "walk", "run", "jog", "sprint", "strafe", "fly", "glide", "hover", "loop" };
 
+        // Blender object names are unique per .blend, so the 2nd gun's socket is "Socket_Muzzle.001".
+        static readonly Regex BlenderDuplicateSuffix = new Regex(@"\.\d{3}$");
+
         // Bump when the rules below change so Unity re-imports the affected models.
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         static bool IsModel(string path) => path.StartsWith(ArtBudgets.ModelsRoot);
         static bool IsAnimation(string path) => path.StartsWith(ArtBudgets.AnimationsRoot);
@@ -33,8 +37,10 @@ namespace RunwayPanic.ArtTools
             importer.importCameras = false;
             importer.importLights = false;
 
-            // Materials are hand-made M_ assets (URP Lit) assigned on the prefab, not FBX-embedded copies.
-            importer.materialImportMode = ModelImporterMaterialImportMode.None;
+            // Each FBX material slot is mapped by name to the shared M_ asset (URP Lit) that ArtMaterialBuilder
+            // creates from the Blender manifest - see OnAssignMaterialModel. No FBX-embedded copies.
+            importer.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
+            importer.materialLocation = ModelImporterMaterialLocation.InPrefab;
 
             // CPU copy of the mesh is not needed at runtime: halves mesh memory.
             importer.isReadable = false;
@@ -136,9 +142,33 @@ namespace RunwayPanic.ArtTools
             return false;
         }
 
+        // Called once per FBX material. Returning the existing M_ asset stops Unity generating an embedded copy,
+        // so every gun shares one M_Gun_Polymer (fewer materials, SRP Batcher friendly).
+        Material OnAssignMaterialModel(Material sourceMaterial, Renderer renderer)
+        {
+            if (!IsModel(assetPath)) return null;
+
+            string path = ArtBudgets.MaterialPathFor(assetPath, sourceMaterial.name);
+            if (!File.Exists(path))
+            {
+                // Normal on the very first import: ArtMaterialBuilder creates it from the manifest and re-imports this model.
+                Debug.LogWarning($"[Art] {Path.GetFileName(assetPath)}: material {sourceMaterial.name} not found at {path}.");
+                return null;
+            }
+
+            context.DependsOnSourceAsset(path);
+            return AssetDatabase.LoadAssetAtPath<Material>(path);
+        }
+
         void OnPostprocessModel(GameObject root)
         {
             if (!IsModel(assetPath)) return;
+
+            // Every asset exposes the same socket names (Socket_Muzzle) to gameplay code. Bones are never renamed.
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.StartsWith("Socket_")) t.name = BlenderDuplicateSuffix.Replace(t.name, "");
+            }
 
             string assetName = Path.GetFileNameWithoutExtension(assetPath);
             int tris = ArtBudgets.CountTriangles(root);
