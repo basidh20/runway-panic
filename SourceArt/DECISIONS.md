@@ -48,3 +48,24 @@ Still to cover: tri + texture budgets in practice, one rig + prefab variants for
 - **Options considered:** A) Set clips by hand in the Inspector. B) Set them on first import only. C) Rebuild every import from the FBX takes, with loop flags from the clip name.
 - **Choice:** C. Names containing Fly/Glide/Idle/Walk/Run/… loop; Dive/Hit/Death play once. The `Armature|` prefix is stripped, and Mixamo's `mixamo.com` takes are renamed to the file name.
 - **Why:** Blender stays the single source of truth. The Agent Controller gets stable clip names (`A_Bird_Fly`) to use in the Animator without any manual Unity step.
+
+## 2026-10-07 — Bringing externally exported FBX files into the pipeline
+- **Context:** The guns (pistol, AR, sniper, RPG) and the player arrived as FBX files exported with Blender's default settings. They had a 90° X rotation on every mesh, source names (`Pistol`, `RG_Polymer`, `MAT_Skin`), duplicated materials, and 3 of 5 files had meshes without UVs.
+- **Options considered:** A) Copy the FBX files into `Assets/` and compensate the rotation with a parent in each prefab. B) Convert each one once into a `.blend` (`SourceArt/Tools/ingest_fbx.py`) and export it through `export_fbx.py` like every other asset.
+- **Choice:** B.
+- **Why:** One pipeline for every asset: same checks, same FBX preset, same import rules. The `.blend` becomes the source of truth for later fixes (UVs, polycount). A compensating parent would hide the problem and break the "rotation (0,0,0)" rule that gameplay code relies on. The script checks that applying the transform does not move the geometry.
+- **Numbers:** bounding-box drift after the transform apply was **0.000000 m** for all 5 assets. Gun pivots were already at the grip and every muzzle faces −Y (checked on orthographic side renders). `Socket_Muzzle` was placed at the front-most vertices: Tier1 z 0.162 m, Tier2 0.711 m, Tier3 1.108 m, Tier4 1.040 m in front of the grip.
+
+## 2026-10-07 — Flat-colour materials from a Blender manifest (palette atlas later)
+- **Context:** The models use flat Principled BSDF colours (no textures): 15 unique gun materials and 49 player materials. Unity needs URP materials that match Blender, without each one being made by hand.
+- **Options considered:** A) Let Unity embed a material per FBX (duplicates per model, Standard shader, pink in URP). B) Make 64 URP materials by hand. C) `export_fbx.py` writes a material manifest (JSON); `ArtMaterialBuilder.cs` creates shared URP Lit `M_` materials from it; the model importer maps slots to them by name. D) Bake everything into the shared palette atlas now.
+- **Choice:** C now, D as the optimisation pass.
+- **Why:** Colours stay authored in Blender (one source of truth) and are converted correctly (linear → sRGB, roughness → smoothness). Materials are shared: the four guns use 15 materials instead of 32, which helps the SRP Batcher. D needs proper UVs on every mesh first, so it fits better in the optimisation pass, and that pass gives a measurable before/after.
+- **Numbers (before the atlas):** gun material slots: Tier1 7, Tier2 8, Tier3 10, Tier4 7 + 3 (rocket). Player: 21 meshes, **76 submeshes** (≈ 76 draw calls per pass). Ingest merged 17 duplicate gun materials and 1 duplicate player material (`MAT_Navy_Fabric__guns_tmp`).
+
+## 2026-10-07 — Accepting over-budget models for the prototype
+- **Context:** The player is **152,707 tris** against an 8,000 budget (19×). The sniper (Tier3) is **6,304 tris** against 2,500. 19 of 21 player meshes and 2 guns had no UVs, so they got a placeholder Smart UV Project map.
+- **Options considered:** A) Import as-is and optimise later. B) Auto-decimate now. C) Hold the player back until it is reworked.
+- **Choice:** A. The Unity import and `export_fbx.py` keep logging OVER BUDGET until it is fixed.
+- **Why:** Teammates need the player and guns now (player controller, gun holding, animation). Auto-decimation would damage the topology, which is graded. A planned optimisation pass (delete faces hidden under clothes, reduce dense parts like boots 20,946 / shirt 19,918 / pants 16,070, proper UVs) is better viva evidence, with real before/after numbers.
+- **Numbers:** to be filled after the optimisation pass (target ≤ 8,000 player, ≤ 2,500 per gun).

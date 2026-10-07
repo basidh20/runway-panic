@@ -8,6 +8,7 @@ Source files for every custom model. This folder is **outside `Assets/`**, so Un
 | `Textures/` | Layered / high-res texture sources (`.psd`, `.kra`, bakes) |
 | `Reference/` | Reference images and sheets |
 | `Tools/export_fbx.py` | Blender → Unity FBX exporter with pre-export checks |
+| `Tools/ingest_fbx.py` | Turns a raw FBX (made outside this pipeline) into a pipeline-ready `.blend` |
 | `DECISIONS.md` | Design decision log (viva evidence) |
 | `HANDOFF.md` | Notes and requests for other team members |
 
@@ -59,6 +60,16 @@ blender SourceArt/Blender/Birds/SK_Bird.blend --background --python SourceArt/To
 
 Exit code is 1 if any asset failed its checks.
 
+Every export also writes a **material manifest** `Assets/_Project/Art/Materials/<Folder>/<Asset>.materials.json` (base colour, metallic, roughness, alpha, emission of each `M_` material). Unity builds the URP materials from it, so colours are authored in Blender only.
+
+### Bringing in a raw FBX (made outside this pipeline)
+FBX files exported with Blender's default settings have a 90° X rotation on every mesh, free-form names and often no UVs. Convert them once into a `.blend` with `ingest_fbx.py`, then export as usual:
+```bash
+blender --background --factory-startup --python SourceArt/Tools/ingest_fbx.py --     --blend SourceArt/Blender/Weapons/Guns.blend --material-prefix M_Gun_ --sockets     ../FBX_Files/pistol.fbx=SM_Gun_Tier1 ../FBX_Files/ar.fbx=SM_Gun_Tier2     ../FBX_Files/sniper.fbx=SM_Gun_Tier3 ../FBX_Files/rpg.fbx=SM_Gun_Tier4
+blender SourceArt/Blender/Weapons/Guns.blend --background --python SourceArt/Tools/export_fbx.py -- --all
+```
+It applies rotation/scale (aborts if the geometry moves), renames the root to the asset name (an armature becomes `Armature`), merges duplicate materials (`RG_Polymer.001`, `MAT_Navy_Fabric__guns_tmp`) and renames them `M_<Prefix>_…`, drops unused material slots, adds a **placeholder** Smart UV Project map where a mesh has none, and with `--sockets` adds `Socket_Muzzle` at the front-most point (−Y). It writes a new `.blend`, so re-running it **overwrites manual edits** in that file.
+
 ### FBX preset applied by the script
 | Setting | Value | Why |
 |---|---|---|
@@ -83,6 +94,7 @@ Exit code is 1 if any asset failed its checks.
 | Rotation not applied, root object not at world origin | Warning |
 | Triangles / deform bones over budget | Warning |
 | More than 2 material slots on a mesh | Warning |
+| Material without the `M_` prefix / empty slot | Warning |
 
 ## 4. Budgets
 
@@ -100,11 +112,22 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 `Assets/_Project/Editor/Art/` re-applies these settings on **every** import. Don't edit them in the Inspector, because they will be overwritten. Change the scripts (and bump `GetVersion()`) instead.
 
 **Models** (`Art/Models/`, `Art/Animations/`) — `ArtModelPostprocessor.cs`
-- Convert Units on, scale factor 1, no cameras/lights, Material Creation Mode = None (hand-made `M_` URP Lit materials), Read/Write off.
+- Convert Units on, scale factor 1, no cameras/lights, Read/Write off.
+- Materials: each FBX material slot is mapped **by name** to `Art/Materials/<same folder as the model>/<name>.mat` (e.g. `Models/Weapons/SM_Gun_Tier1.fbx` → `Materials/Weapons/M_Gun_Polymer.mat`). No embedded copies, so all four guns share one `M_Gun_Polymer`.
+- `Socket_*` transforms lose Blender's `.001` suffix, so every gun has a `Socket_Muzzle`.
 - `SM_`: Rig = None, no animation, mesh compression Low, Generate Lightmap UVs only in `Models/Environment` and `Models/Props`.
 - `SK_Player*`: Rig = **Humanoid**. Other `SK_`: Rig = **Generic**. Both: blend shapes on, mesh compression off.
 - Clips are rebuilt from the FBX every import. Names containing Idle/Walk/Run/Jog/Sprint/Strafe/Fly/Glide/Hover/Loop loop; others (Dive, Hit, Death…) don't. Mixamo `mixamo.com` takes are renamed to the file name.
 - Logs a warning if tris/bones exceed the budget.
+
+**Materials** (`Art/Materials/`) — `ArtMaterialBuilder.cs`
+- When a `*.materials.json` manifest is imported, it creates or updates one URP Lit material per entry: Blender base colour (linear → sRGB), metallic, smoothness = 1 − roughness, emission (keyword on only if non-black), alpha < 1 → Transparent surface.
+- Values are overwritten on every export. Change colours in Blender, not in the Inspector.
+- New materials trigger a re-import of the matching model. **Tools → S3 → Rebuild Materials From Manifests** rebuilds everything.
+
+**Prefabs** — `ArtPrefabBuilder.cs`
+- **Tools → S3 → Build Model Prefabs** creates `Prefabs/Weapons/P_Gun_Tier1-4` (model + fitted BoxCollider on the root) and `Prefabs/Player/P_Player_Officer` (model with the importer's Animator + Humanoid avatar).
+- The model is a nested prefab, so a Blender re-export updates the prefab. Existing prefabs are skipped: delete one to rebuild it.
 
 **Textures** (`Art/Textures/`) — `ArtTexturePostprocessor.cs`
 - Max size by sub-folder: Characters 1024, Birds 1024, Weapons 512, Props 512, Environment 2048, Shared 1024. Names containing `Palette` → 256.
