@@ -7,7 +7,8 @@ side of that ONCE, so the result can be exported with export_fbx.py like any oth
 
   1. imports each FBX into its own collection named after the asset (SM_Gun_Tier1, ...)
   2. applies rotation + scale (verifies the world bounding box did not move)
-  3. renames the root mesh (or armature -> "Armature") to the asset name
+  3. renames the root mesh (or armature -> "Armature") to the asset name; meshes named like a bone
+     get a _Mesh suffix (Unity Humanoid needs unique names: mesh "Head" vs bone "Head")
   4. merges duplicate materials (RG_Polymer.001, MAT_Navy_Fabric__guns_tmp) and renames
      them with the material prefix (RG_Polymer -> M_Gun_Polymer), then drops unused slots
   5. adds a placeholder Smart UV Project map to meshes without UVs (replaced by the palette pass)
@@ -166,6 +167,13 @@ def rename_root(asset_name, objects, log):
         log.append("  armature %s -> Armature" % armature.name)
         armature.name = "Armature"
         armature.data.name = "Armature"
+        bones = {b.name for b in armature.data.bones}
+        for obj in objects:
+            if obj is not armature and obj.name in bones:
+                log.append("  %s -> %s_Mesh (same name as a bone)" % (obj.name, obj.name))
+                obj.name = obj.name + "_Mesh"
+                if obj.type == "MESH":
+                    obj.data.name = obj.name
         return armature
     if len(roots) != 1:
         raise SystemExit("ingest: %s expected one root mesh, found %s" % (asset_name, [o.name for o in roots]))

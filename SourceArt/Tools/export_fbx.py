@@ -232,6 +232,13 @@ def check_asset(collection, mixamo):
                      % ", ".join(a.name for a in armatures))
     if len(armatures) > 1:
         report.error("more than one armature: " + ", ".join(a.name for a in armatures))
+    if armatures:
+        # Unity's avatar maps bones by transform name; a mesh called "Head" next to bone "Head" breaks it.
+        bones = {b.name for b in armatures[0].data.bones}
+        clashes = sorted(o.name for o in objects if o.name in bones)
+        if clashes:
+            report.error("object name(s) equal to a bone name: %s. Rename them (e.g. Head -> Head_Mesh)"
+                         % ", ".join(clashes))
 
     # --- per-object transform / UV / material checks ---
     total_tris = 0
