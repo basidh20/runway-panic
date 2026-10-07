@@ -1,0 +1,196 @@
+{
+  "asset": "SM_Gun_Tier3",
+  "source": "SourceArt/Blender/Weapons/Guns.blend",
+  "materials": [
+    {
+      "name": "M_Gun_AnodizedAlu",
+      "baseColor": {
+        "r": 0.03,
+        "g": 0.03,
+        "b": 0.032,
+        "a": 1.0
+      },
+      "metallic": 0.85,
+      "roughness": 0.42,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_Bore",
+      "baseColor": {
+        "r": 0.002,
+        "g": 0.002,
+        "b": 0.002,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.9,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_DarkParts",
+      "baseColor": {
+        "r": 0.012,
+        "g": 0.012,
+        "b": 0.013,
+        "a": 1.0
+      },
+      "metallic": 0.5,
+      "roughness": 0.5,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_LensGlass",
+      "baseColor": {
+        "r": 0.04,
+        "g": 0.07,
+        "b": 0.12,
+        "a": 1.0
+      },
+      "metallic": 0.4,
+      "roughness": 0.05,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_ParkerizedSteel",
+      "baseColor": {
+        "r": 0.05,
+        "g": 0.05,
+        "b": 0.05,
+        "a": 1.0
+      },
+      "metallic": 1.0,
+      "roughness": 0.5,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_Polymer",
+      "baseColor": {
+        "r": 0.018,
+        "g": 0.018,
+        "b": 0.02,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.72,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_PolymerStipple",
+      "baseColor": {
+        "r": 0.022,
+        "g": 0.022,
+        "b": 0.024,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.95,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_Rubber",
+      "baseColor": {
+        "r": 0.015,
+        "g": 0.015,
+        "b": 0.015,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.9,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_Stainless",
+      "baseColor": {
+        "r": 0.55,
+        "g": 0.55,
+        "b": 0.56,
+        "a": 1.0
+      },
+      "metallic": 1.0,
+      "roughness": 0.25,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Gun_StockOD",
+      "baseColor": {
+        "r": 0.13,
+        "g": 0.14,
+        "b": 0.08,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.65,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    }
+  ]
+}

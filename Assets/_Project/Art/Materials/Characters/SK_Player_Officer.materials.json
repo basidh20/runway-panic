@@ -1,0 +1,937 @@
+{
+  "asset": "SK_Player_Officer",
+  "source": "SourceArt/Blender/Characters/SK_Player_Officer.blend",
+  "materials": [
+    {
+      "name": "M_Player_Badge_Blue",
+      "baseColor": {
+        "r": 0.16,
+        "g": 0.3,
+        "b": 0.55,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Badge_Card",
+      "baseColor": {
+        "r": 0.86,
+        "g": 0.87,
+        "b": 0.86,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.55,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Badge_Clear",
+      "baseColor": {
+        "r": 0.92,
+        "g": 0.94,
+        "b": 0.95,
+        "a": 0.22
+      },
+      "metallic": 0.0,
+      "roughness": 0.06,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Badge_Ink",
+      "baseColor": {
+        "r": 0.06,
+        "g": 0.06,
+        "b": 0.08,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.6,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Belt_Webbing",
+      "baseColor": {
+        "r": 0.022,
+        "g": 0.022,
+        "b": 0.024,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.76,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Boot_Leather",
+      "baseColor": {
+        "r": 0.028,
+        "g": 0.026,
+        "b": 0.026,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Boot_Midsole",
+      "baseColor": {
+        "r": 0.035,
+        "g": 0.035,
+        "b": 0.036,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.82,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Boot_Padding",
+      "baseColor": {
+        "r": 0.03,
+        "g": 0.03,
+        "b": 0.032,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.62,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Boot_Rubber",
+      "baseColor": {
+        "r": 0.022,
+        "g": 0.022,
+        "b": 0.022,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.88,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Brow",
+      "baseColor": {
+        "r": 0.02,
+        "g": 0.014,
+        "b": 0.01,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.7,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Cap_Navy",
+      "baseColor": {
+        "r": 0.03,
+        "g": 0.04,
+        "b": 0.09,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.88,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Cap_Under",
+      "baseColor": {
+        "r": 0.02,
+        "g": 0.026,
+        "b": 0.058,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.9,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Cushion",
+      "baseColor": {
+        "r": 0.016,
+        "g": 0.016,
+        "b": 0.018,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.55,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Eye_Catch",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.1,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 1.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Eye_Iris",
+      "baseColor": {
+        "r": 0.3,
+        "g": 0.15,
+        "b": 0.055,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.2,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Eye_IrisDark",
+      "baseColor": {
+        "r": 0.1,
+        "g": 0.05,
+        "b": 0.025,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.25,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Eye_Pupil",
+      "baseColor": {
+        "r": 0.01,
+        "g": 0.01,
+        "b": 0.01,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.1,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Eye_White",
+      "baseColor": {
+        "r": 0.88,
+        "g": 0.86,
+        "b": 0.83,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.15,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Glove",
+      "baseColor": {
+        "r": 0.03,
+        "g": 0.03,
+        "b": 0.032,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.62,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Glove_Pad",
+      "baseColor": {
+        "r": 0.045,
+        "g": 0.045,
+        "b": 0.048,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.7,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Glove_Palm",
+      "baseColor": {
+        "r": 0.055,
+        "g": 0.052,
+        "b": 0.05,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.82,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Hair",
+      "baseColor": {
+        "r": 0.022,
+        "g": 0.015,
+        "b": 0.011,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.58,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Headset_Black",
+      "baseColor": {
+        "r": 0.022,
+        "g": 0.022,
+        "b": 0.025,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Headset_Yellow",
+      "baseColor": {
+        "r": 0.95,
+        "g": 0.74,
+        "b": 0.02,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.3,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_KneePad_Panel",
+      "baseColor": {
+        "r": 0.045,
+        "g": 0.045,
+        "b": 0.048,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.64,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_KneePad_Shell",
+      "baseColor": {
+        "r": 0.03,
+        "g": 0.03,
+        "b": 0.033,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.52,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_LED_Green",
+      "baseColor": {
+        "r": 0.05,
+        "g": 0.9,
+        "b": 0.15,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.3,
+      "emissionColor": {
+        "r": 0.05,
+        "g": 0.9,
+        "b": 0.15,
+        "a": 1.0
+      },
+      "emissionStrength": 3.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Lace",
+      "baseColor": {
+        "r": 0.02,
+        "g": 0.02,
+        "b": 0.022,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.82,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Leather_Brown",
+      "baseColor": {
+        "r": 0.2,
+        "g": 0.1,
+        "b": 0.045,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.58,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Lip",
+      "baseColor": {
+        "r": 0.64,
+        "g": 0.33,
+        "b": 0.27,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.42,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Lip_Line",
+      "baseColor": {
+        "r": 0.16,
+        "g": 0.05,
+        "b": 0.04,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.6,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Logo_White",
+      "baseColor": {
+        "r": 0.86,
+        "g": 0.86,
+        "b": 0.88,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.7,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Metal",
+      "baseColor": {
+        "r": 0.6,
+        "g": 0.6,
+        "b": 0.62,
+        "a": 1.0
+      },
+      "metallic": 1.0,
+      "roughness": 0.3,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Metal_Dark",
+      "baseColor": {
+        "r": 0.16,
+        "g": 0.16,
+        "b": 0.17,
+        "a": 1.0
+      },
+      "metallic": 1.0,
+      "roughness": 0.38,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Mic_Foam",
+      "baseColor": {
+        "r": 0.018,
+        "g": 0.018,
+        "b": 0.018,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.97,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Navy_Dark",
+      "baseColor": {
+        "r": 0.025,
+        "g": 0.03,
+        "b": 0.065,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.85,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Navy_Fabric",
+      "baseColor": {
+        "r": 0.04,
+        "g": 0.05,
+        "b": 0.105,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.84,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Plastic_Black",
+      "baseColor": {
+        "r": 0.03,
+        "g": 0.03,
+        "b": 0.035,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Pouch_Black",
+      "baseColor": {
+        "r": 0.026,
+        "g": 0.026,
+        "b": 0.028,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.76,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Radio_Plastic",
+      "baseColor": {
+        "r": 0.028,
+        "g": 0.028,
+        "b": 0.032,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.48,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Radio_Rubber",
+      "baseColor": {
+        "r": 0.018,
+        "g": 0.018,
+        "b": 0.018,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.75,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Reflective_Strip",
+      "baseColor": {
+        "r": 0.66,
+        "g": 0.67,
+        "b": 0.67,
+        "a": 1.0
+      },
+      "metallic": 0.35,
+      "roughness": 0.32,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Shirt_Gray",
+      "baseColor": {
+        "r": 0.25,
+        "g": 0.25,
+        "b": 0.26,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.85,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Skin",
+      "baseColor": {
+        "r": 0.8,
+        "g": 0.53,
+        "b": 0.4,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Stitch",
+      "baseColor": {
+        "r": 0.1,
+        "g": 0.1,
+        "b": 0.1,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.8,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Strap_Webbing",
+      "baseColor": {
+        "r": 0.022,
+        "g": 0.022,
+        "b": 0.024,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.76,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Vest_Binding",
+      "baseColor": {
+        "r": 0.36,
+        "g": 0.58,
+        "b": 0.02,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.72,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Vest_Emblem",
+      "baseColor": {
+        "r": 0.5,
+        "g": 0.51,
+        "b": 0.52,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.55,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Vest_HiVis",
+      "baseColor": {
+        "r": 0.52,
+        "g": 0.82,
+        "b": 0.03,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.7,
+      "emissionColor": {
+        "r": 0.52,
+        "g": 0.82,
+        "b": 0.03,
+        "a": 1.0
+      },
+      "emissionStrength": 0.05,
+      "textured": false
+    }
+  ]
+}
