@@ -9,6 +9,11 @@ The second name token (Bird / Gun / Player / Prop / Env) picks the Unity folder.
 
 Hidden objects are NOT exported (handy for keeping blockouts / references in the file).
 
+Every export also writes a material manifest next to the Unity materials:
+    Assets/_Project/Art/Materials/<Folder>/<Asset>.materials.json
+Unity (ArtMaterialBuilder.cs) turns it into one URP Lit M_ material per Blender material,
+so colours / metallic / roughness stay authored in Blender.
+
 The pre-export checks only READ the scene. They warn or abort; they never modify geometry.
 
 USAGE
@@ -30,6 +35,7 @@ Assets/_Project/Editor/Art/ArtBudgets.cs.
 """
 
 import argparse
+import json
 import os
 import sys
 
@@ -45,6 +51,7 @@ TEXT_EDITOR_MIXAMO = False
 # Pipeline tables
 # ----------------------------------------------------------------------------
 MODELS_DIR = "Assets/_Project/Art/Models"
+MATERIALS_DIR = "Assets/_Project/Art/Materials"
 MIXAMO_DIR = "SourceArt/Mixamo"
 
 # Second token of the asset name -> sub-folder of MODELS_DIR
@@ -244,6 +251,12 @@ def check_asset(collection, mixamo):
     for obj in meshes:
         if len(obj.data.uv_layers) == 0:
             report.error("%s: has no UV map" % obj.name)
+        for slot in obj.material_slots:
+            if slot.material is None:
+                report.warn("%s: empty material slot" % obj.name)
+            elif not slot.material.name.startswith("M_"):
+                report.warn("%s: material '%s' has no M_ prefix - Unity looks materials up by name"
+                            % (obj.name, slot.material.name))
         slots = len(obj.material_slots)
         if slots > MAX_MATERIAL_SLOTS:
             report.warn("%s: %d material slots (max %d) - each slot is an extra draw call"
@@ -301,6 +314,55 @@ def export_asset(collection, meta, filepath, mixamo):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     result = bpy.ops.export_scene.fbx(filepath=filepath, collection=collection.name, **settings)
     return "FINISHED" in result
+
+
+def material_entry(mat):
+    """Values Unity needs for a URP Lit material. Colours are linear, as Blender stores them."""
+    def color(values):
+        return dict(r=round(values[0], 5), g=round(values[1], 5), b=round(values[2], 5),
+                    a=round(values[3], 5) if len(values) > 3 else 1.0)
+
+    entry = dict(name=mat.name, baseColor=color(mat.diffuse_color), metallic=mat.metallic,
+                 roughness=mat.roughness, emissionColor=color((0, 0, 0, 1)), emissionStrength=0.0,
+                 textured=False)
+    node = None
+    if mat.node_tree:
+        node = next((n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+    if node is not None:
+        inputs = node.inputs
+        base = list(inputs["Base Color"].default_value)
+        base[3] = inputs["Alpha"].default_value
+        entry.update(baseColor=color(base),
+                     metallic=inputs["Metallic"].default_value,
+                     roughness=inputs["Roughness"].default_value,
+                     emissionColor=color(inputs["Emission Color"].default_value),
+                     emissionStrength=inputs["Emission Strength"].default_value,
+                     textured=inputs["Base Color"].is_linked)
+    entry["metallic"] = round(entry["metallic"], 4)
+    entry["roughness"] = round(entry["roughness"], 4)
+    entry["emissionStrength"] = round(entry["emissionStrength"], 4)
+    return entry
+
+
+def write_material_manifest(collection, meta, repo_root):
+    """One manifest per asset; ArtMaterialBuilder.cs builds / updates the M_ materials from it."""
+    used = {}
+    for obj in collection.all_objects:
+        if obj.type != "MESH" or not obj.visible_get():
+            continue
+        for slot in obj.material_slots:
+            if slot.material is not None:
+                used[slot.material.name] = slot.material
+    manifest = dict(asset=collection.name,
+                    source=os.path.relpath(bpy.data.filepath, repo_root).replace("\\", "/") if bpy.data.filepath else "",
+                    materials=[material_entry(used[name]) for name in sorted(used)])
+    folder = os.path.join(repo_root, *MATERIALS_DIR.split("/"), meta["route"])
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, collection.name + ".materials.json")
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(manifest, f, indent=2)
+        f.write("\n")
+    return path, len(manifest["materials"])
 
 
 def show_popup(lines, failed):
@@ -367,6 +429,10 @@ def main():
             if export_asset(coll, meta, path, args.mixamo):
                 shown = os.path.relpath(path, repo_root) if repo_root else path
                 status = "exported -> " + shown.replace("\\", "/")
+                if not args.mixamo and not args.out:
+                    manifest, count = write_material_manifest(coll, meta, repo_root)
+                    report.note("material manifest: %d material(s) -> %s"
+                                % (count, os.path.relpath(manifest, repo_root).replace("\\", "/")))
             else:
                 status = "FAILED - exporter returned an error"
                 any_failed = True
