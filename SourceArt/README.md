@@ -129,6 +129,10 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 - **Tools → S3 → Build Model Prefabs** creates `Prefabs/Weapons/P_Gun_Tier1-4` (model + fitted BoxCollider on the root) and `Prefabs/Player/P_Player_Officer` (model with the importer's Animator + Humanoid avatar).
 - The model is a nested prefab, so a Blender re-export updates the prefab. Existing prefabs are skipped: delete one to rebuild it.
 
+**Art Budget Checker** — `ArtBudgetWindow.cs`
+- **Tools → S3 → Art Budget Checker** lists every model (tris, verts, submeshes ≈ draw calls, materials, bones, mesh GPU memory) and texture (imported size, format, mips, memory) against the budgets, with over-budget rows in red.
+- **Export report** writes `SourceArt/budget_report.md`. Export it before and after each optimisation pass and commit it: that's the viva evidence.
+
 **Textures** (`Art/Textures/`) — `ArtTexturePostprocessor.cs`
 - Max size by sub-folder: Characters 1024, Birds 1024, Weapons 512, Props 512, Environment 2048, Shared 1024. Names containing `Palette` → 256.
 - `*_Normal` → Normal Map. `*_Mask`, `_ORM`, `_Roughness`, `_Metallic`, `_AO`, `_Height` → sRGB off.
