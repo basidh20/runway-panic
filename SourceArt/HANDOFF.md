@@ -13,6 +13,15 @@ Template:
 
 ---
 
+## 2026-10-08 — to: Agent Controller + all — 4 species prefabs; bird animation clips are yours
+- **What:** `Assets/_Project/Prefabs/Birds/P_Bird_Gull`, `P_Bird_Pigeon`, `P_Bird_Crow`, `P_Bird_Hawk` — Prefab Variants of `P_Bird_Base`
+- **Details:**
+  - Same mesh, rig and bones as `P_Bird_Base` (see the entry below). They differ only in scale (Gull 1.0, Pigeon 0.6, Crow 0.8, Hawk 1.2 on the root), materials and blend shapes.
+  - The variants have `Wings_Spread` = 100 (flying pose) and a per-species `Tail_Spread`. If your clips key these blend shapes, the clip wins while it plays.
+  - The root scale also scales the CapsuleCollider. Don't reset the root scale in code; move or rotate only.
+- **Action needed:** (team decision, 8 Oct) **the Agent Controller makes the bird clips** (`A_Bird_Fly`, `A_Bird_Glide`, `A_Bird_Dive`, `A_Bird_Hit`, `A_Bird_Death`) and the Animator Controller. Put the controller on **`P_Bird_Base`** so all 4 species get it. Each IS owner adds their species AI script to their own variant.
+- **Status:** open
+
 ## 2026-10-08 — to: Agent Controller — base bird model + rig (`P_Bird_Base`)
 - **What:** `Assets/_Project/Prefabs/Birds/P_Bird_Base.prefab` (model: `Assets/_Project/Art/Models/Birds/SK_Bird.fbx`)
 - **Details:**

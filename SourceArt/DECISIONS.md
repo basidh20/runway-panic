@@ -85,3 +85,18 @@ Still to cover: tri + texture budgets in practice, one rig + prefab variants for
 - **Choice:** C. The bone limit (15) stays. In `ArtBudgets.cs` the bird's `MaxTris` is 0 and in `export_fbx.py` it is `None`, meaning "no limit".
 - **Why:** The detail is what the model is built around (separate feather details, shaped wings), and the game has to run on desktop PCs, not phones. Tris are still in the Budget Checker report, so the cost stays visible.
 - **To defend it in the viva:** measure it rather than assume it. Record FPS and the Statistics panel (tris, batches) with the largest planned wave (e.g. 30 birds ≈ 760k tris). If the frame rate drops, LODs (Decimate copies at 50% / 20%, via `LODGroup`) are the fallback.
+
+## 2026-10-08 — Four species from one mesh and one rig (Prefab Variants)
+- **Context:** The game needs 4 bird species (one per team member for IS): **Gull, Pigeon, Crow, Hawk**. Each has to be recognisable at a distance, and the Agent Controller should animate only once.
+- **Options considered:** A) Model 4 separate birds. B) One mesh + one rig, with 4 **Prefab Variants** of `P_Bird_Base` that differ in colour, scale and blend shapes. C) One prefab, recoloured at runtime by a script.
+- **Choice:** B, built by `Tools > S3 > Build Bird Species Variants` (`ArtBirdSpeciesBuilder.cs`). Its colour/scale/shape table is the source of truth, and re-running it updates the variants in place.
+- **Why:** One mesh in memory for all four species, and one rig, so every animation clip and Animator Controller works on all four. A component added to `P_Bird_Base` (AI, health) reaches every species automatically. Scale and silhouette make the species readable during gameplay, not just their colour. Option C would hide the variants from the editor and from the level designer.
+- **Per species:**
+  - Gull: scale 1.0, tail fan 0, base colours.
+  - Pigeon: scale 0.6, tail fan 50, blue-grey with pink legs.
+  - Crow: scale 0.8, tail fan 30, black and slightly glossier (smoothness 0.45).
+  - Hawk: scale 1.2, tail fan 100, brown/cream with a yellow cere and legs.
+  - All variants have `Wings_Spread` = 100, because birds are always flying.
+- **Materials:** only the 11 coloured parts get a species copy (`Materials/Birds/Species/M_Bird_<Species>_<Part>`). Eye pupil and claws stay shared: 13 base materials + 33 species materials, instead of 52 if every slot were copied.
+- **GPU instancing:** the plan suggested it, but Unity **cannot GPU-instance a SkinnedMeshRenderer**, so it is left off. URP's **SRP Batcher** batches the birds instead: all bird materials use the same URP Lit shader variant, which keeps draw-call setup cheap even with 13 submeshes per bird.
+- **Numbers:** wingspan with wings spread: gull 1.66 m, pigeon ≈ 1.0 m, crow ≈ 1.33 m, hawk ≈ 2.0 m. One shared mesh: 25,266 tris, 13,405 verts.
