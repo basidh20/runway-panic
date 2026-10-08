@@ -26,7 +26,7 @@ namespace RunwayPanic.ArtTools
             public long MeshBytes;
             public bool HasBudget;
             public ArtBudgets.ModelBudget Budget;
-            public bool TrisOk => !HasBudget || Tris <= Budget.MaxTris;
+            public bool TrisOk => !HasBudget || Budget.MaxTris == 0 || Tris <= Budget.MaxTris;
             public bool BonesOk => !HasBudget || Budget.MaxBones == 0 || Bones <= Budget.MaxBones;
             public bool Ok => TrisOk && BonesOk;
         }
@@ -163,7 +163,7 @@ namespace RunwayPanic.ArtTools
         }
 
         static string Kb(long bytes) => (bytes / 1024f).ToString("N1") + " KB";
-        static string Budget(ModelRow r) => r.HasBudget ? r.Budget.MaxTris.ToString("N0") : "-";
+        static string Budget(ModelRow r) => r.HasBudget && r.Budget.MaxTris > 0 ? r.Budget.MaxTris.ToString("N0") : "-";
         static string BoneBudget(ModelRow r) => r.HasBudget && r.Budget.MaxBones > 0 ? r.Budget.MaxBones.ToString() : "-";
 
         // ------------------------------------------------------------------ UI

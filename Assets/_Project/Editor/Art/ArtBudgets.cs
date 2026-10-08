@@ -17,7 +17,7 @@ namespace RunwayPanic.ArtTools
         public readonly struct ModelBudget
         {
             public readonly string Prefix;
-            public readonly int MaxTris;
+            public readonly int MaxTris;  // 0 = no triangle limit (count is still reported)
             public readonly int MaxBones; // 0 = no bone limit
 
             public ModelBudget(string prefix, int maxTris, int maxBones)
@@ -30,7 +30,7 @@ namespace RunwayPanic.ArtTools
 
         static readonly ModelBudget[] ModelBudgets =
         {
-            new ModelBudget("SK_Bird", 1500, 15),
+            new ModelBudget("SK_Bird", 0, 15),  // no tri limit (decided 8 Oct), bones still capped
             new ModelBudget("SK_Player", 8000, 0),
             new ModelBudget("SM_Gun", 2500, 0),
             new ModelBudget("SM_Prop", 500, 0),

@@ -180,7 +180,7 @@ namespace RunwayPanic.ArtTools
                 return;
             }
 
-            if (tris > budget.MaxTris)
+            if (budget.MaxTris > 0 && tris > budget.MaxTris)
             {
                 Debug.LogWarning($"[Art] {assetName}: OVER BUDGET {tris} tris > {budget.MaxTris} ({budget.Prefix}).");
             }

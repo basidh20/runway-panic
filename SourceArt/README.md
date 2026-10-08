@@ -114,7 +114,7 @@ blender SourceArt/Blender/Birds/SK_Bird.blend --background --python SourceArt/To
 
 | Asset | Max tris | Max bones | Texture |
 |---|---|---|---|
-| `SK_Bird` (shared base for 4 species) | 1,500 | 15 | Shared palette (256²) |
+| `SK_Bird` (shared base for 4 species) | none (reported only) | 15 | Shared palette (256²) |
 | `SM_Gun_Tier*` | 2,500 each | — | Shared palette (256²) |
 | `SK_Player_Officer` | 8,000 | Mixamo rig | up to 1024² |
 | `SM_Prop_*` | 500 | — | Shared palette |

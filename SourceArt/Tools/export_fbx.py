@@ -63,9 +63,9 @@ ROUTES = {
     "Env": "Environment",
 }
 
-# Asset-name prefix -> (max triangles, max deform bones or None). Longest prefix wins.
+# Asset-name prefix -> (max triangles or None, max deform bones or None). Longest prefix wins.
 BUDGETS = {
-    "SK_Bird": (1500, 15),
+    "SK_Bird": (None, 15),  # no tri limit (decided 8 Oct), bones still capped
     "SK_Player": (8000, None),
     "SM_Gun": (2500, None),
     "SM_Prop": (500, None),
@@ -283,11 +283,11 @@ def check_asset(collection, mixamo):
         report.warn("no budget defined for '%s' - add one to BUDGETS" % name)
     else:
         max_tris, max_bones = budget
-        if total_tris > max_tris:
+        if max_tris is not None and total_tris > max_tris:
             report.warn("OVER BUDGET: %d tris > %d (%s)" % (total_tris, max_tris, budget_prefix))
         if max_bones is not None and deform_bones is not None and deform_bones > max_bones:
             report.warn("OVER BUDGET: %d deform bones > %d (%s)" % (deform_bones, max_bones, budget_prefix))
-    report.note("TOTAL: %d tris%s" % (total_tris, "" if budget is None else " / budget %d" % budget[0]))
+    report.note("TOTAL: %d tris%s" % (total_tris, "" if budget is None or budget[0] is None else " / budget %d" % budget[0]))
 
     route = ROUTES[parts[1]] if len(parts) > 1 and parts[1] in ROUTES else None
     return report, dict(is_skinned=is_skinned, has_armature=bool(armatures), route=route)
