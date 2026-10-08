@@ -1,0 +1,253 @@
+{
+  "asset": "SK_Bird",
+  "source": "SourceArt/Blender/Birds/SK_Bird.blend",
+  "materials": [
+    {
+      "name": "M_Bird_Beak",
+      "baseColor": {
+        "r": 0.91141,
+        "g": 0.50708,
+        "b": 0.02198,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.42,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Beak_Spot",
+      "baseColor": {
+        "r": 0.71057,
+        "g": 0.0331,
+        "b": 0.01002,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.45,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Beak_Tip",
+      "baseColor": {
+        "r": 0.01533,
+        "g": 0.01165,
+        "b": 0.00854,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.4,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Claws",
+      "baseColor": {
+        "r": 0.00394,
+        "g": 0.00394,
+        "b": 0.00394,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.35,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Eye_Iris",
+      "baseColor": {
+        "r": 0.78741,
+        "g": 0.36725,
+        "b": 0.01341,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.25,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Eye_Pupil",
+      "baseColor": {
+        "r": 0.00077,
+        "g": 0.00077,
+        "b": 0.00077,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.1,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Eyelid",
+      "baseColor": {
+        "r": 0.74841,
+        "g": 0.13287,
+        "b": 0.02198,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.55,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Feather_Dark",
+      "baseColor": {
+        "r": 0.00598,
+        "g": 0.00598,
+        "b": 0.00719,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.72,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Feather_Gray",
+      "baseColor": {
+        "r": 0.18732,
+        "g": 0.21404,
+        "b": 0.26327,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.84,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Feather_Gray_Dark",
+      "baseColor": {
+        "r": 0.09463,
+        "g": 0.10654,
+        "b": 0.13287,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.84,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Feather_Gray_Light",
+      "baseColor": {
+        "r": 0.26327,
+        "g": 0.2957,
+        "b": 0.34239,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.84,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Feather_White",
+      "baseColor": {
+        "r": 0.78741,
+        "g": 0.78741,
+        "b": 0.74841,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.84,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Bird_Legs",
+      "baseColor": {
+        "r": 0.89001,
+        "g": 0.40645,
+        "b": 0.02721,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.55,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    }
+  ]
+}
