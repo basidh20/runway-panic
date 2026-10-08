@@ -9,6 +9,7 @@ Source files for every custom model. This folder is **outside `Assets/`**, so Un
 | `Reference/` | Reference images and sheets |
 | `Tools/export_fbx.py` | Blender → Unity FBX exporter with pre-export checks |
 | `Tools/ingest_fbx.py` | Turns a raw FBX (made outside this pipeline) into a pipeline-ready `.blend` |
+| `Tools/rig_bird.py` | Turns the raw base-bird FBX (separate parts, no armature) into a rigged `SK_Bird.blend` |
 | `DECISIONS.md` | Design decision log (viva evidence) |
 | `HANDOFF.md` | Notes and requests for other team members |
 
@@ -70,6 +71,19 @@ blender SourceArt/Blender/Weapons/Guns.blend --background --python SourceArt/Too
 ```
 It applies rotation/scale (aborts if the geometry moves), renames the root to the asset name (an armature becomes `Armature`), merges duplicate materials (`RG_Polymer.001`, `MAT_Navy_Fabric__guns_tmp`) and renames them `M_<Prefix>_…`, drops unused material slots, adds a **placeholder** Smart UV Project map where a mesh has none, and with `--sockets` adds `Socket_Muzzle` at the front-most point (−Y). It writes a new `.blend`, so re-running it **overwrites manual edits** in that file.
 
+### The base bird (`rig_bird.py`)
+The bird FBX arrives as 13 separate parts under an Empty, without an armature. `rig_bird.py` reuses the `ingest_fbx.py` helpers and also rigs it:
+```bash
+blender --background --factory-startup --python SourceArt/Tools/rig_bird.py --     --fbx ../FBX_Files/AirportBird_Base.fbx --blend SourceArt/Blender/Birds/SK_Bird.blend
+blender SourceArt/Blender/Birds/SK_Bird.blend --background --python SourceArt/Tools/export_fbx.py -- --all
+```
+- **Pivot = centre of mass** (centre of the body's bounding box). The feet are 0.254 m below it.
+- **9 deform bones**, each placed at the origin the modeller gave that part: `Body` (root, at the pivot) → `Head`, `Tail`, `Wing_L/R`, `Leg_L/R` → `Foot_L/R`.
+- **Rigid skinning**: each part is weighted 100% to its bone. The body and feather details blend Body→Head across the neck, and the thigh feather ruff follows the legs.
+- The parts are **joined into one mesh** `Bird_Mesh`, so Unity gets one SkinnedMeshRenderer per bird. The shape keys `Wings_Spread` and `Tail_Spread` become blend shapes.
+- Wings are one rigid piece: they rotate at the shoulder but don't fold. Hand-painted weights or 2-bone wings can replace this later with the same bone and file names.
+- Like `ingest_fbx.py`, re-running it **overwrites** `SK_Bird.blend`.
+
 ### FBX preset applied by the script
 | Setting | Value | Why |
 |---|---|---|
@@ -126,7 +140,7 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 - New materials trigger a re-import of the matching model. **Tools → S3 → Rebuild Materials From Manifests** rebuilds everything.
 
 **Prefabs** — `ArtPrefabBuilder.cs`
-- **Tools → S3 → Build Model Prefabs** creates `Prefabs/Weapons/P_Gun_Tier1-4` (model + fitted BoxCollider on the root) and `Prefabs/Player/P_Player_Officer` (model with the importer's Animator + Humanoid avatar).
+- **Tools → S3 → Build Model Prefabs** creates `Prefabs/Weapons/P_Gun_Tier1-4` (model + fitted BoxCollider on the root), `Prefabs/Player/P_Player_Officer` (model with the importer's Animator + Humanoid avatar) and `Prefabs/Birds/P_Bird_Base` (model with the Animator + Generic avatar, a body CapsuleCollider along +Z on the root).
 - The model is a nested prefab, so a Blender re-export updates the prefab. Existing prefabs are skipped: delete one to rebuild it.
 
 **Art Budget Checker** — `ArtBudgetWindow.cs`
