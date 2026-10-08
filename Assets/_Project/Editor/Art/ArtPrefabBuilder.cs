@@ -13,7 +13,7 @@ namespace RunwayPanic.ArtTools
     {
         const string PrefabsRoot = "Assets/_Project/Prefabs/";
 
-        enum Kind { Gun, Character }
+        enum Kind { Gun, Character, Bird }
 
         static readonly (string Model, string Prefab, Kind Kind)[] Entries =
         {
@@ -22,6 +22,7 @@ namespace RunwayPanic.ArtTools
             ("Weapons/SM_Gun_Tier3.fbx", "Weapons/P_Gun_Tier3.prefab", Kind.Gun),   // sniper
             ("Weapons/SM_Gun_Tier4.fbx", "Weapons/P_Gun_Tier4.prefab", Kind.Gun),   // RPG
             ("Characters/SK_Player_Officer.fbx", "Player/P_Player_Officer.prefab", Kind.Character),
+            ("Birds/SK_Bird.fbx", "Birds/P_Bird_Base.prefab", Kind.Bird),            // base for the 4 species variants
         };
 
         [MenuItem("Tools/S3/Build Model Prefabs")]
@@ -58,6 +59,7 @@ namespace RunwayPanic.ArtTools
 
             // Characters keep the importer's Animator + Humanoid avatar on the model; the controller is added later.
             if (kind == Kind.Gun) AddFittedBoxCollider(root);
+            if (kind == Kind.Bird) AddBodyCapsuleCollider(root);
 
             PrefabUtility.SaveAsPrefabAsset(root, prefabPath, out bool success);
             Object.DestroyImmediate(root);
@@ -78,6 +80,21 @@ namespace RunwayPanic.ArtTools
             var box = root.AddComponent<BoxCollider>();
             box.center = bounds.center;
             box.size = bounds.size;
+        }
+
+        // Bird hitbox: one capsule along the body (+Z, beak to tail) around the pivot (centre of mass).
+        // Legs and wings are left out, so the hitbox does not change size when the wings flap.
+        static void AddBodyCapsuleCollider(GameObject root)
+        {
+            var renderer = root.GetComponentInChildren<SkinnedMeshRenderer>();
+            if (renderer == null) return;
+
+            Bounds bounds = renderer.bounds;
+            var capsule = root.AddComponent<CapsuleCollider>();
+            capsule.direction = 2; // Z axis
+            capsule.center = new Vector3(0f, 0f, bounds.center.z);
+            capsule.radius = 0.12f; // body is ~0.24 m deep and ~0.17 m wide (SK_Bird, 8 Oct)
+            capsule.height = bounds.size.z;
         }
     }
 }
