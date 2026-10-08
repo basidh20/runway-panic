@@ -143,6 +143,10 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 - **Tools → S3 → Build Model Prefabs** creates `Prefabs/Weapons/P_Gun_Tier1-4` (model + fitted BoxCollider on the root), `Prefabs/Player/P_Player_Officer` (model with the importer's Animator + Humanoid avatar) and `Prefabs/Birds/P_Bird_Base` (model with the Animator + Generic avatar, a body CapsuleCollider along +Z on the root).
 - The model is a nested prefab, so a Blender re-export updates the prefab. Existing prefabs are skipped: delete one to rebuild it.
 
+**Bird species** — `ArtBirdSpeciesBuilder.cs`
+- **Tools → S3 → Build Bird Species Variants** creates or updates the Prefab Variants `Prefabs/Birds/P_Bird_Gull`, `_Pigeon`, `_Crow` and `_Hawk` of `P_Bird_Base`. Each gets its uniform scale, its species materials (`Materials/Birds/Species/M_Bird_<Species>_<Part>`, copies of the base material with the species colour) and its blend shape weights (`Wings_Spread` 100, `Tail_Spread` per species).
+- The table at the top of the script is the source of truth. Change a colour or scale there and re-run the menu. Only scale, materials and blend shapes are overwritten; components teammates add to a variant are kept.
+
 **Art Budget Checker** — `ArtBudgetWindow.cs`
 - **Tools → S3 → Art Budget Checker** lists every model (tris, verts, submeshes ≈ draw calls, materials, bones, mesh GPU memory) and texture (imported size, format, mips, memory) against the budgets, with over-budget rows in red.
 - **Export report** writes `SourceArt/budget_report.md`. Export it before and after each optimisation pass and commit it: that's the viva evidence.
