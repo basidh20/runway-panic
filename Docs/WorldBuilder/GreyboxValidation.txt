@@ -1,0 +1,127 @@
+Airport greybox validation
+Scene: Assets/_Project/Scenes/Main.unity
+Unity: 6000.6.4f1
+
+PASS: Ground has solid box collision
+PASS: Eight bird spawn markers exist
+PASS: Six reusable cover instances exist
+PASS: Valid material: Base
+PASS: Valid material: RunwayNumber_09
+PASS: Valid material: Shelter_B_Label
+PASS: Valid material: Top
+PASS: Valid material: CoverBody
+PASS: Valid material: TowerCab
+PASS: Valid material: TerminalWindow_4
+PASS: Valid material: CentreStripe_05
+PASS: Valid material: CoverBody
+PASS: Valid material: Front_Right
+PASS: Valid material: Door_Lintel
+PASS: Valid material: Wall_Back
+PASS: Valid material: Wall_Left
+PASS: Valid material: Base
+PASS: Valid material: TowerRoof
+PASS: Valid material: Runway_60x14
+PASS: Valid material: Front_Right
+PASS: Valid material: TerminalRoof
+PASS: Valid material: Front_Left
+PASS: Valid material: Floor
+PASS: Valid material: Boundary_South
+PASS: Valid material: Top
+PASS: Valid material: RunwayNumber_27
+PASS: Valid material: Boundary_West
+PASS: Valid material: Apron_A
+PASS: Valid material: Wall_Left
+PASS: Valid material: CentreStripe_04
+PASS: Valid material: Top
+PASS: Valid material: Base
+PASS: Valid material: TowerShaft
+PASS: Valid material: Base
+PASS: Valid material: CoverBody
+PASS: Valid material: CoverBody
+PASS: Valid material: Shelter_A_Label
+PASS: Valid material: Threshold_27_3
+PASS: Valid material: CentreStripe_03
+PASS: Valid material: EntranceCanopy
+PASS: Valid material: Base
+PASS: Valid material: Threshold_27_2
+PASS: Valid material: TerminalWindow_2
+PASS: Valid material: TowerBase
+PASS: Valid material: CentreStripe_08
+PASS: Valid material: Wall_Back
+PASS: Valid material: Boundary_East
+PASS: Valid material: CoverBody
+PASS: Valid material: TerminalWindow_3
+PASS: Valid material: Wall_Right
+PASS: Valid material: Roof
+PASS: Valid material: Top
+PASS: Valid material: Threshold_-27_2
+PASS: Valid material: Wall_Right
+PASS: Valid material: Threshold_27_0
+PASS: Valid material: CentreStripe_02
+PASS: Valid material: Threshold_-27_5
+PASS: Valid material: Boundary_North
+PASS: Valid material: Terminal_Placeholder
+PASS: Valid material: Floor
+PASS: Valid material: Threshold_-27_3
+PASS: Valid material: Door_Lintel
+PASS: Valid material: ShelterSign
+PASS: Valid material: RunwayEdge_6.45
+PASS: Valid material: Roof
+PASS: Valid material: Top
+PASS: Valid material: CoverBody
+PASS: Valid material: EntryStripe
+PASS: Valid material: Threshold_27_1
+PASS: Valid material: RunwayEdge_-6.45
+PASS: Valid material: CentreStripe_06
+PASS: Valid material: TerminalWindow_1
+PASS: Valid material: Front_Left
+PASS: Valid material: TerminalWindow_0
+PASS: Valid material: ShelterSign
+PASS: Valid material: Threshold_27_4
+PASS: Valid material: Threshold_-27_1
+PASS: Valid material: Threshold_-27_0
+PASS: Valid material: Threshold_27_5
+PASS: Valid material: Apron_B
+PASS: Valid material: CentreStripe_01
+PASS: Valid material: EntryStripe
+PASS: Valid material: CentreStripe_09
+PASS: Valid material: Ground_100x80
+PASS: Valid material: CentreStripe_07
+PASS: Valid material: Base
+PASS: Valid material: Top
+PASS: Valid material: EntranceCanopy
+PASS: Valid material: Threshold_-27_4
+PASS: Ground supports point -45, -35
+PASS: Ground supports point -45, -20
+PASS: Ground supports point -45, 0
+PASS: Ground supports point -45, 20
+PASS: Ground supports point -45, 35
+PASS: Ground supports point -10, -35
+PASS: Ground supports point -10, -20
+PASS: Ground supports point -10, 0
+PASS: Ground supports point -10, 20
+PASS: Ground supports point -10, 35
+PASS: Ground supports point 0, -35
+PASS: Ground supports point 0, -20
+PASS: Ground supports point 0, 0
+PASS: Ground supports point 0, 20
+PASS: Ground supports point 0, 35
+PASS: Ground supports point 10, -35
+PASS: Ground supports point 10, -20
+PASS: Ground supports point 10, 0
+PASS: Ground supports point 10, 20
+PASS: Ground supports point 10, 35
+PASS: Ground supports point 45, -35
+PASS: Ground supports point 45, -20
+PASS: Ground supports point 45, 0
+PASS: Ground supports point 45, 20
+PASS: Ground supports point 45, 35
+PASS: Character passes through Shelter A doorway into interior
+PASS: Character exits Shelter A doorway
+PASS: Character passes through Shelter B doorway into interior
+PASS: Character exits Shelter B doorway
+PASS: Shelter side wall blocks character
+PASS: Perimeter wall contains character
+PASS: Character lands on ground without falling through
+
+Failures: 0
