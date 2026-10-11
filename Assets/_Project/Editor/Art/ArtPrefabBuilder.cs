@@ -22,7 +22,8 @@ namespace RunwayPanic.ArtTools
             ("Weapons/SM_Gun_Tier3.fbx", "Weapons/P_Gun_Tier3.prefab", Kind.Gun),   // sniper
             ("Weapons/SM_Gun_Tier4.fbx", "Weapons/P_Gun_Tier4.prefab", Kind.Gun),   // RPG
             ("Characters/SK_Player_Officer.fbx", "Player/P_Player_Officer.prefab", Kind.Character),
-            ("Birds/SK_Bird.fbx", "Birds/P_Bird_Base.prefab", Kind.Bird),            // base for the 4 species variants
+            ("Birds/SK_Bird.fbx", "Birds/P_Bird_Base.prefab", Kind.Bird),            // base for the Gull/Pigeon/Crow variants
+            ("Birds/SK_Bird_Hawk.fbx", "Birds/P_Bird_Hawk.prefab", Kind.Bird),       // own mesh, same bone names as SK_Bird
         };
 
         [MenuItem("Tools/S3/Build Model Prefabs")]

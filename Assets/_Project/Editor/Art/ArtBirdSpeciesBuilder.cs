@@ -6,10 +6,12 @@ using UnityEngine;
 namespace RunwayPanic.ArtTools
 {
     /// <summary>
-    /// Tools > S3 > Build Bird Species Variants: one mesh + one rig -> four species.
-    /// Each species is a Prefab Variant of P_Bird_Base with its own uniform scale, feather/beak/leg colours and
-    /// blend shape weights. Animations, colliders and scripts added to P_Bird_Base reach all four automatically.
-    /// The table below is the source of truth: re-running the menu updates existing variants in place
+    /// Tools > S3 > Build Bird Species Variants: one mesh + one rig -> Gull, Pigeon, Crow; plus the Hawk's own model.
+    /// Recoloured species are Prefab Variants of P_Bird_Base with their own uniform scale, feather/beak/leg colours and
+    /// blend shape weights. Animations, colliders and scripts added to P_Bird_Base reach all of them automatically.
+    /// "Own model" species (Hawk: SK_Bird_Hawk, same bone names) keep their prefab from Build Model Prefabs and only
+    /// get their scale + blend shapes here, so every bird starts in the same flying pose.
+    /// The table below is the source of truth: re-running the menu updates existing prefabs in place
     /// (only scale, materials and blend shapes are touched - components a teammate added are kept).
     /// </summary>
     public static class ArtBirdSpeciesBuilder
@@ -23,6 +25,7 @@ namespace RunwayPanic.ArtTools
         const string TailSpread = "Tail_Spread";   // tail fan, used as the per-species shape difference
 
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int LegacyColorId = Shader.PropertyToID("_Color"); // Unity re-syncs it to _BaseColor on load
         static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
 
         readonly struct Species
@@ -32,15 +35,23 @@ namespace RunwayPanic.ArtTools
             public readonly float TailSpread;   // 0-100
             public readonly float? Smoothness;  // null = keep the base material's value
             public readonly (string Part, string Hex)[] Colours; // Part = base material name without "M_Bird_"; sRGB hex
+            public readonly bool OwnModel;      // true = own mesh + materials (P_Bird_<Name> from Build Model Prefabs)
 
             public Species(string name, float scale, float tailSpread, float? smoothness, params (string, string)[] colours)
+                : this(name, scale, tailSpread, smoothness, false, colours) { }
+
+            Species(string name, float scale, float tailSpread, float? smoothness, bool ownModel, (string, string)[] colours)
             {
                 Name = name;
                 Scale = scale;
                 TailSpread = tailSpread;
                 Smoothness = smoothness;
+                OwnModel = ownModel;
                 Colours = colours;
             }
+
+            public static Species WithOwnModel(string name, float scale, float tailSpread) =>
+                new Species(name, scale, tailSpread, null, true, new (string, string)[0]);
         }
 
         // Scale is relative to the base model (gull: 0.6 m beak to tail, 1.66 m wingspan with Wings_Spread = 100).
@@ -61,11 +72,8 @@ namespace RunwayPanic.ArtTools
                 ("Beak", "#141416"), ("Beak_Spot", "#141416"), ("Beak_Tip", "#0E0E10"),
                 ("Eye_Iris", "#2B1D14"), ("Eyelid", "#1B1B1E"), ("Legs", "#1A1A1C")),
 
-            new Species("Hawk", 1.2f, 100f, null,
-                ("Feather_White", "#E8DCC4"), ("Feather_Gray_Light", "#A8774A"), ("Feather_Gray", "#8A5A35"),
-                ("Feather_Gray_Dark", "#5E3B22"), ("Feather_Dark", "#2E1E14"),
-                ("Beak", "#3B3B3D"), ("Beak_Spot", "#F2C230"), ("Beak_Tip", "#1C1C1E"),
-                ("Eye_Iris", "#F0B020"), ("Eyelid", "#E3B341"), ("Legs", "#F2C230")),
+            // Modelled separately (11 Oct) at real size: 0.56 m beak to tail, 1.51 m wingspan; colours from Blender.
+            Species.WithOwnModel("Hawk", 1.0f, 100f),
         };
 
         [MenuItem("Tools/S3/Build Bird Species Variants")]
@@ -85,11 +93,16 @@ namespace RunwayPanic.ArtTools
 
             foreach (var species in AllSpecies)
             {
+                if (species.OwnModel)
+                {
+                    UpdateOwnModel(species);
+                    continue;
+                }
                 var materials = BuildMaterials(species, baseMaterials);
                 BuildVariant(species, basePrefab, materials);
             }
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Art] Build Bird Species Variants: {AllSpecies.Length} variants updated.");
+            Debug.Log($"[Art] Build Bird Species Variants: {AllSpecies.Length} species updated.");
         }
 
         static Material[] BuildMaterials(Species species, Material[] baseMaterials)
@@ -139,6 +152,7 @@ namespace RunwayPanic.ArtTools
             }
 
             material.SetColor(BaseColorId, colour);
+            material.SetColor(LegacyColorId, colour);
             if (species.Smoothness.HasValue) material.SetFloat(SmoothnessId, species.Smoothness.Value);
             // No GPU instancing: Unity cannot instance SkinnedMeshRenderers. The SRP Batcher batches the birds instead.
             material.enableInstancing = false;
@@ -169,6 +183,29 @@ namespace RunwayPanic.ArtTools
             }
         }
 
+        // Own-model species: the prefab comes from Build Model Prefabs; only scale + blend shapes are set here.
+        static void UpdateOwnModel(Species species)
+        {
+            string path = $"{VariantFolder}P_Bird_{species.Name}.prefab";
+            if (!File.Exists(path))
+            {
+                Debug.LogWarning($"[Art] {path} not found - run Build Model Prefabs first.");
+                return;
+            }
+
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                Apply(species, root, null);
+                PrefabUtility.SaveAsPrefabAsset(root, path, out bool success);
+                if (success) Debug.Log($"[Art] Updated {path} (own model)");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
         static void Apply(Species species, GameObject root, Material[] materials)
         {
             root.name = $"P_Bird_{species.Name}";
@@ -177,7 +214,7 @@ namespace RunwayPanic.ArtTools
             root.transform.localScale = Vector3.one * species.Scale;
 
             var renderer = root.GetComponentInChildren<SkinnedMeshRenderer>();
-            renderer.sharedMaterials = materials;
+            if (materials != null) renderer.sharedMaterials = materials;
             SetBlendShape(renderer, WingsSpread, 100f, species.Name);
             SetBlendShape(renderer, TailSpread, species.TailSpread, species.Name);
         }
