@@ -13,6 +13,15 @@ Template:
 
 ---
 
+## 2026-10-11 — to: Agent Controller + Hawk owner — the hawk is now its own model
+- **What:** `Assets/_Project/Prefabs/Birds/P_Bird_Hawk.prefab` (model `Art/Models/Birds/SK_Bird_Hawk.fbx`) replaces the recoloured gull variant. It is **no longer a variant of `P_Bird_Base`**.
+- **Details:**
+  - It has the **same bone names** (`Body` → `Head`, `Tail`, `Wing_L/R`, `Leg_L/R` → `Foot_L/R`), the same mesh name (`Bird_Mesh`) and the same blend shapes (`Wings_Spread`, `Tail_Spread`). The pivot is also at the centre of mass.
+  - Size: 0.56 m beak to tail, 1.51 m wingspan (scale 1.0). The feet are 0.238 m below the pivot.
+  - Because the bone paths match, **the same clips play on the hawk**. Key **rotations only** (and blend shapes); the hawk's bones sit in slightly different places, so keyed bone positions would pull its body out of shape.
+- **Action needed:** assign the bird Animator Controller to `P_Bird_Hawk` as well as `P_Bird_Base` (the Animator is on the model child, `SK_Bird_Hawk`). Anything else added to `P_Bird_Base` must also be added to `P_Bird_Hawk`.
+- **Status:** open
+
 ## 2026-10-08 — to: Agent Controller + all — 4 species prefabs; bird animation clips are yours
 - **What:** `Assets/_Project/Prefabs/Birds/P_Bird_Gull`, `P_Bird_Pigeon`, `P_Bird_Crow`, `P_Bird_Hawk` — Prefab Variants of `P_Bird_Base`
 - **Details:**
