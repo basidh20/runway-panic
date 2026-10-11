@@ -9,7 +9,7 @@ Source files for every custom model. This folder is **outside `Assets/`**, so Un
 | `Reference/` | Reference images and sheets |
 | `Tools/export_fbx.py` | Blender → Unity FBX exporter with pre-export checks |
 | `Tools/ingest_fbx.py` | Turns a raw FBX (made outside this pipeline) into a pipeline-ready `.blend` |
-| `Tools/rig_bird.py` | Turns the raw base-bird FBX (separate parts, no armature) into a rigged `SK_Bird.blend` |
+| `Tools/rig_bird.py` | Turns a raw bird (`.fbx` or `.blend`, separate parts, no armature) into a rigged `SK_Bird*.blend` |
 | `DECISIONS.md` | Design decision log (viva evidence) |
 | `HANDOFF.md` | Notes and requests for other team members |
 
@@ -31,7 +31,7 @@ Put each asset in its own collection, named with its prefix. The collection name
 
 | Collection name | Exports to |
 |---|---|
-| `SK_Bird` | `Assets/_Project/Art/Models/Birds/SK_Bird.fbx` |
+| `SK_Bird`, `SK_Bird_Hawk` | `Assets/_Project/Art/Models/Birds/` |
 | `SK_Player_Officer` | `Assets/_Project/Art/Models/Characters/` |
 | `SM_Gun_Tier1` … `SM_Gun_Tier4` | `Assets/_Project/Art/Models/Weapons/` |
 | `SM_Prop_*` | `Assets/_Project/Art/Models/Props/` |
@@ -71,18 +71,22 @@ blender SourceArt/Blender/Weapons/Guns.blend --background --python SourceArt/Too
 ```
 It applies rotation/scale (aborts if the geometry moves), renames the root to the asset name (an armature becomes `Armature`), merges duplicate materials (`RG_Polymer.001`, `MAT_Navy_Fabric__guns_tmp`) and renames them `M_<Prefix>_…`, drops unused material slots, adds a **placeholder** Smart UV Project map where a mesh has none, and with `--sockets` adds `Socket_Muzzle` at the front-most point (−Y). It writes a new `.blend`, so re-running it **overwrites manual edits** in that file.
 
-### The base bird (`rig_bird.py`)
-The bird FBX arrives as 13 separate parts under an Empty, without an armature. `rig_bird.py` reuses the `ingest_fbx.py` helpers and also rigs it:
+### Birds (`rig_bird.py`)
+Birds arrive as separate parts under an Empty, without an armature. Parts are named `<Prefix>_<Part>`: `Bird_Body`, `Hawk_Wing_L`, … (Body, Head, Beak, Eyes, Tail, Wing_L/R, Leg_L/R, Foot_L/R, Feather_Details, and optionally Primary_L/R). `rig_bird.py` reuses the `ingest_fbx.py` helpers and also rigs them. The source can be an `.fbx` or a `.blend`; cameras and lights in a `.blend` are skipped.
 ```bash
-blender --background --factory-startup --python SourceArt/Tools/rig_bird.py --     --fbx ../FBX_Files/AirportBird_Base.fbx --blend SourceArt/Blender/Birds/SK_Bird.blend
-blender SourceArt/Blender/Birds/SK_Bird.blend --background --python SourceArt/Tools/export_fbx.py -- --all
+# base bird (gull) -> SK_Bird
+blender --background --factory-startup --python SourceArt/Tools/rig_bird.py -- --source ../FBX_Files/AirportBird_Base.fbx --blend SourceArt/Blender/Birds/SK_Bird.blend
+# hawk (own model) -> SK_Bird_Hawk, materials M_Bird_Hawk_*
+blender --background --factory-startup --python SourceArt/Tools/rig_bird.py -- --source ../FBX_Files/AirportBird_Hawk_Head_Refined.blend --blend SourceArt/Blender/Birds/SK_Bird_Hawk.blend --asset SK_Bird_Hawk --material-prefix M_Bird_Hawk_
+blender SourceArt/Blender/Birds/SK_Bird_Hawk.blend --background --python SourceArt/Tools/export_fbx.py -- --all
 ```
+- **Every bird gets the same bone names, mesh name (`Bird_Mesh`) and blend shape names**, so one set of animation clips fits all of them.
 - **Pivot = centre of mass** (centre of the body's bounding box). The feet are 0.254 m below it.
 - **9 deform bones**, each placed at the origin the modeller gave that part: `Body` (root, at the pivot) → `Head`, `Tail`, `Wing_L/R`, `Leg_L/R` → `Foot_L/R`.
 - **Rigid skinning**: each part is weighted 100% to its bone. The body and feather details blend Body→Head across the neck, and the thigh feather ruff follows the legs.
 - The parts are **joined into one mesh** `Bird_Mesh`, so Unity gets one SkinnedMeshRenderer per bird. The shape keys `Wings_Spread` and `Tail_Spread` become blend shapes.
 - Wings are one rigid piece: they rotate at the shoulder but don't fold. Hand-painted weights or 2-bone wings can replace this later with the same bone and file names.
-- Like `ingest_fbx.py`, re-running it **overwrites** `SK_Bird.blend`.
+- Like `ingest_fbx.py`, re-running it **overwrites** the output `.blend`.
 
 ### FBX preset applied by the script
 | Setting | Value | Why |
@@ -114,7 +118,7 @@ blender SourceArt/Blender/Birds/SK_Bird.blend --background --python SourceArt/To
 
 | Asset | Max tris | Max bones | Texture |
 |---|---|---|---|
-| `SK_Bird` (shared base for 4 species) | none (reported only) | 15 | Shared palette (256²) |
+| `SK_Bird*` (base + hawk) | none (reported only) | 15 | Shared palette (256²) |
 | `SM_Gun_Tier*` | 2,500 each | — | Shared palette (256²) |
 | `SK_Player_Officer` | 8,000 | Mixamo rig | up to 1024² |
 | `SM_Prop_*` | 500 | — | Shared palette |
@@ -140,11 +144,12 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 - New materials trigger a re-import of the matching model. **Tools → S3 → Rebuild Materials From Manifests** rebuilds everything.
 
 **Prefabs** — `ArtPrefabBuilder.cs`
-- **Tools → S3 → Build Model Prefabs** creates `Prefabs/Weapons/P_Gun_Tier1-4` (model + fitted BoxCollider on the root), `Prefabs/Player/P_Player_Officer` (model with the importer's Animator + Humanoid avatar) and `Prefabs/Birds/P_Bird_Base` (model with the Animator + Generic avatar, a body CapsuleCollider along +Z on the root).
+- **Tools → S3 → Build Model Prefabs** creates `Prefabs/Weapons/P_Gun_Tier1-4` (model + fitted BoxCollider on the root), `Prefabs/Player/P_Player_Officer` (model with the importer's Animator + Humanoid avatar) and `Prefabs/Birds/P_Bird_Base` + `P_Bird_Hawk` (model with the Animator + Generic avatar, a body CapsuleCollider along +Z on the root).
 - The model is a nested prefab, so a Blender re-export updates the prefab. Existing prefabs are skipped: delete one to rebuild it.
 
 **Bird species** — `ArtBirdSpeciesBuilder.cs`
-- **Tools → S3 → Build Bird Species Variants** creates or updates the Prefab Variants `Prefabs/Birds/P_Bird_Gull`, `_Pigeon`, `_Crow` and `_Hawk` of `P_Bird_Base`. Each gets its uniform scale, its species materials (`Materials/Birds/Species/M_Bird_<Species>_<Part>`, copies of the base material with the species colour) and its blend shape weights (`Wings_Spread` 100, `Tail_Spread` per species).
+- **Tools → S3 → Build Bird Species Variants** creates or updates the Prefab Variants `Prefabs/Birds/P_Bird_Gull`, `_Pigeon` and `_Crow` of `P_Bird_Base`. Each gets its uniform scale, its species materials (`Materials/Birds/Species/M_Bird_<Species>_<Part>`, copies of the base material with the species colour) and its blend shape weights (`Wings_Spread` 100, `Tail_Spread` per species).
+- The hawk has its own model: `P_Bird_Hawk` comes from **Build Model Prefabs**, and this menu only sets its scale and blend shapes. Run Build Model Prefabs first.
 - The table at the top of the script is the source of truth. Change a colour or scale there and re-run the menu. Only scale, materials and blend shapes are overwritten; components teammates add to a variant are kept.
 
 **Art Budget Checker** — `ArtBudgetWindow.cs`

@@ -1,28 +1,34 @@
 """
-rig_bird.py - turn the raw base-bird FBX (separate parts, no armature) into a rigged SK_Bird.blend.
+rig_bird.py - turn a raw bird (separate parts, no armature) into a rigged SK_Bird*.blend.
 
-The source FBX is 13 mesh parts (body, head, beak, eyes, wings, tail, legs, feet, feather details)
+The source (.fbx or .blend) holds mesh parts named <Prefix>_<Part> (Bird_Body, Hawk_Wing_L, ...):
+body, head, beak, eyes, wings, tail, legs, feet, feather details, optionally primary feathers,
 parented to an Empty. Each part's origin sits at its joint (head at the neck, wings at the shoulders,
-legs at the hips, feet at the ankles), so the rig is built from those origins:
+legs at the hips, feet at the ankles), so the rig is built from those origins. Every bird gets the
+SAME bone names, mesh name (Bird_Mesh) and blend shape names, so one set of animation clips fits all.
 
-  1. imports the FBX (helpers shared with ingest_fbx.py), unparents the parts, removes the Empty
+  1. imports the source (FBX helpers shared with ingest_fbx.py; a .blend is appended without its
+     cameras / lights), unparents the parts, removes the Empty
   2. applies rotation/scale (aborts if the geometry moves)
   3. moves the pivot to the centre of mass (centre of the body's bounding box): the bird is always
      flying, so banking / pitching on a path must rotate around the body, not the toes
-  4. names materials M_Bird_*, adds a placeholder UV map where a part has none
+  4. names materials <material prefix>* (M_Bird_*, M_Bird_Hawk_*), adds a placeholder UV map where a part has none
   5. rigid skinning: every part is weighted 100% to its bone; the body and feather details blend
      smoothly between Body and Head around the neck so the head can turn without a seam, and the
      thigh feather ruff (feather-detail islands under the body around each hip) follows its leg
   6. joins the parts into ONE skinned mesh (one SkinnedMeshRenderer per bird in Unity) - shape keys
      (Wings_Spread, Tail_Spread) are kept and become blend shapes
-  7. builds the armature (deform bones, Generic rig in Unity) and saves SK_Bird.blend
+  7. builds the armature (deform bones, Generic rig in Unity) and saves the .blend
 
 Wings are rigid: they rotate at the shoulder but cannot fold at an elbow. Replacing this with
 hand-painted weights / 2-bone wings later keeps the same bone and file names.
 
 USAGE (from the repo root):
   blender --background --factory-startup --python SourceArt/Tools/rig_bird.py -- \
-      --fbx ../FBX_Files/AirportBird_Base.fbx --blend SourceArt/Blender/Birds/SK_Bird.blend
+      --source ../FBX_Files/AirportBird_Base.fbx --blend SourceArt/Blender/Birds/SK_Bird.blend
+  blender --background --factory-startup --python SourceArt/Tools/rig_bird.py -- \
+      --source ../FBX_Files/AirportBird_Hawk_Head_Refined.blend --blend SourceArt/Blender/Birds/SK_Bird_Hawk.blend \
+      --asset SK_Bird_Hawk --material-prefix M_Bird_Hawk_
 Then export:  blender SourceArt/Blender/Birds/SK_Bird.blend --background --python SourceArt/Tools/export_fbx.py -- --all
 """
 
@@ -38,37 +44,39 @@ sys.dont_write_bytecode = True  # no __pycache__ next to the tools
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ingest_fbx as ingest  # noqa: E402  (shared import / material / UV helpers)
 
-ASSET = "SK_Bird"
-MESH_NAME = "Bird_Mesh"
-MATERIAL_PREFIX = "M_Bird_"
+MESH_NAME = "Bird_Mesh"  # same on every bird: clips that key blend shapes bind to this path
 
-# Source part -> bone. "NECK" = smooth Body/Head blend around the neck joint.
+# Part (object name without its "Bird_" / "Hawk_" prefix) -> bone.
+# "NECK" = smooth Body/Head blend around the neck joint.
 PART_BONES = {
-    "Bird_Body": "NECK",
-    "Bird_Feather_Details": "NECK",
-    "Bird_Head": "Head",
-    "Bird_Beak": "Head",
-    "Bird_Eyes": "Head",
-    "Bird_Tail": "Tail",
-    "Bird_Wing_L": "Wing_L",
-    "Bird_Wing_R": "Wing_R",
-    "Bird_Leg_L": "Leg_L",
-    "Bird_Leg_R": "Leg_R",
-    "Bird_Foot_L": "Foot_L",
-    "Bird_Foot_R": "Foot_R",
+    "Body": "NECK",
+    "Feather_Details": "NECK",
+    "Head": "Head",
+    "Beak": "Head",
+    "Eyes": "Head",
+    "Tail": "Tail",
+    "Wing_L": "Wing_L",
+    "Wing_R": "Wing_R",
+    "Primary_L": "Wing_L",  # optional: separate primary feathers ride on the wing
+    "Primary_R": "Wing_R",
+    "Leg_L": "Leg_L",
+    "Leg_R": "Leg_R",
+    "Foot_L": "Foot_L",
+    "Foot_R": "Foot_R",
 }
+OPTIONAL_PARTS = {"Primary_L", "Primary_R"}
 
 # Bone -> (parent, part whose origin is the joint)
 BONES = {
-    "Body": (None, "Bird_Body"),
-    "Head": ("Body", "Bird_Head"),
-    "Tail": ("Body", "Bird_Tail"),
-    "Wing_L": ("Body", "Bird_Wing_L"),
-    "Wing_R": ("Body", "Bird_Wing_R"),
-    "Leg_L": ("Body", "Bird_Leg_L"),
-    "Leg_R": ("Body", "Bird_Leg_R"),
-    "Foot_L": ("Leg_L", "Bird_Foot_L"),
-    "Foot_R": ("Leg_R", "Bird_Foot_R"),
+    "Body": (None, "Body"),
+    "Head": ("Body", "Head"),
+    "Tail": ("Body", "Tail"),
+    "Wing_L": ("Body", "Wing_L"),
+    "Wing_R": ("Body", "Wing_R"),
+    "Leg_L": ("Body", "Leg_L"),
+    "Leg_R": ("Body", "Leg_R"),
+    "Foot_L": ("Leg_L", "Foot_L"),
+    "Foot_R": ("Leg_R", "Foot_R"),
 }
 
 NECK_BLEND = 0.015          # +-15 mm soft band across the neck plane
@@ -80,8 +88,10 @@ MIN_BONE_LENGTH = 0.03
 def parse_args():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     parser = argparse.ArgumentParser(prog="rig_bird.py")
-    parser.add_argument("--fbx", required=True, help="raw bird FBX")
+    parser.add_argument("--source", "--fbx", dest="source", required=True, help="raw bird .fbx or .blend")
     parser.add_argument("--blend", required=True, help=".blend file to write")
+    parser.add_argument("--asset", default="SK_Bird", help="asset / collection name, e.g. SK_Bird_Hawk")
+    parser.add_argument("--material-prefix", default="M_Bird_", help="e.g. M_Bird_Hawk_")
     return parser.parse_args(argv)
 
 
@@ -95,6 +105,33 @@ def mesh_bbox(obj):
     lo = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
     hi = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
     return lo, hi
+
+
+def append_blend(path, asset_name, log):
+    """Append the mesh parts and Empties of a .blend (cameras, lights etc. are left behind)."""
+    with bpy.data.libraries.load(path, link=False) as (src, dst):
+        dst.objects = list(src.objects)
+    collection = bpy.data.collections.new(asset_name)
+    bpy.context.scene.collection.children.link(collection)
+    objects = []
+    for obj in dst.objects:
+        if obj is None:
+            continue
+        if obj.type in ("MESH", "EMPTY"):
+            collection.objects.link(obj)
+            objects.append(obj)
+        else:
+            log.append("  skipped %s %s" % (obj.type.lower(), obj.name))
+            bpy.data.objects.remove(obj)
+    # Appended objects have no evaluated world matrix until the scene updates: without this every
+    # part would read as sitting at the origin.
+    bpy.context.view_layer.update()
+    return collection, objects
+
+
+def part_key(name):
+    """Bird_Wing_L / Hawk_Wing_L -> Wing_L"""
+    return name.split("_", 1)[1] if "_" in name else name
 
 
 def flatten_hierarchy(objects, log):
@@ -111,12 +148,14 @@ def flatten_hierarchy(objects, log):
     return meshes
 
 
-def check_parts(meshes):
-    names = {o.name for o in meshes}
-    unknown = names - set(PART_BONES)
-    missing = set(PART_BONES) - names
-    if unknown or missing:
+def index_parts(meshes):
+    """{part key: object}; aborts on unknown, missing or duplicated parts."""
+    parts = {part_key(o.name): o for o in meshes}
+    unknown = set(parts) - set(PART_BONES)
+    missing = set(PART_BONES) - OPTIONAL_PARTS - set(parts)
+    if unknown or missing or len(parts) != len(meshes):
         raise SystemExit("rig_bird: unexpected parts. unknown=%s missing=%s" % (sorted(unknown), sorted(missing)))
+    return parts
 
 
 def recentre(meshes, pivot):
@@ -162,7 +201,7 @@ def leg_ruff_islands(obj, body_bottom, hips):
 
 def assign_weights(meshes, neck_joint, head_dir, body_bottom, hips, log):
     for obj in meshes:
-        bone = PART_BONES[obj.name]
+        bone = PART_BONES[part_key(obj.name)]
         if bone != "NECK":
             group = obj.vertex_groups.new(name=bone)
             group.add([v.index for v in obj.data.vertices], 1.0, "REPLACE")
@@ -195,8 +234,7 @@ def unify_uv_names(meshes):
             layer.name = "UVMap" if i == 0 else "UVMap.%d" % i
 
 
-def join_parts(meshes, log):
-    body = next(o for o in meshes if o.name == "Bird_Body")
+def join_parts(meshes, body, log):
     bpy.ops.object.select_all(action="DESELECT")
     for obj in meshes:
         obj.select_set(True)
@@ -237,19 +275,21 @@ def main():
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 1.0
 
-    fbx = os.path.abspath(args.fbx)
-    log = ["%s <- %s" % (ASSET, fbx)]
-    collection, objects = ingest.import_asset(fbx, ASSET)
+    source = os.path.abspath(args.source)
+    log = ["%s <- %s" % (args.asset, source)]
+    if source.lower().endswith(".blend"):
+        collection, objects = append_blend(source, args.asset, log)
+    else:
+        collection, objects = ingest.import_asset(source, args.asset)
     meshes = flatten_hierarchy(objects, log)
-    check_parts(meshes)
+    by_name = index_parts(meshes)
     ingest.apply_transforms(meshes, log)
 
-    by_name = {o.name: o for o in meshes}
     # Joint = the part's origin (placed by the modeller). Read before the parts are baked to the pivot.
     origins = {name: o.matrix_world.translation.copy() for name, o in by_name.items()}
     boxes = {name: mesh_bbox(o) for name, o in by_name.items()}
 
-    body_lo, body_hi = boxes["Bird_Body"]
+    body_lo, body_hi = boxes["Body"]
     pivot = (body_lo + body_hi) / 2
     pivot.x = 0.0  # keep the pivot on the symmetry plane
     log.append("  pivot (centre of mass) at (%.3f, %.3f, %.3f) - Blender coords" % tuple(pivot))
@@ -262,26 +302,26 @@ def main():
 
     joints = {bone: (Vector((0, 0, 0)) if bone == "Body" else origins[part]) for bone, (_, part) in BONES.items()}
     tips = {
-        "Body": Vector((0.0, boxes["Bird_Body"][1].y * 0.5, 0.0)),               # points back toward the tail
-        "Head": centre["Bird_Head"],
-        "Tail": Vector((0.0, boxes["Bird_Tail"][1].y, centre["Bird_Tail"].z)),
-        "Wing_L": centre["Bird_Wing_L"],
-        "Wing_R": centre["Bird_Wing_R"],
+        "Body": Vector((0.0, boxes["Body"][1].y * 0.5, 0.0)),               # points back toward the tail
+        "Head": centre["Head"],
+        "Tail": Vector((0.0, boxes["Tail"][1].y, centre["Tail"].z)),
+        "Wing_L": centre["Wing_L"],
+        "Wing_R": centre["Wing_R"],
         "Leg_L": joints["Foot_L"],
         "Leg_R": joints["Foot_R"],
-        "Foot_L": Vector((joints["Foot_L"].x, boxes["Bird_Foot_L"][0].y, joints["Foot_L"].z)),  # toes point -Y
-        "Foot_R": Vector((joints["Foot_R"].x, boxes["Bird_Foot_R"][0].y, joints["Foot_R"].z)),
+        "Foot_L": Vector((joints["Foot_L"].x, boxes["Foot_L"][0].y, joints["Foot_L"].z)),  # toes point -Y
+        "Foot_R": Vector((joints["Foot_R"].x, boxes["Foot_R"][0].y, joints["Foot_R"].z)),
     }
 
-    ingest.normalise_materials(MATERIAL_PREFIX, log)
+    ingest.normalise_materials(args.material_prefix, log)
     ingest.tidy_slots(meshes, log)
     ingest.add_placeholder_uvs(meshes, log)
     unify_uv_names(meshes)
 
-    head_dir = (centre["Bird_Head"] - joints["Head"]).normalized()
+    head_dir = (centre["Head"] - joints["Head"]).normalized()
     hips = {"Leg_L": joints["Leg_L"], "Leg_R": joints["Leg_R"]}
-    assign_weights(meshes, joints["Head"], head_dir, boxes["Bird_Body"][0].z, hips, log)
-    mesh = join_parts(meshes, log)
+    assign_weights(meshes, joints["Head"], head_dir, boxes["Body"][0].z, hips, log)
+    mesh = join_parts(meshes, by_name["Body"], log)
 
     arm = build_armature(collection, joints, tips)
     mesh.parent = arm
