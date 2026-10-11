@@ -1,0 +1,309 @@
+Student greybox additions review
+Unity: 6000.6.4f1
+
+PASS: Plane_A_Greybox has solid collision
+PASS: Plane_A_Greybox rests on the ground
+PASS: Plane_A_Greybox fits inside the perimeter
+PASS: Plane_A_Greybox does not overlap Top
+PASS: Plane_A_Greybox does not overlap Floor
+PASS: Plane_A_Greybox does not overlap CoverBody
+PASS: Plane_A_Greybox does not overlap TerminalRoof
+PASS: Plane_A_Greybox does not overlap EntranceCanopy
+PASS: Plane_A_Greybox does not overlap Top
+PASS: Plane_A_Greybox does not overlap Top
+PASS: Plane_A_Greybox does not overlap TowerCab
+PASS: Plane_A_Greybox does not overlap Top
+PASS: Plane_A_Greybox does not overlap Front_Right
+PASS: Plane_A_Greybox does not overlap Wall_Left
+PASS: Plane_A_Greybox does not overlap CoverBody
+PASS: Plane_A_Greybox does not overlap Plane_D_Greybox
+PASS: Plane_A_Greybox does not overlap Wall_Back
+PASS: Plane_A_Greybox does not overlap EntranceCanopy
+PASS: Plane_A_Greybox does not overlap Top
+PASS: Plane_A_Greybox does not overlap Base
+PASS: Plane_A_Greybox does not overlap TowerRoof
+PASS: Plane_A_Greybox does not overlap CoverBody
+PASS: Plane_A_Greybox does not overlap Wall_Left
+PASS: Plane_A_Greybox does not overlap Boundary_West
+PASS: Plane_A_Greybox does not overlap Wall_Right
+PASS: Plane_A_Greybox does not overlap TowerBase
+PASS: Plane_A_Greybox does not overlap Hangar_Greybox
+PASS: Plane_A_Greybox does not overlap Front_Right
+PASS: Plane_A_Greybox does not overlap Base
+PASS: Plane_A_Greybox does not overlap Floor
+PASS: Plane_A_Greybox does not overlap Base
+PASS: Plane_A_Greybox does not overlap Base
+PASS: Plane_A_Greybox does not overlap Wall_Right
+PASS: Plane_A_Greybox does not overlap Front_Left
+PASS: Plane_A_Greybox does not overlap TowerShaft
+PASS: Plane_A_Greybox does not overlap Door_Lintel
+PASS: Plane_A_Greybox does not overlap Wall_Back
+PASS: Plane_A_Greybox does not overlap Boundary_East
+PASS: Plane_A_Greybox does not overlap Door_Lintel
+PASS: Plane_A_Greybox does not overlap Plane_C_Greybox
+PASS: Plane_A_Greybox does not overlap Plane_B_Greybox
+PASS: Plane_A_Greybox does not overlap Boundary_North
+PASS: Plane_A_Greybox does not overlap Roof
+PASS: Plane_A_Greybox does not overlap Roof
+PASS: Plane_A_Greybox does not overlap CoverBody
+PASS: Plane_A_Greybox does not overlap Terminal_Placeholder
+PASS: Plane_A_Greybox does not overlap CoverBody
+PASS: Plane_A_Greybox does not overlap Boundary_South
+PASS: Plane_A_Greybox does not overlap Front_Left
+PASS: Plane_A_Greybox does not overlap Base
+PASS: Plane_A_Greybox does not overlap CoverBody
+PASS: Plane_A_Greybox does not overlap Top
+PASS: Plane_A_Greybox does not overlap Base
+Transform: Plane_A_Greybox position=(-15.110, 0.250, -23.430) scale=(3.000, 0.500, 12.000)
+PASS: Plane_B_Greybox has solid collision
+PASS: Plane_B_Greybox rests on the ground
+PASS: Plane_B_Greybox fits inside the perimeter
+PASS: Plane_B_Greybox does not overlap Top
+PASS: Plane_B_Greybox does not overlap Floor
+PASS: Plane_B_Greybox does not overlap CoverBody
+PASS: Plane_B_Greybox does not overlap TerminalRoof
+PASS: Plane_B_Greybox does not overlap EntranceCanopy
+PASS: Plane_B_Greybox does not overlap Top
+PASS: Plane_B_Greybox does not overlap Top
+PASS: Plane_B_Greybox does not overlap TowerCab
+PASS: Plane_B_Greybox does not overlap Top
+PASS: Plane_B_Greybox does not overlap Front_Right
+PASS: Plane_B_Greybox does not overlap Wall_Left
+PASS: Plane_B_Greybox does not overlap CoverBody
+PASS: Plane_B_Greybox does not overlap Plane_D_Greybox
+PASS: Plane_B_Greybox does not overlap Wall_Back
+PASS: Plane_B_Greybox does not overlap EntranceCanopy
+PASS: Plane_B_Greybox does not overlap Top
+PASS: Plane_B_Greybox does not overlap Base
+PASS: Plane_B_Greybox does not overlap TowerRoof
+PASS: Plane_B_Greybox does not overlap CoverBody
+PASS: Plane_B_Greybox does not overlap Plane_A_Greybox
+PASS: Plane_B_Greybox does not overlap Wall_Left
+PASS: Plane_B_Greybox does not overlap Boundary_West
+PASS: Plane_B_Greybox does not overlap Wall_Right
+PASS: Plane_B_Greybox does not overlap TowerBase
+PASS: Plane_B_Greybox does not overlap Hangar_Greybox
+PASS: Plane_B_Greybox does not overlap Front_Right
+PASS: Plane_B_Greybox does not overlap Base
+PASS: Plane_B_Greybox does not overlap Floor
+PASS: Plane_B_Greybox does not overlap Base
+PASS: Plane_B_Greybox does not overlap Base
+PASS: Plane_B_Greybox does not overlap Wall_Right
+PASS: Plane_B_Greybox does not overlap Front_Left
+PASS: Plane_B_Greybox does not overlap TowerShaft
+PASS: Plane_B_Greybox does not overlap Door_Lintel
+PASS: Plane_B_Greybox does not overlap Wall_Back
+PASS: Plane_B_Greybox does not overlap Boundary_East
+PASS: Plane_B_Greybox does not overlap Door_Lintel
+PASS: Plane_B_Greybox does not overlap Plane_C_Greybox
+PASS: Plane_B_Greybox does not overlap Boundary_North
+PASS: Plane_B_Greybox does not overlap Roof
+PASS: Plane_B_Greybox does not overlap Roof
+PASS: Plane_B_Greybox does not overlap CoverBody
+PASS: Plane_B_Greybox does not overlap Terminal_Placeholder
+PASS: Plane_B_Greybox does not overlap CoverBody
+PASS: Plane_B_Greybox does not overlap Boundary_South
+PASS: Plane_B_Greybox does not overlap Front_Left
+PASS: Plane_B_Greybox does not overlap Base
+PASS: Plane_B_Greybox does not overlap CoverBody
+PASS: Plane_B_Greybox does not overlap Top
+PASS: Plane_B_Greybox does not overlap Base
+Transform: Plane_B_Greybox position=(33.310, 0.250, 2.810) scale=(3.000, 0.500, 9.000)
+PASS: Plane_C_Greybox has solid collision
+PASS: Plane_C_Greybox rests on the ground
+PASS: Plane_C_Greybox fits inside the perimeter
+PASS: Plane_C_Greybox does not overlap Top
+PASS: Plane_C_Greybox does not overlap Floor
+PASS: Plane_C_Greybox does not overlap CoverBody
+PASS: Plane_C_Greybox does not overlap TerminalRoof
+PASS: Plane_C_Greybox does not overlap EntranceCanopy
+PASS: Plane_C_Greybox does not overlap Top
+PASS: Plane_C_Greybox does not overlap Top
+PASS: Plane_C_Greybox does not overlap TowerCab
+PASS: Plane_C_Greybox does not overlap Top
+PASS: Plane_C_Greybox does not overlap Front_Right
+PASS: Plane_C_Greybox does not overlap Wall_Left
+PASS: Plane_C_Greybox does not overlap CoverBody
+PASS: Plane_C_Greybox does not overlap Plane_D_Greybox
+PASS: Plane_C_Greybox does not overlap Wall_Back
+PASS: Plane_C_Greybox does not overlap EntranceCanopy
+PASS: Plane_C_Greybox does not overlap Top
+PASS: Plane_C_Greybox does not overlap Base
+PASS: Plane_C_Greybox does not overlap TowerRoof
+PASS: Plane_C_Greybox does not overlap CoverBody
+PASS: Plane_C_Greybox does not overlap Plane_A_Greybox
+PASS: Plane_C_Greybox does not overlap Wall_Left
+PASS: Plane_C_Greybox does not overlap Boundary_West
+PASS: Plane_C_Greybox does not overlap Wall_Right
+PASS: Plane_C_Greybox does not overlap TowerBase
+PASS: Plane_C_Greybox does not overlap Hangar_Greybox
+PASS: Plane_C_Greybox does not overlap Front_Right
+PASS: Plane_C_Greybox does not overlap Base
+PASS: Plane_C_Greybox does not overlap Floor
+PASS: Plane_C_Greybox does not overlap Base
+PASS: Plane_C_Greybox does not overlap Base
+PASS: Plane_C_Greybox does not overlap Wall_Right
+PASS: Plane_C_Greybox does not overlap Front_Left
+PASS: Plane_C_Greybox does not overlap TowerShaft
+PASS: Plane_C_Greybox does not overlap Door_Lintel
+PASS: Plane_C_Greybox does not overlap Wall_Back
+PASS: Plane_C_Greybox does not overlap Boundary_East
+PASS: Plane_C_Greybox does not overlap Door_Lintel
+PASS: Plane_C_Greybox does not overlap Plane_B_Greybox
+PASS: Plane_C_Greybox does not overlap Boundary_North
+PASS: Plane_C_Greybox does not overlap Roof
+PASS: Plane_C_Greybox does not overlap Roof
+PASS: Plane_C_Greybox does not overlap CoverBody
+PASS: Plane_C_Greybox does not overlap Terminal_Placeholder
+PASS: Plane_C_Greybox does not overlap CoverBody
+PASS: Plane_C_Greybox does not overlap Boundary_South
+PASS: Plane_C_Greybox does not overlap Front_Left
+PASS: Plane_C_Greybox does not overlap Base
+PASS: Plane_C_Greybox does not overlap CoverBody
+PASS: Plane_C_Greybox does not overlap Top
+PASS: Plane_C_Greybox does not overlap Base
+Transform: Plane_C_Greybox position=(33.410, 0.250, 9.760) scale=(3.000, 0.500, 9.000)
+PASS: Plane_D_Greybox has solid collision
+PASS: Plane_D_Greybox rests on the ground
+PASS: Plane_D_Greybox fits inside the perimeter
+PASS: Plane_D_Greybox does not overlap Top
+PASS: Plane_D_Greybox does not overlap Floor
+PASS: Plane_D_Greybox does not overlap CoverBody
+PASS: Plane_D_Greybox does not overlap TerminalRoof
+PASS: Plane_D_Greybox does not overlap EntranceCanopy
+PASS: Plane_D_Greybox does not overlap Top
+PASS: Plane_D_Greybox does not overlap Top
+PASS: Plane_D_Greybox does not overlap TowerCab
+PASS: Plane_D_Greybox does not overlap Top
+PASS: Plane_D_Greybox does not overlap Front_Right
+PASS: Plane_D_Greybox does not overlap Wall_Left
+PASS: Plane_D_Greybox does not overlap CoverBody
+PASS: Plane_D_Greybox does not overlap Wall_Back
+PASS: Plane_D_Greybox does not overlap EntranceCanopy
+PASS: Plane_D_Greybox does not overlap Top
+PASS: Plane_D_Greybox does not overlap Base
+PASS: Plane_D_Greybox does not overlap TowerRoof
+PASS: Plane_D_Greybox does not overlap CoverBody
+PASS: Plane_D_Greybox does not overlap Plane_A_Greybox
+PASS: Plane_D_Greybox does not overlap Wall_Left
+PASS: Plane_D_Greybox does not overlap Boundary_West
+PASS: Plane_D_Greybox does not overlap Wall_Right
+PASS: Plane_D_Greybox does not overlap TowerBase
+PASS: Plane_D_Greybox does not overlap Hangar_Greybox
+PASS: Plane_D_Greybox does not overlap Front_Right
+PASS: Plane_D_Greybox does not overlap Base
+PASS: Plane_D_Greybox does not overlap Floor
+PASS: Plane_D_Greybox does not overlap Base
+PASS: Plane_D_Greybox does not overlap Base
+PASS: Plane_D_Greybox does not overlap Wall_Right
+PASS: Plane_D_Greybox does not overlap Front_Left
+PASS: Plane_D_Greybox does not overlap TowerShaft
+PASS: Plane_D_Greybox does not overlap Door_Lintel
+PASS: Plane_D_Greybox does not overlap Wall_Back
+PASS: Plane_D_Greybox does not overlap Boundary_East
+PASS: Plane_D_Greybox does not overlap Door_Lintel
+PASS: Plane_D_Greybox does not overlap Plane_C_Greybox
+PASS: Plane_D_Greybox does not overlap Plane_B_Greybox
+PASS: Plane_D_Greybox does not overlap Boundary_North
+PASS: Plane_D_Greybox does not overlap Roof
+PASS: Plane_D_Greybox does not overlap Roof
+PASS: Plane_D_Greybox does not overlap CoverBody
+PASS: Plane_D_Greybox does not overlap Terminal_Placeholder
+PASS: Plane_D_Greybox does not overlap CoverBody
+PASS: Plane_D_Greybox does not overlap Boundary_South
+PASS: Plane_D_Greybox does not overlap Front_Left
+PASS: Plane_D_Greybox does not overlap Base
+PASS: Plane_D_Greybox does not overlap CoverBody
+PASS: Plane_D_Greybox does not overlap Top
+PASS: Plane_D_Greybox does not overlap Base
+Transform: Plane_D_Greybox position=(33.510, 0.250, 16.720) scale=(3.000, 0.500, 9.000)
+PASS: Hangar_Greybox has solid collision
+PASS: Hangar_Greybox rests on the ground
+PASS: Hangar_Greybox fits inside the perimeter
+PASS: Hangar_Greybox does not overlap Top
+PASS: Hangar_Greybox does not overlap Floor
+PASS: Hangar_Greybox does not overlap CoverBody
+PASS: Hangar_Greybox does not overlap TerminalRoof
+PASS: Hangar_Greybox does not overlap EntranceCanopy
+PASS: Hangar_Greybox does not overlap Top
+PASS: Hangar_Greybox does not overlap Top
+PASS: Hangar_Greybox does not overlap TowerCab
+PASS: Hangar_Greybox does not overlap Top
+PASS: Hangar_Greybox does not overlap Front_Right
+PASS: Hangar_Greybox does not overlap Wall_Left
+PASS: Hangar_Greybox does not overlap CoverBody
+PASS: Hangar_Greybox does not overlap Plane_D_Greybox
+PASS: Hangar_Greybox does not overlap Wall_Back
+PASS: Hangar_Greybox does not overlap EntranceCanopy
+PASS: Hangar_Greybox does not overlap Top
+PASS: Hangar_Greybox does not overlap Base
+PASS: Hangar_Greybox does not overlap TowerRoof
+PASS: Hangar_Greybox does not overlap CoverBody
+PASS: Hangar_Greybox does not overlap Plane_A_Greybox
+PASS: Hangar_Greybox does not overlap Wall_Left
+PASS: Hangar_Greybox does not overlap Boundary_West
+PASS: Hangar_Greybox does not overlap Wall_Right
+PASS: Hangar_Greybox does not overlap TowerBase
+PASS: Hangar_Greybox does not overlap Front_Right
+PASS: Hangar_Greybox does not overlap Base
+PASS: Hangar_Greybox does not overlap Floor
+PASS: Hangar_Greybox does not overlap Base
+PASS: Hangar_Greybox does not overlap Base
+PASS: Hangar_Greybox does not overlap Wall_Right
+PASS: Hangar_Greybox does not overlap Front_Left
+PASS: Hangar_Greybox does not overlap TowerShaft
+PASS: Hangar_Greybox does not overlap Door_Lintel
+PASS: Hangar_Greybox does not overlap Wall_Back
+PASS: Hangar_Greybox does not overlap Boundary_East
+PASS: Hangar_Greybox does not overlap Door_Lintel
+PASS: Hangar_Greybox does not overlap Plane_C_Greybox
+PASS: Hangar_Greybox does not overlap Plane_B_Greybox
+PASS: Hangar_Greybox does not overlap Boundary_North
+PASS: Hangar_Greybox does not overlap Roof
+PASS: Hangar_Greybox does not overlap Roof
+PASS: Hangar_Greybox does not overlap CoverBody
+PASS: Hangar_Greybox does not overlap Terminal_Placeholder
+PASS: Hangar_Greybox does not overlap CoverBody
+PASS: Hangar_Greybox does not overlap Boundary_South
+PASS: Hangar_Greybox does not overlap Front_Left
+PASS: Hangar_Greybox does not overlap Base
+PASS: Hangar_Greybox does not overlap CoverBody
+PASS: Hangar_Greybox does not overlap Top
+PASS: Hangar_Greybox does not overlap Base
+Transform: Hangar_Greybox position=(-38.460, 3.000, -12.700) scale=(14.000, 6.000, 25.000)
+PASS: BirdSpawn_01 has 0.5 m obstacle clearance
+PASS: BirdSpawn_02 has 0.5 m obstacle clearance
+PASS: BirdSpawn_03 has 0.5 m obstacle clearance
+PASS: BirdSpawn_04 has 0.5 m obstacle clearance
+PASS: BirdSpawn_05 has 0.5 m obstacle clearance
+PASS: BirdSpawn_06 has 0.5 m obstacle clearance
+PASS: BirdSpawn_07 has 0.5 m obstacle clearance
+PASS: BirdSpawn_08 has 0.5 m obstacle clearance
+PASS: CentreStripe_01 fits within the runway ends
+PASS: CentreStripe_02 fits within the runway ends
+PASS: CentreStripe_03 fits within the runway ends
+PASS: CentreStripe_04 fits within the runway ends
+PASS: CentreStripe_05 fits within the runway ends
+PASS: CentreStripe_06 fits within the runway ends
+PASS: CentreStripe_07 fits within the runway ends
+PASS: CentreStripe_08 fits within the runway ends
+PASS: CentreStripe_09 fits within the runway ends
+PASS: CentreStripe_10 fits within the runway ends
+PASS: CentreStripe_11 fits within the runway ends
+PASS: CentreStripe_12 fits within the runway ends
+PASS: CentreStripe_13 fits within the runway ends
+PASS: Threshold_-27_0 fits within the runway ends
+PASS: Threshold_27_0 fits within the runway ends
+PASS: Threshold_-27_1 fits within the runway ends
+PASS: Threshold_27_1 fits within the runway ends
+PASS: Threshold_-27_2 fits within the runway ends
+PASS: Threshold_27_2 fits within the runway ends
+PASS: Threshold_-27_3 fits within the runway ends
+PASS: Threshold_27_3 fits within the runway ends
+PASS: Threshold_-27_4 fits within the runway ends
+PASS: Threshold_27_4 fits within the runway ends
+PASS: Threshold_-27_5 fits within the runway ends
+PASS: Threshold_27_5 fits within the runway ends
+Runway: 75 x 14 m
+Hangar remains a solid massing placeholder, not an enterable building.
+Failures: 0

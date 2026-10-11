@@ -2,12 +2,14 @@
 
 Scene: `Assets/_Project/Scenes/Main.unity`  
 Unity: `6000.6.4f1`  
-Branch: `feature/world-greybox`
+Current working branch: `worldBuilfer`
 
 ## What is built
 
 - Solid 100 x 80 m ground and perimeter walls.
-- Central 60 x 14 m runway, threshold bars, edge markings, and runway numbers.
+- Central 75 x 14 m runway (extended by the student), with aligned threshold bars, centre stripes, edge markings, and runway numbers.
+- Four recognisable aircraft greyboxes under Environment/Aircraft, refined from the student's parking cubes. Plane A uses a 12 m-long / 9 m-span utility-aircraft prefab; B/C/D share a 9 m-long / 8 m-span light-aircraft prefab. Each has fuselage, cockpit, wings, tail, engines, wheels, and compound collision. Parking was adjusted for wing clearance and terminal/hangar routes. See `AircraftArtHandoff.md` for final-model specifications.
+- An enterable Hangar_Greybox under Environment/Buildings, converted from the student's massing cube. The original 14 x 25 m footprint and 6 m exterior height are preserved. Its reusable P_Greybox_Hangar prefab has separate walls, floor, roof, a 10 m wide / 4.8 m high runway-facing entrance, and a 2.8 m wide / 3.2 m high north-side exit. Interior lights and flush maintenance-bay markings leave the central path clear.
 - Two 10 x 8 m shelter prefabs at opposite sides of the runway. Each contains a floor, separate walls, roof, and a 2.8 m wide / 3 m high open entrance.
 - Six barricade prefab instances placed beside the runway, with routes left open.
 - A simple control-tower and terminal placeholder to establish airport scale and landmarks.
@@ -23,7 +25,7 @@ The greybox is made of ordinary saved Unity objects and reusable prefabs. It is 
 2. Click the Game view to give it keyboard focus.
 3. Press Tab, or click the on-screen button, to change between overview and walking.
 4. WASD moves; mouse looks; Left Shift sprints; Space jumps.
-5. Press 1 to return to the runway start, 2 for Shelter A's entrance, or 3 for Shelter B's entrance.
+5. Press 1 for the runway, 2/3 for shelter entrances, 4 for the hangar entrance, or 5 for the aircraft aisle. Walk forward into the hangar; the EXIT sign marks its secondary escape route.
 6. Press Escape to release the cursor; click below the on-screen panel to capture it again.
 7. Stop Play before making permanent scene changes.
 
@@ -36,6 +38,14 @@ Outside Play mode, open Main and choose Tools > Runway Panic > Validate Airport 
 The validation report is written to `Docs/WorldBuilder/GreyboxValidation.txt`. It checks material assignments, ground support, marker/cover counts, passage into and out of both shelters, wall/perimeter blocking, and landing on the ground using an actual 1.8 m CharacterController. Revisit the test positions if you deliberately relocate the shelters.
 
 Play-mode smoke checks also verified switching from overview to walking and walking inside Shelter A. The final third-person controller and camera still need a separate walkthrough once available.
+
+The earlier cube-stage additions review is recorded in `Docs/WorldBuilder/GreyboxAdditionsReview.txt`. BirdSpawn_05 was moved away from the hangar to (-47, 8, 0). That report is a historical snapshot; the Adjust User Greybox Additions menu now refuses to run on the converted hangar.
+
+Use Tools > Runway Panic > Validate Enterable Hangar after hangar edits. `Docs/WorldBuilder/HangarValidation.txt` records entry and exit through both openings, wall/roof blocking, floor support, obstacle/perimeter clearance, and bird-spawn clearance. All checks passed. Play-mode walking through the main entrance and out of the side exit was also verified. The Make Hangar Enterable menu is a one-off converter and refuses to replace an existing hangar prefab.
+
+The hangar is ordinary geometric cover, not an extra automatic safe room: it has no invulnerability trigger, closable doors, timers, or enemy-navigation behaviour. The wide main opening keeps part of the interior exposed and the side exit avoids a dead-end retreat. Integrate and test S2's third-person camera separately; the temporary walkthrough is first-person. Final models and gameplay can reuse this footprint and open routes.
+
+Use Tools > Runway Panic > Validate Aircraft Greyboxes after plane edits. `AircraftValidation.txt` records aircraft grounding, obstacle intersections, runway/perimeter clearance, wing collision, routes around each nose, parking aisles, and runway traversal. All tests passed after moving D clear of the terminal-front route. The final-model dimensions, positions, collision contract, and remaining integration tests are in `AircraftArtHandoff.md`. Aircraft are parked props, not flyable or enterable vehicles.
 
 ## Why the layout is arranged this way
 
@@ -54,8 +64,8 @@ The builder menu creates Main only when it does not already exist; it deliberate
 
 ## Git handoff
 
-Changes are on the feature branch. Review the files before committing with a message such as:
+Changes remain on `worldBuilfer`. Review the files before committing with a message such as:
 
-`feat(level): build airport greybox and walkthrough preview`
+`fix(level): ground plane placeholders and align extended runway markings`
 
 Include the assets and their .meta files. Do not add Library, Logs, or generated builds. No commit or push is performed automatically for this milestone.
