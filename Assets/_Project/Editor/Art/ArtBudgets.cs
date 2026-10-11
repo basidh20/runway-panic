@@ -30,10 +30,11 @@ namespace RunwayPanic.ArtTools
 
         static readonly ModelBudget[] ModelBudgets =
         {
-            new ModelBudget("SK_Bird", 0, 15),  // no tri limit (decided 8 Oct), bones still capped
-            new ModelBudget("SK_Player", 8000, 0),
-            new ModelBudget("SM_Gun", 2500, 0),
-            new ModelBudget("SM_Prop", 500, 0),
+            // No triangle limits on any model (decided 11 Oct, DECISIONS.md): tris are reported, never flagged.
+            new ModelBudget("SK_Bird", 0, 15),  // bones still capped
+            new ModelBudget("SK_Player", 0, 0),
+            new ModelBudget("SM_Gun", 0, 0),
+            new ModelBudget("SM_Prop", 0, 0),
         };
 
         // Max imported size per Textures/<Folder>/. Palette textures (name contains "Palette") use PaletteMaxSize.

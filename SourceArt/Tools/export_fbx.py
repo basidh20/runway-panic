@@ -65,10 +65,11 @@ ROUTES = {
 
 # Asset-name prefix -> (max triangles or None, max deform bones or None). Longest prefix wins.
 BUDGETS = {
-    "SK_Bird": (None, 15),  # no tri limit (decided 8 Oct), bones still capped
-    "SK_Player": (8000, None),
-    "SM_Gun": (2500, None),
-    "SM_Prop": (500, None),
+    # No triangle limits on any model (decided 11 Oct, DECISIONS.md): tris are reported, never flagged.
+    "SK_Bird": (None, 15),  # bones still capped
+    "SK_Player": (None, None),
+    "SM_Gun": (None, None),
+    "SM_Prop": (None, None),
 }
 
 # More material slots = more submeshes = more draw calls. We aim for the shared palette material.

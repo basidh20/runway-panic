@@ -9,6 +9,7 @@ Source files for every custom model. This folder is **outside `Assets/`**, so Un
 | `Reference/` | Reference images and sheets |
 | `Tools/export_fbx.py` | Blender → Unity FBX exporter with pre-export checks |
 | `Tools/ingest_fbx.py` | Turns a raw FBX (made outside this pipeline) into a pipeline-ready `.blend` |
+| `Tools/hidden_faces_report.py` | Read-only: tris per mesh and how many are hidden under other meshes (optimisation targets) |
 | `Tools/rig_bird.py` | Turns a raw bird (`.fbx` or `.blend`, separate parts, no armature) into a rigged `SK_Bird*.blend` |
 | `DECISIONS.md` | Design decision log (viva evidence) |
 | `HANDOFF.md` | Notes and requests for other team members |
@@ -119,9 +120,11 @@ blender SourceArt/Blender/Birds/SK_Bird_Hawk.blend --background --python SourceA
 | Asset | Max tris | Max bones | Texture |
 |---|---|---|---|
 | `SK_Bird*` (base + hawk) | none (reported only) | 15 | Shared palette (256²) |
-| `SM_Gun_Tier*` | 2,500 each | — | Shared palette (256²) |
-| `SK_Player_Officer` | 8,000 | Mixamo rig | up to 1024² |
-| `SM_Prop_*` | 500 | — | Shared palette |
+| `SM_Gun_Tier*` | none (reported only; was 2,500) | — | Shared palette (256²) |
+| `SK_Player_Officer` | none (reported only; was 8,000) | 52-bone Humanoid | up to 1024² |
+| `SM_Prop_*` | none (reported only; was 500) | — | Shared palette |
+
+No model has a triangle limit (decided 11 Oct, see `DECISIONS.md`): the Art Budget Checker and the exporter still report every count, they just never flag it. `Tools/hidden_faces_report.py` shows where triangles are spent on faces nobody can see.
 
 The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor/Art/ArtBudgets.cs`. Change all three together.
 
