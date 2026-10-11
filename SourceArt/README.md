@@ -159,6 +159,11 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 - **Tools → S3 → Art Budget Checker** lists every model (tris, verts, submeshes ≈ draw calls, materials, bones, mesh GPU memory) and texture (imported size, format, mips, memory) against the budgets, with over-budget rows in red.
 - **Export report** writes `SourceArt/budget_report.md`. Export it before and after each optimisation pass and commit it: that's the viva evidence.
 
+**Performance Test** — `ArtPerfTest.cs`
+- **Tools → S3 → Performance Test → Create Test Wave (40 / 100 birds)** puts `P_Player_Officer` and an equal mix of Gull / Pigeon / Crow / Hawk inside the main camera's view (same layout every run, fixed seed). The root `_ArtPerfTest` is tagged EditorOnly. **Remove Test Wave** deletes it; don't save the scene with it.
+- **Measure (Play Mode)** (only enabled in Play mode): 2 s warm-up, then 10 s of samples. Average and lowest FPS, CPU / render-thread ms, tris, draw calls, SetPass calls, SRP Batcher draw calls, shadow casters and visible skinned meshes are appended to `SourceArt/perf_report.md`. Disable `_ArtPerfTest` and measure again to get a baseline row.
+- It's the evidence for "no triangle limits" (`DECISIONS.md`, 11 Oct). Editor Play mode includes editor overhead, so a build is usually faster.
+
 **Textures** (`Art/Textures/`) — `ArtTexturePostprocessor.cs`
 - Max size by sub-folder: Characters 1024, Birds 1024, Weapons 512, Props 512, Environment 2048, Shared 1024. Names containing `Palette` → 256.
 - `*_Normal` → Normal Map. `*_Mask`, `_ORM`, `_Roughness`, `_Metallic`, `_AO`, `_Height` → sRGB off.
