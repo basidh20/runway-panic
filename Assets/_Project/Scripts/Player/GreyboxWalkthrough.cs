@@ -20,10 +20,16 @@ namespace RunwayPanic.Greybox
         private float ignoreLookUntil;
         private GUIStyle titleStyle;
         private GUIStyle bodyStyle;
+        private string runwayDimensions = "Runway layout preview";
 
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
+            var runway = GameObject.Find("Runway");
+            if (runway != null)
+                foreach (Transform child in runway.transform)
+                    if (child.name.StartsWith("Runway_") && child.GetComponent<MeshRenderer>() != null)
+                        runwayDimensions = $"{child.lossyScale.z:0.#} x {child.lossyScale.x:0.#} m runway";
             SetWalking(false);
         }
 
@@ -56,6 +62,13 @@ namespace RunwayPanic.Greybox
             if (keyboard.digit1Key.wasPressedThisFrame) Teleport(new Vector3(0, 0.12f, -24), 0);
             if (keyboard.digit2Key.wasPressedThisFrame) Teleport(new Vector3(-13, 0.12f, 12), -90);
             if (keyboard.digit3Key.wasPressedThisFrame) Teleport(new Vector3(13, 0.12f, -12), 90);
+            if (keyboard.digit4Key.wasPressedThisFrame)
+            {
+                var hangar = GameObject.Find("Hangar_Greybox");
+                if (hangar != null && hangar.GetComponent<BoxCollider>() == null)
+                    Teleport(hangar.transform.TransformPoint(new Vector3(12, 0.12f, 0)), -90);
+            }
+            if (keyboard.digit5Key.wasPressedThisFrame) Teleport(new Vector3(24, 0.12f, 5), 90);
 
             Vector2 input = new Vector2(
                 (keyboard.dKey.isPressed ? 1 : 0) - (keyboard.aKey.isPressed ? 1 : 0),
@@ -114,8 +127,8 @@ namespace RunwayPanic.Greybox
             GUI.Box(new Rect(16, 16, 460, 142), GUIContent.none);
             GUI.Label(new Rect(30, 25, 430, 30), "RUNWAY PANIC  /  AIRPORT GREYBOX", titleStyle);
             GUI.Label(new Rect(30, 58, 425, 45), walking
-                ? "WASD move  |  Mouse look  |  Shift sprint  |  Space jump\n1 runway  |  2 Shelter A entrance  |  3 Shelter B entrance"
-                : "100 x 80 m arena  |  60 x 14 m runway  |  2 open shelters\nTemporary layout preview. Gameplay and AI come later.", bodyStyle);
+                ? "WASD move  |  Mouse look  |  Shift sprint  |  Space jump\n1 runway  |  2/3 shelters  |  4 hangar  |  5 planes"
+                : "100 x 80 m arena  |  " + runwayDimensions + "  |  2 open shelters\nTemporary layout preview. Gameplay and AI come later.", bodyStyle);
             if (GUI.Button(new Rect(30, 112, 155, 28), walking ? "Tab: overview" : "Tab: walk airport")) SetWalking(!walking);
             GUI.Label(new Rect(200, 117, 255, 25), walking ? "Esc releases mouse" : "Click the Game view to focus", bodyStyle);
         }
