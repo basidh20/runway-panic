@@ -14,10 +14,13 @@ namespace RunwayPanic.ArtTools
     /// Tools > S3 > Performance Test: evidence for the "no triangle limits" decision (DECISIONS.md, 11 Oct).
     ///   Create Test Wave  - the player + an equal mix of the 4 bird species, spread inside the main camera's view.
     ///                       Root "_ArtPerfTest" is tagged EditorOnly, so it never ends up in a build.
-    ///   Measure           - in Play mode: 2 s warm-up, then 10 s of samples (FPS, CPU / render ms, tris, draw calls,
+    ///   Measure           - starts AUTOMATICALLY when Play mode starts in a scene that contains "_ArtPerfTest"
+    ///                       (active root = wave row, unticked root = baseline row), or via the menu in Play mode.
+    ///                       2 s warm-up, then 10 s of samples (FPS, CPU / render ms, tris, draw calls,
     ///                       SetPass calls, SRP Batcher draw calls...), appended to SourceArt/perf_report.md.
     /// Editor-only: no runtime scripts, nothing in the build, no teammate code touched.
     /// </summary>
+    [InitializeOnLoad]
     public static class ArtPerfTest
     {
         const string RootName = "_ArtPerfTest";
@@ -34,6 +37,20 @@ namespace RunwayPanic.ArtTools
 
         const double WarmUpSeconds = 2.0, MeasureSeconds = 10.0, WindowSeconds = 0.5;
 
+        static ArtPerfTest()
+        {
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        }
+
+        static void OnPlayModeChanged(PlayModeStateChange change)
+        {
+            if (change == PlayModeStateChange.EnteredPlayMode && FindRoot() != null && !measuring) StartMeasure();
+        }
+
+        // GameObject.Find skips inactive objects; the root is searched by name so an unticked root is found too.
+        static GameObject FindRoot() =>
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().FirstOrDefault(g => g.name == RootName);
+
         // ------------------------------------------------------------------ wave
 
         [MenuItem("Tools/S3/Performance Test/Create Test Wave (40 birds)")]
@@ -45,7 +62,7 @@ namespace RunwayPanic.ArtTools
         [MenuItem("Tools/S3/Performance Test/Remove Test Wave")]
         static void RemoveWave()
         {
-            var existing = GameObject.Find(RootName);
+            var existing = FindRoot();
             if (existing != null) Undo.DestroyObjectImmediate(existing);
         }
 
@@ -91,7 +108,7 @@ namespace RunwayPanic.ArtTools
 
             Selection.activeGameObject = root;
             Debug.Log($"[Art] Performance test wave: player + {spawned} birds ({perSpecies} per species). " +
-                      "Enter Play mode, then Tools > S3 > Performance Test > Measure.");
+                      "Press Play: the measurement starts by itself.");
         }
 
         static bool Spawn(string prefabPath, Transform parent, Vector3 position, Quaternion rotation)
@@ -201,9 +218,11 @@ namespace RunwayPanic.ArtTools
 
         static void WriteReport(double avgFps)
         {
-            // GameObject.Find skips inactive objects: a disabled wave root counts as "no wave" (baseline run).
-            var root = GameObject.Find(RootName);
-            var children = root != null ? root.transform.Cast<Transform>().Where(t => t.gameObject.activeSelf).ToList() : new System.Collections.Generic.List<Transform>();
+            // An unticked wave root counts as "no wave" (baseline run).
+            var root = FindRoot();
+            var children = root != null && root.activeSelf
+                ? root.transform.Cast<Transform>().Where(t => t.gameObject.activeSelf).ToList()
+                : new System.Collections.Generic.List<Transform>();
             int birds = children.Count(t => t.name.StartsWith("P_Bird_"));
             bool player = children.Any(t => t.name.StartsWith("P_Player"));
             int skinned = Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
