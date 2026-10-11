@@ -257,7 +257,8 @@ namespace RunwayPanic.ArtTools
             for (int i = 0; i < StatNames.Length; i++)
             {
                 double avg = statSamples > 0 ? statSums[i] / statSamples : double.NaN;
-                string value = double.IsNaN(avg) ? "n/a" : StatNames[i].Property.EndsWith("Time") ? avg.ToString("0.00") : avg.ToString("N0");
+                // UnityStats reports frameTime / renderTime in seconds: shown in ms.
+                string value = double.IsNaN(avg) ? "n/a" : StatNames[i].Property.EndsWith("Time") ? (avg * 1000.0).ToString("0.00") : avg.ToString("N0");
                 sb.AppendLine($"| {StatNames[i].Label} (avg) | {value} |");
             }
             sb.AppendLine();
