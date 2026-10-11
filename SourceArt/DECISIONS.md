@@ -115,4 +115,68 @@ Still to cover: tri + texture budgets in practice, one rig + prefab variants for
 - **Choice:** C, for the player, guns and props. The birds' 15-bone limit stays.
 - **Why:** My call, to keep the time for modelling quality and UVs (which are graded) instead of polygon reduction. The game targets desktop PCs.
 - **How I keep it defensible:** every count is still measured (Art Budget Checker / `budget_report.md`). `hidden_faces_report.py` shows exactly where the waste is. An FPS + Stats panel test with the player and the largest bird wave on screen is the evidence that performance is acceptable without limits. If that test fails, deleting the hidden player faces is the first, zero-visual-cost fix (−33%).
-- **Numbers:** whole game 217,011 tris, 138 submeshes, 13.2 MB mesh memory (baseline report, 11 Oct). FPS test: _to fill in_.
+- **Numbers:** whole game 217,011 tris, 138 submeshes, 13.2 MB mesh memory (baseline report, 11 Oct).
+- **FPS test** (`SourceArt/perf_report.md`, Tools > S3 > Performance Test; Editor Play mode, 1920×1080, VSync off; Ryzen 5 4600H + RTX 3050 Laptop):
+
+  | Scene | Unique tris | Tris drawn | Draw calls | SetPass | Avg FPS | Lowest FPS (0.5 s) |
+  |---|---:|---:|---:|---:|---:|---:|
+  | Player + 40 birds (10 per species) | ~1.19 M | 5.02 M | 2,595 | 38 | **95.0** | 69.0 |
+  | Player + 100 birds (25 per species) | ~2.75 M | 11.61 M | 5,950 | 38 | **78.4** | 57.9 |
+
+- **Result:** with 2.5× more birds than a realistic wave, the editor (slower than a build) still averages 78 FPS. Unlimited triangles are acceptable on this hardware, so the decision stands.
+- **What the test revealed:** every triangle and submesh is drawn **~4.2 times** (5.02 M drawn / 1.19 M unique; 2,595 draw calls / 606 submeshes). That's the shadow-map cascades plus the main pass. The SRP Batcher handles **2,549 of the 2,595 draw calls**, and only **38 SetPass calls** remain, because all models share one URP Lit shader variant. This confirms the "SRP Batcher instead of GPU instancing" decision.
+- **If performance must improve, in order of payoff:** (1) fewer submeshes per bird: the palette atlas takes 13–14 materials down to 1–2, and draw calls scale with it; (2) birds far away stop casting shadows, or fewer shadow cascades (shared URP asset → ask the World Builder); (3) delete the hidden player faces (−33% player tris); (4) LODs on birds.
+
+## 2026-10-11 — Pistol (SM_Gun_Tier1) UV unwrap: scripted box-net seams on the big parts, Smart UV on the small ones
+- **Context:** `ingest_fbx.py` gave the pistol a placeholder UV map. All 42 boxes of the pistol used the same default cube layout, so **42 faces were stacked on each spot** and **346 of 346 faces overlapped**. A texture or a baked palette would repeat on every part, and texel density varied by a factor of ~6,500 (area ratio 0.05–302.6).
+- **Options considered:** A) Smart UV Project on the whole gun. B) Box-net seams on every part. C) Box-net seams on the parts the player actually sees, Smart UV Project on the tiny parts, then one shared scale and pack.
+- **Choice:** C, in `Guns.blend` (the pipeline file, not the raw FBX).
+- **How it was done (tooling):** the seams were **placed by a script**, `SourceArt/Tools/uv/unwrap_pistol.py`, not by hand in the Blender UI. The script applies the seam rules below to each part, then runs Blender's own Unwrap, Smart UV Project, Average Islands Scale and Pack Islands. The rules are the method; the script applies them consistently to all 47 parts.
+  - **10 big parts, box-net seams** (slide, frame front/rear, beavertail, grip, 2 grip panels, magazine, trigger guard bar + front post): the 4 edges around each end cap + **1 lengthwise edge on the least visible side**. Each part unwraps to one long strip + 2 end caps.
+    - Slide and frame: lengthwise seam on the **bottom**, where they sit on each other. **No seam crosses the top of the slide**, the most visible surface in third person.
+    - Grip: end caps are hidden under the frame and the magazine; lengthwise seam on the front strap edge, under the fingers.
+    - Grip panels: seam on the edge that faces into the grip. Magazine: seam on top, inside the grip. Trigger guard: seams on the inside of the guard.
+  - **5 cylinders** (barrel, bore, 3 sight dots): rings at both ends + one seam along the bottom → a rectangle + 2 circles.
+  - **32 small boxes** (sight blades, pins, serrations, trigger, slide lock…): Smart UV Project, angle 66°, island margin 0.02. One clean island per face with no stretch, which is fine for small hard-surface parts.
+  - Then **Average Islands Scale** and **Pack Islands** (rotate on, margin 0.01).
+- **Why:** The slide, frame and grip fill most of the screen, so they get large, unbroken islands with their seams hidden. Fewer, bigger islands also mean fewer visible colour breaks when the palette atlas is baked. Hand-cutting 40 tiny boxes would teach nothing new and would not change what the player sees. Averaging the scale gives every part the same pixel density, so the slide isn't blurrier than a pin.
+- **Numbers** (measured with `SourceArt/Tools/uv/uvmetrics.py` on the mesh and on the exported FBX; re-checked independently with a separate rasteriser: 0 overlapping faces, 0 faces stretched > 2°, geometry / materials / sockets byte-identical):
+
+  | | Before | After |
+  |---|---:|---:|
+  | Overlapping faces | 346 / 346 | **0 / 346** |
+  | Most faces on one UV spot | 42 | **1** |
+  | Islands | 57 | 237 |
+  | Marked seams | 0 | 263 |
+  | Angle stretch (worst corner) | 0.0° (boxes mapped to squares keep their right angles; the damage was in area) | 0.01° (all 346 faces "blue") |
+  | Texel density spread between islands (CV) | 102 % | **0.0 %** |
+  | UV area / 3D area ratio, min–max | 0.05–302.6 | **1.00–1.00** |
+  | UV space used | — (overlapping) | 71.4 % |
+
+  Geometry, materials and the other three guns' UVs are unchanged (verified by hash). Export: 820 tris, UVMap present, no errors. The 7-material-slot warning stays until the palette atlas pass.
+- **Evidence:** `Evidence/UV/SM_Gun_Tier1_UV_before.png` / `_after.png` (Blender UV → Export UV Layout), `SM_Gun_Tier1_UV_before_after.png` (islands coloured by method), `SM_Gun_Tier1_checker_before_after.png` (checker texture rendered on the gun).
+
+## 2026-10-11 — AR, sniper and RPG UV unwrap (same method as the pistol)
+- **Context:** The other three guns still had the `ingest_fbx.py` placeholder UVs. The AR used the default cube layout (**792 of 792 faces overlapping, 80 faces on one spot**). The RPG had **389 of 500 faces overlapping** and 38% texel-density spread. The sniper's Smart UV placeholder didn't overlap, but **810 of its 2,539 faces were stretched** (worst corner 21°).
+- **Choice:** the pistol rules, applied to every part by `SourceArt/Tools/uv/unwrap_generic.py` (scripted, like the pistol). Unlike the pistol, these guns also have bevelled boxes, extruded profiles (stock, grip), cones and spheres, so the script adds the extra rules below.
+  - **Every part ≥ 4 cm, and every round part:** rings around both end caps + one lengthwise cut on the least visible side: the bottom for horizontal parts, the front for vertical ones (grip, magazine, bipod legs), the inner face for parts mounted on the side.
+  - **Curved corners:** a patch only flattens without stretch if the face angles around each vertex inside it add up to 360°. Bevel corners, cones and the stock's bevelled outline break that, so a short seam runs from each such vertex to the nearest seam, preferring hidden edges.
+  - **Spheres** (bipod feet, bolt knob): a sphere can never be flattened without stretch, so they're cut like an orange peel, pole to pole along every meridian.
+  - **Parts that folded over themselves after unwrapping** (stock, trigger, bolt release): split at their sharpest edges (> 40°, then 30°, then 20°) and unwrapped again.
+  - **Small plain boxes** (< 4 cm): Smart UV Project, 66°, margin 0.02.
+  - **Each gun:** Average Islands Scale + Pack Islands (rotate, margin 0.01). **The RPG and its rocket share one UV square**, because they ship in the same FBX.
+- **Numbers** (measured with `uvmetrics.py` on the mesh and on the re-imported FBX; independent re-check: 0 overlapping faces on every gun, stretched faces > 2°: AR 0, RPG 0, rocket 0, sniper 23):
+
+  | Gun | Overlapping faces before → after | Stretch-free faces before → after | Texel-density spread before → after | Islands | Seams |
+  |---|---:|---:|---:|---:|---:|
+  | Tier1 pistol | 346/346 → **0** | 346 → 346 / 346 | 102% → **0%** | 237 | 263 |
+  | Tier2 AR | 792/792 → **0** | 792 → 792 / 792 | 55% → **0%** | 465 | 741 |
+  | Tier3 sniper | 0 → **0** | 1,729 → **2,516** / 2,539 | 2.7% → **0%** | 557 | 3,273 |
+  | Tier4 RPG + rocket | 389/500 → **0** | 444 → **500** / 500 | 38% → **0%** | 96 | 880 |
+
+  ("Stretch-free" = every corner angle within 2° of the 3D angle, shown blue in Display Stretch.)
+- **What's left:** 23 sniper faces (0.9%) keep slight stretch, worst 5.9°. They're on the two 1.8 cm rubber bipod feet, two faces of the stock, and the trigger. Nobody can see that at game scale, and more seams there would only add islands.
+- **Trade-off:** the sniper uses only 34% of its UV square, because it has many tiny islands, each with a margin. That's fine for the shared 256² palette, where each part samples one flat colour. A painted texture would need the small parts scaled down first.
+- **Unchanged:** geometry, materials, sockets and pivots (verified by hash). Export: 820 / 2,064 / 6,304 / 1,664 tris, UVMap on every mesh, no errors. The only warnings are the material-slot ones, which stay until the palette atlas pass.
+- **Evidence:** `Evidence/UV/<asset>_UV_before.png` / `_after.png` (Blender UV → Export UV Layout), `<asset>_UV_before_after.png` (islands coloured by method), `<asset>_checker_before_after.png` (checker texture rendered on the gun), `uv_report.json` (all the numbers).
+- **Viva note:** the UVs were produced with scripted rules, not by hand. To be able to show the method live, I unwrap at least one part by hand in Blender: mark a box-net seam ring, Unwrap, check Display Stretch.
