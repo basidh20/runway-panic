@@ -10,6 +10,9 @@ Source files for every custom model. This folder is **outside `Assets/`**, so Un
 | `Tools/export_fbx.py` | Blender → Unity FBX exporter with pre-export checks |
 | `Tools/ingest_fbx.py` | Turns a raw FBX (made outside this pipeline) into a pipeline-ready `.blend` |
 | `Tools/hidden_faces_report.py` | Read-only: tris per mesh and how many are hidden under other meshes (optimisation targets) |
+| `Tools/uv/unwrap_pistol.py`, `Tools/uv/unwrap_generic.py` | Scripted UV unwrap of the guns (box-net seam rules → Blender Unwrap / Smart UV / Average Scale / Pack). Used once on 11 Oct, see `DECISIONS.md`. Args: `-- <in.blend> <out.blend>`. `unwrap_generic.py` needs the `shapely` package in Blender's Python |
+| `Tools/uv/uvmetrics.py` | Read-only UV quality metrics module (overlap, stretch, texel density); needs `shapely` |
+| `Evidence/UV/` | Gun UV layouts before/after (PNG/SVG), checker renders, `uv_report.json` (viva evidence) |
 | `Tools/rig_bird.py` | Turns a raw bird (`.fbx` or `.blend`, separate parts, no armature) into a rigged `SK_Bird*.blend` |
 | `DECISIONS.md` | Design decision log (viva evidence) |
 | `HANDOFF.md` | Notes and requests for other team members |
