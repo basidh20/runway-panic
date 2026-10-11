@@ -13,6 +13,26 @@ Template:
 
 ---
 
+## 2026-10-11 — to: Systems Engineer — gun prefabs (Tier 1–4)
+- **What:** `Assets/_Project/Prefabs/Weapons/P_Gun_Tier1.prefab` … `P_Gun_Tier4.prefab`
+
+| Prefab | Gun | Length (Z) | `Socket_Muzzle` (local) | Tris | Materials |
+|---|---|---:|---|---:|---:|
+| `P_Gun_Tier1` | Pistol | 0.21 m | (0, 0.077, 0.162) | 820 | 7 |
+| `P_Gun_Tier2` | Assault rifle | 1.08 m | (0, 0.097, 0.711) | 2,064 | 8 |
+| `P_Gun_Tier3` | Sniper | 1.47 m | (0, 0.097, 1.108) | 6,304 | 10 |
+| `P_Gun_Tier4` | RPG | 1.57 m | (0, 0.075, 1.040) | 1,664 | 7 (+3 rocket) |
+
+- **Details:**
+  - **Pivot = the grip** (where the hand holds it). Forward = **+Z** (barrel), up = +Y, real-world size, scale (1, 1, 1).
+  - To hold a gun, parent the prefab to the hand bone (`RightHand` on `P_Player_Officer`'s Humanoid rig) at local position 0. Fine-tune the rotation once, on a hand-socket child Transform. Don't rotate the gun prefab itself.
+  - `Socket_Muzzle` is a child Transform at the barrel tip. Spawn bullets / muzzle flash / raycasts from `Socket_Muzzle.position` along `Socket_Muzzle.forward` (= gun +Z).
+  - Root = gameplay object with one fitted **BoxCollider** (no MeshCollider: cheaper for pickups and thrown guns). Add your Rigidbody / scripts on the root; the model is a nested child, so a Blender re-export never removes your components.
+  - The RPG's rocket is part of the Tier 4 mesh. Tell me if you need it as a separate object (to hide it after firing or fly it as a projectile).
+  - Tier 3 (sniper) is over its 2,500-tri budget and will get lighter in my optimisation pass. The prefab path, pivot and socket stay the same.
+- **Action needed:** use these prefabs in the shop / weapon system. Tell me if you need more sockets (`Socket_Grip_Left` for two-handed guns, `Socket_Scope`, `Socket_Eject`).
+- **Status:** open
+
 ## 2026-10-11 — to: Agent Controller + Hawk owner — the hawk is now its own model
 - **What:** `Assets/_Project/Prefabs/Birds/P_Bird_Hawk.prefab` (model `Art/Models/Birds/SK_Bird_Hawk.fbx`) replaces the recoloured gull variant. It is **no longer a variant of `P_Bird_Base`**.
 - **Details:**
