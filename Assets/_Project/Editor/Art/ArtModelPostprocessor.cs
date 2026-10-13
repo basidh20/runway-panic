@@ -19,7 +19,9 @@ namespace RunwayPanic.ArtTools
         static readonly Regex BlenderDuplicateSuffix = new Regex(@"\.\d{3}$");
 
         // Bump when the rules below change so Unity re-imports the affected models.
-        public override uint GetVersion() => 2;
+        // 3 (13 Oct): material dependency registered before the material exists; also discards the cached
+        // fallback-material imports made before that fix.
+        public override uint GetVersion() => 3;
 
         static bool IsModel(string path) => path.StartsWith(ArtBudgets.ModelsRoot);
         static bool IsAnimation(string path) => path.StartsWith(ArtBudgets.AnimationsRoot);
@@ -143,12 +145,18 @@ namespace RunwayPanic.ArtTools
         }
 
         // Called once per FBX material. Returning the existing M_ asset stops Unity generating an embedded copy,
-        // so every gun shares one M_Gun_Polymer (fewer materials, SRP Batcher friendly).
+        // so a model uses the one M_ asset built from its manifest (M_Gun_Tier1_Atlas, ...).
         Material OnAssignMaterialModel(Material sourceMaterial, Renderer renderer)
         {
             if (!IsModel(assetPath)) return null;
 
             string path = ArtBudgets.MaterialPathFor(assetPath, sourceMaterial.name);
+
+            // Registered even when the material does not exist yet. Without it, an import that fell back to the
+            // FBX's own material recorded no link to the missing M_ asset, so Unity kept treating that result as
+            // valid and could bring it back from its import cache later (13 Oct: white hawk, then a white player
+            // after a script reload). With it, creating the material makes this import out of date.
+            context.DependsOnSourceAsset(path);
             if (!File.Exists(path))
             {
                 // Normal on the very first import: ArtMaterialBuilder creates it from the manifest and re-imports this model.
@@ -156,8 +164,13 @@ namespace RunwayPanic.ArtTools
                 return null;
             }
 
-            context.DependsOnSourceAsset(path);
-            return AssetDatabase.LoadAssetAtPath<Material>(path);
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                // The file is there but Unity has not imported it yet (created earlier in the same refresh).
+                Debug.LogWarning($"[Art] {Path.GetFileName(assetPath)}: material {sourceMaterial.name} at {path} is not loadable yet - re-import the model.");
+            }
+            return material;
         }
 
         void OnPostprocessModel(GameObject root)

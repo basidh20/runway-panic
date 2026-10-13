@@ -67,7 +67,7 @@ namespace RunwayPanic.ArtTools
         }
 
         /// <summary>
-        /// Materials sit in the folder that mirrors the model's: Models/Weapons/SM_Gun_Tier1.fbx -> Materials/Weapons/M_Gun_Polymer.mat.
+        /// Materials sit in the folder that mirrors the model's: Models/Weapons/SM_Gun_Tier1.fbx -> Materials/Weapons/M_Gun_Tier1_Atlas.mat.
         /// </summary>
         public static string MaterialPathFor(string modelPath, string materialName)
         {

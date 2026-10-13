@@ -9,7 +9,7 @@ namespace RunwayPanic.ArtTools
 {
     /// <summary>
     /// Builds the shared M_ materials (URP Lit) from the manifests that export_fbx.py writes next to them:
-    /// Art/Materials/Weapons/SM_Gun_Tier1.materials.json -> Art/Materials/Weapons/M_Gun_Polymer.mat, ...
+    /// Art/Materials/Weapons/SM_Gun_Tier1.materials.json -> Art/Materials/Weapons/M_Gun_Tier1_Atlas.mat, ...
     /// Runs automatically when a manifest is imported. Blender is the source of truth: values are overwritten
     /// on every export. Change colours in Blender and re-export, not in the Inspector.
     /// An atlas entry (M_Bird_Atlas, written by bake_atlas.py) names its textures instead of a colour:
@@ -28,6 +28,7 @@ namespace RunwayPanic.ArtTools
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         static readonly int SurfaceId = Shader.PropertyToID("_Surface");
         static readonly int BlendId = Shader.PropertyToID("_Blend");
+        static readonly int PreserveSpecularId = Shader.PropertyToID("_BlendModePreserveSpecular");
         static readonly int SrcBlendId = Shader.PropertyToID("_SrcBlend");
         static readonly int DstBlendId = Shader.PropertyToID("_DstBlend");
         static readonly int SrcBlendAlphaId = Shader.PropertyToID("_SrcBlendAlpha");
@@ -98,6 +99,8 @@ namespace RunwayPanic.ArtTools
             // Not from inside this callback: a re-import started here, in the refresh that created the materials, kept
             // the fallback (13 Oct: the hawk stayed light grey until Rebuild Materials From Manifests was run by hand).
             // delayCall runs it once the refresh has finished. That import brings no manifest, so it cannot loop.
+            // ArtModelPostprocessor also makes each model depend on its material paths, so Unity re-imports the
+            // model by itself when a material appears; this call only makes it happen straight away.
             if (modelsToReimport.Count == 0) return;
             EditorApplication.delayCall += () =>
             {
@@ -223,7 +226,13 @@ namespace RunwayPanic.ArtTools
         {
             material.SetFloat(SurfaceId, transparent ? 1f : 0f);
             material.SetFloat(BlendId, 0f);
-            material.SetFloat(SrcBlendId, (float)(transparent ? BlendMode.SrcAlpha : BlendMode.One));
+            // Alpha blend with URP's default "Preserve Specular Lighting" on: the shader multiplies the colour by
+            // alpha itself (_ALPHAPREMULTIPLY_ON), so the source factor is One, not SrcAlpha. Writing SrcAlpha made
+            // Unity rewrite the .mat back to One whenever it validated the material (a changed file on every rebuild).
+            if (transparent) material.SetFloat(PreserveSpecularId, 1f);
+            if (transparent) material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+            else material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            material.SetFloat(SrcBlendId, (float)BlendMode.One);
             material.SetFloat(DstBlendId, (float)(transparent ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
             material.SetFloat(SrcBlendAlphaId, (float)BlendMode.One);
             material.SetFloat(DstBlendAlphaId, (float)(transparent ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
