@@ -18,10 +18,10 @@ Template:
 - **Details:**
   - Prefab paths, pivots, sockets, bones, blend shapes, colliders and the look are **unchanged**. Only the materials changed.
   - New materials: `Materials/Birds/M_Bird_Atlas`, `M_Bird_Pigeon_Atlas`, `M_Bird_Crow_Atlas`, `M_Bird_Hawk_Atlas`; `Materials/Characters/M_Player_Officer_Atlas` (plus `M_Player_Badge_Clear`, `M_Player_LED_Green`, `M_Player_Eye_Catch`, `M_Player_Vest_HiVis`); `Materials/Weapons/M_Gun_Tier1_Atlas` … `M_Gun_Tier4_Atlas`.
-  - The old flat materials (`M_Bird_Feather_*`, `M_Gun_Polymer`, `M_Player_Navy_Fabric`, … 109 files) will be **deleted** in a clean-up commit.
+  - The old flat materials (`M_Bird_Feather_*`, `M_Gun_Polymer`, `M_Player_Navy_Fabric`, … 109 files) were **deleted** on 13 Oct. Nothing on `origin/worldBuilder` used them (checked by GUID).
   - Each bird and gun is now 1 draw call per pass (was 7–14), the player 26 (was 76).
 - **Action needed:**
-  - If a scene, prefab or script of yours references one of the old `M_*` colour materials directly, tell me before the clean-up; use the prefab instead.
+  - If a scene, prefab or script on your own branch references one of the old `M_*` colour materials directly, it will show pink after merging `develop`: use the prefab instead, or tell me.
   - Don't change the import settings of `T_*_Atlas_*` textures (Point, no mipmaps) or edit the atlas materials in the Inspector. To change a colour, ask me: it is changed in Blender and re-exported.
   - If a model ever shows up plain light grey after a pull, run **Tools → S3 → Rebuild Materials From Manifests**.
 - **Status:** open
