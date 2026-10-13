@@ -12,7 +12,7 @@ Template:
 - **Numbers:** tri count / texture size / memory / fps impact, if any
 ```
 
-Still to cover: tri + texture budgets in practice, one rig + prefab variants for 4 species, primitive colliders vs MeshCollider, texture compression + mipmaps, GPU instancing on birds, shared palette atlas vs per-asset textures.
+Still to cover: tri + texture budgets in practice, one rig + prefab variants for 4 species, primitive colliders vs MeshCollider, measured texture compression table (BC1 / BC7 / uncompressed), GPU instancing on birds.
 
 ---
 
@@ -283,3 +283,54 @@ Still to cover: tri + texture budgets in practice, one rig + prefab variants for
 - **Evidence:** `Evidence/UV/SK_Player_Officer_UV_before.png` / `.svg` and `_UV_after.png` / `.svg` (all 21 meshes in the shared square, one colour per mesh; the SVGs show island outlines), `SK_Player_Officer_UV_before_after.png` (side by side with the overlap counts), `SK_Player_Officer_checker_before_after.png` (front and back, Workbench render with a 256×256 checker), and `uv_report.json` (combined, FBX and per-mesh numbers, the margin test, and the rule 7 comparison). The same set exists for `SK_Bird` and `SK_Bird_Hawk`; their checker renders show the underside with the wings spread and a side view of the head and eye. These images were drawn by a small evidence script, not with Blender's Export UV Layout as for the guns: with 83k faces, Blender's export SVG would be very large (estimated ~10 MB).
 - **Export:** `export_fbx.py --all`: no errors, 152,707 tris, `UVMap` on every mesh, 52 deform bones. The 14 material-slot warnings stay until the palette atlas pass. The material manifest is byte-identical.
 - **Viva note:** the seams were placed by scripted rules, not by hand. To show the method live: select an arm tube of `Shirt` in Blender, mark a seam along its underside (the least visible side), Unwrap, and check Display Stretch. That is rule 3 done by hand on one patch.
+
+## 2026-10-13 — One flat-colour atlas per model (one material instead of 7–49)
+- **Context:** Every model used one URP Lit material per flat colour: player 49 materials / 76 submeshes, gull 13, hawk 14, guns 7 / 8 / 10 / 7 + 3 (113 materials, 138 submeshes in total). Each submesh is one draw call in every render pass, and the 11 Oct test showed ~4.2 passes per submesh (shadow cascades + main pass). No model had a texture, so I also had no texture-compression evidence.
+- **Options considered:** A) One shared palette texture `M_Palette` for all models (the first plan): every face's UVs would have to be moved onto a colour swatch, which throws away the unwrapped layouts. B) A Cycles bake per model: it renders lighting that isn't needed, and it samples texel centres only, so an island thinner than a texel gets its neighbour's colour. C) A script that fills each model's **existing UV islands** with the values of the material on those faces, one atlas per model.
+- **Choice:** C. `SourceArt/Tools/bake_atlas.py`, called by `export_fbx.py` for the assets in its `ATLAS` table.
+- **How it was done (tooling):** the fill is done **by a script, not painted by hand**; the script was written with an AI coding assistant. I ran the Unity look checks and the performance tests.
+  - Per model: `T_<Asset>_Atlas_Albedo` (RGB = base colour) and `T_<Asset>_Atlas_Mask` (R = metallic, A = smoothness; URP Lit's Metallic Map) → one material `M_<Asset>_Atlas`.
+  - It is a fill, not a render. Every texel an island touches gets that island's value (exact triangle / texel test, quads tested with both diagonals), and texels touched by two islands with different values are counted as **bleed texels**. 0 bleed texels means every face shows exactly its own colour with Point filtering.
+  - The `.blend` files and the UVs don't change. The material slots are swapped only for the duration of the FBX export and put back, so the flat materials stay the authoring source in Blender.
+  - **Species:** the pigeon and crow colours moved from `ArtBirdSpeciesBuilder.cs` to `SourceArt/Tools/bird_species.json`. One Albedo per species is filled on the gull's UVs (`M_Bird_Pigeon_Atlas`, `M_Bird_Crow_Atlas`); the pigeon reuses the gull's Mask.
+  - **Kept as separate materials on the player:** transparent `M_Player_Badge_Clear` and emissive `M_Player_LED_Green`, `M_Player_Eye_Catch`, `M_Player_Vest_HiVis` (there is no Emission texture). Player: 5 materials / 26 submeshes.
+- **Texture size:** flat colours need no detail, so the size only has to keep two islands from sharing a texel. Blender pads every island by the pack margin, so the gap is 2 × margin: birds 2 × 0.004 × 256 = **2.05 px → 256²**; player 2 × 0.002 × 512 = **2.05 px → 512²**; guns **128²**. The bleed count is the proof, not the formula.
+- **Import settings (`_Atlas_` textures, `ArtTexturePostprocessor.cs`):**
+  - **Point filter:** the GPU reads exactly the texel a UV falls in. Bilinear would blend in the neighbouring island, 2 texels away.
+  - **No mipmaps:** an island is one flat value, so a smaller mip adds nothing inside it and would only average neighbouring islands together. It also saves 25% memory.
+  - **Clamp**, and **High Quality compression (BC7)** instead of BC1, because BC1's 5:6:5 colours tint the near-black materials. Still to measure: the BC1 / BC7 / uncompressed table in Unity.
+- **Why:** the 11 Oct test named submeshes, not triangles, as the real cost. C cuts them without touching geometry, UVs or the look, and it reuses the unwrap instead of discarding it. Cohesion comes from the shared flat-colour style, not from a shared texture.
+- **Numbers (export checks, all 7 assets: 0 bleed texels, 0 wrong-colour triangles):**
+
+  | Asset | Tris | Materials before → after | Submeshes before → after | Atlas | Texels used |
+  |---|---:|---|---|---|---:|
+  | `SK_Bird` (gull, pigeon, crow) | 25,266 | 13 → 1 per species | 13 → 1 | 256² | 49.1% |
+  | `SK_Bird_Hawk` | 28,204 | 14 → 1 | 14 → 1 | 256² | 45.2% |
+  | `SK_Player_Officer` | 152,707 | 49 → 5 | 76 → 26 | 512² | 50.8% |
+  | `SM_Gun_Tier1` | 820 | 7 → 1 | 7 → 1 | 128² | 85.8% |
+  | `SM_Gun_Tier2` | 2,064 | 8 → 1 | 8 → 1 | 128² | 66.6% |
+  | `SM_Gun_Tier3` | 6,304 | 10 → 1 | 10 → 1 | 128² | 55.3% |
+  | `SM_Gun_Tier4` (+ rocket) | 1,664 | 7 → 1 | 10 → 2 | 128² | 72.0% |
+
+  Whole game: **113 materials → 13**, **138 submeshes → 33**. 17 textures; the PNG files total 94 KB. Calculated GPU memory with BC7 (1 byte per texel) and no mipmaps: 7 × 64 KB + 2 × 256 KB + 8 × 16 KB = **1.06 MB** (to confirm in the Art Budget Checker).
+- **Safety:** each re-exported FBX was imported back into Blender and compared with the previous one: vertex positions, faces, UVs, weights, bones, shape keys, smoothing and object transforms are identical on all 7 assets; only the material slots differ.
+- **Performance** (`SourceArt/perf_report.md`, player + 100 birds, Editor Play mode, 1920×1080, VSync off, same machine as 11 Oct):
+
+  | Metric | Before (13:54, 13:56) | Birds on the atlas (14:17) | Birds + player (14:21) |
+  |---|---:|---:|---:|
+  | Draw calls (Batches) | 5,950 | 763 | **569** (−90%) |
+  | SRP Batcher draw calls | 5,904 | 717 | **523** |
+  | Shadow casters | 3,115 | 378 | **284** (−91%) |
+  | SetPass calls | 38 | 40 | 39 |
+  | Render thread (ms) | 3.94 / 3.96 | 2.78 | **2.55** (−35%) |
+  | CPU main thread (ms) | 10.48 / 10.52 | 10.36 | 10.35 |
+  | Average FPS | 95.5 / 95.1 | 96.6 | **96.7** |
+  | Lowest FPS (0.5 s) | 95.1 / 94.2 | 96.0 | 95.9 |
+  | Triangles / vertices drawn | 11.61 M / 10.18 M | same | same |
+
+- **Result, honestly:** draw calls and shadow casters fell by 90%, and the render thread by a third, but **FPS only moved from ~95 to ~97**. The main thread stays at ~10.4 ms whatever the draw-call count, so in this test draw calls were not the bottleneck: the SRP Batcher already made them cheap (5,904 of 5,950 were batched before). This corrects the 11 Oct entry, which expected the atlas to be the biggest win. What the atlas does give: 100 fewer material assets, far fewer shadow casters, and headroom on the render thread for the level and effects my teammates add.
+- **Side observation, not proven:** between the 11 Oct run and today's "before" run, the same 100-bird scene went from 78.4 to ~95 FPS with identical triangles and draw calls, while drawn vertices fell from 21.0 M to 10.2 M. The UV unwrap is the only asset change I know of between those runs (the placeholder UVs split almost every face into its own vertices). This suggests vertex count, i.e. skinning, matters more here than draw calls.
+- **SetPass calls did not drop** because all flat materials already shared one shader variant; the atlas materials use the Metallic Map variant, which adds one.
+- **Known limits:** (1) Without mipmaps a distant bird samples the full-size texture; this is fine for flat colours, but with MSAA a pixel on a triangle edge can sample slightly outside its island. Each island has 8 texels of its own colour as padding; no specks were seen in the look check. (2) A painted or gradient texture would need Bilinear, mipmaps, a larger size and a wider margin, so this method only fits the flat-colour style.
+- **Bug found and fixed (models turning plain white):** it happened twice. (1) On the first install the hawk was plain light grey. The Unity log shows `ArtMaterialBuilder.cs` re-imported the model inside the same refresh that created the atlas material, before Unity had imported that material, so the model kept the FBX's own fallback material. Running Rebuild Materials From Manifests fixed it, and the re-import now runs after the refresh (`EditorApplication.delayCall`). (2) The player imported correctly, then turned white after a later script reload with no re-import in between. Likely cause (inferred from the log, not proven): the model's very first import, made while the material did not exist, recorded no dependency on that material, so Unity still treated the fallback result as valid and reused it. `ArtModelPostprocessor.cs` now registers the dependency on the material path even when the file is missing, and its version went from 2 to 3 so every model is re-imported once with the materials in place. Lesson: an importer that reads another asset must declare it, or Unity's import cache can't know the result is stale. Second fix: `ArtBirdSpeciesBuilder.cs` now reverts a variant's material overrides before assigning the atlas material, which removed 12 dead slot overrides from the pigeon and crow prefabs. Third fix: the builder wrote source blend `SrcAlpha` for the transparent badge, and Unity rewrote the file to `One` every time it validated the material (URP's "Preserve Specular Lighting" premultiplies in the shader). The builder now writes what URP expects, so the file stops changing.
+- **Clean-up:** after the look check on all 7 assets, the **109 old flat materials** were deleted (birds 27, species 22 with their folder, player 45, guns 15). Before deleting, a search for their GUIDs found no scene, prefab or asset that still used them, on this branch or on `origin/worldBuilder`. 13 materials remain: 4 bird, 5 player, 4 gun.

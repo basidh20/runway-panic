@@ -47,3 +47,87 @@ Note: in the two 11 Oct 12:57 / 12:58 runs the "CPU main thread" and "Render thr
 | CPU main thread (ms) (avg) | 0.01 |
 | Render thread (ms) (avg) | 0.01 |
 
+## 2026-10-13 13:54 — player + 100 birds
+
+- Scene: `Sandbox_Basidh`, Game view 1920×1080, VSync count 0, target frame rate -1
+- Machine: AMD Ryzen 5 4600H with Radeon Graphics , NVIDIA GeForce RTX 3050 Laptop GPU (Direct3D11), 15.4 GB RAM, Unity 6000.6.4f1
+- Active SkinnedMeshRenderers in the scene: 121
+
+| Metric | Value |
+|---|---:|
+| Average FPS | 95.5 |
+| Lowest FPS (0.5 s windows) | 95.1 |
+| Average frame time (ms) | 10.48 |
+| Triangles (avg) | 11,609,545 |
+| Vertices (avg) | 10,179,419 |
+| Draw calls (Batches) (avg) | 5,950 |
+| SetPass calls (avg) | 38 |
+| SRP Batcher draw calls (avg) | 5,904 |
+| Shadow casters (avg) | 3,115 |
+| Visible skinned meshes (avg) | 121 |
+| CPU main thread (ms) (avg) | 10.48 |
+| Render thread (ms) (avg) | 3.94 |
+
+## 2026-10-13 13:56 — player + 100 birds
+
+- Scene: `Sandbox_Basidh`, Game view 1920×1080, VSync count 0, target frame rate -1
+- Machine: AMD Ryzen 5 4600H with Radeon Graphics , NVIDIA GeForce RTX 3050 Laptop GPU (Direct3D11), 15.4 GB RAM, Unity 6000.6.4f1
+- Active SkinnedMeshRenderers in the scene: 121
+
+| Metric | Value |
+|---|---:|
+| Average FPS | 95.1 |
+| Lowest FPS (0.5 s windows) | 94.2 |
+| Average frame time (ms) | 10.52 |
+| Triangles (avg) | 11,609,545 |
+| Vertices (avg) | 10,179,419 |
+| Draw calls (Batches) (avg) | 5,950 |
+| SetPass calls (avg) | 38 |
+| SRP Batcher draw calls (avg) | 5,904 |
+| Shadow casters (avg) | 3,115 |
+| Visible skinned meshes (avg) | 121 |
+| CPU main thread (ms) (avg) | 10.52 |
+| Render thread (ms) (avg) | 3.96 |
+
+## 2026-10-13 14:17 — player + 100 birds
+
+- Scene: `Sandbox_Basidh`, Game view 1920×1080, VSync count 0, target frame rate -1
+- Machine: AMD Ryzen 5 4600H with Radeon Graphics , NVIDIA GeForce RTX 3050 Laptop GPU (Direct3D11), 15.4 GB RAM, Unity 6000.6.4f1
+- Active SkinnedMeshRenderers in the scene: 121
+
+| Metric | Value |
+|---|---:|
+| Average FPS | 96.6 |
+| Lowest FPS (0.5 s windows) | 96.0 |
+| Average frame time (ms) | 10.35 |
+| Triangles (avg) | 11,609,545 |
+| Vertices (avg) | 10,179,419 |
+| Draw calls (Batches) (avg) | 763 |
+| SetPass calls (avg) | 40 |
+| SRP Batcher draw calls (avg) | 717 |
+| Shadow casters (avg) | 378 |
+| Visible skinned meshes (avg) | 121 |
+| CPU main thread (ms) (avg) | 10.36 |
+| Render thread (ms) (avg) | 2.78 |
+
+## 2026-10-13 14:21 — player + 100 birds
+
+- Scene: `Sandbox_Basidh`, Game view 1920×1080, VSync count 0, target frame rate -1
+- Machine: AMD Ryzen 5 4600H with Radeon Graphics , NVIDIA GeForce RTX 3050 Laptop GPU (Direct3D11), 15.4 GB RAM, Unity 6000.6.4f1
+- Active SkinnedMeshRenderers in the scene: 121
+
+| Metric | Value |
+|---|---:|
+| Average FPS | 96.7 |
+| Lowest FPS (0.5 s windows) | 95.9 |
+| Average frame time (ms) | 10.34 |
+| Triangles (avg) | 11,609,545 |
+| Vertices (avg) | 10,179,419 |
+| Draw calls (Batches) (avg) | 569 |
+| SetPass calls (avg) | 39 |
+| SRP Batcher draw calls (avg) | 523 |
+| Shadow casters (avg) | 284 |
+| Visible skinned meshes (avg) | 121 |
+| CPU main thread (ms) (avg) | 10.35 |
+| Render thread (ms) (avg) | 2.55 |
+

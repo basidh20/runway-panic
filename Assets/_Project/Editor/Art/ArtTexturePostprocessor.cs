@@ -8,13 +8,15 @@ namespace RunwayPanic.ArtTools
     /// Applies the agreed texture import settings to everything under Art/Textures/.
     /// Suffix rules: _Normal = normal map; _Mask/_ORM/_Roughness/_Metallic/_AO/_Height = linear data (sRGB off).
     /// Names containing "Palette" are the shared colour atlas: 256 max, Point filter, Clamp.
+    /// Names containing "_Atlas_" are flat-colour fills of a model's UV islands (bake_atlas.py): Point filter, Clamp,
+    /// no mipmaps.
     /// </summary>
     public class ArtTexturePostprocessor : AssetPostprocessor
     {
         static readonly string[] LinearSuffixes = { "_Mask", "_ORM", "_Roughness", "_Metallic", "_AO", "_Height" };
 
         // Bump when the rules below change so Unity re-imports the affected textures.
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         void OnPreprocessTexture()
         {
@@ -28,13 +30,22 @@ namespace RunwayPanic.ArtTools
                 : TextureImporterType.Default;
             importer.sRGBTexture = !IsLinearData(textureName);
             importer.isReadable = false;
-            importer.mipmapEnabled = true;
-            importer.textureCompression = TextureImporterCompression.Compressed; // "Normal Quality" -> BC/DXT on PC
             importer.maxTextureSize = ArtBudgets.TextureMaxSizeFor(assetPath, textureName);
 
-            if (ArtBudgets.IsPalette(textureName))
+            bool atlas = ArtBudgets.IsAtlas(textureName);
+            // An atlas island is one flat value, so a smaller mip level adds nothing inside it; it would only average
+            // neighbouring islands (2 texels apart) into each other. No mipmaps = no bleeding and 25% less memory.
+            importer.mipmapEnabled = !atlas;
+            // "Normal Quality" -> BC1/BC3 on PC. BC1 stores colours as 5:6:5 bits, which tints the near-black
+            // materials; the atlases are tiny (128-512 px), so they take "High Quality" (BC7) instead.
+            importer.textureCompression = atlas
+                ? TextureImporterCompression.CompressedHQ
+                : TextureImporterCompression.Compressed;
+
+            if (atlas || ArtBudgets.IsPalette(textureName))
             {
-                // Flat colour swatches: Point keeps edges crisp, Clamp stops UVs on the border sampling the far side.
+                // Flat colour swatches: Point reads exactly the texel a UV falls in (Bilinear would blend in the
+                // neighbouring island), Clamp stops UVs on the border sampling the far side.
                 importer.filterMode = FilterMode.Point;
                 importer.wrapMode = TextureWrapMode.Clamp;
             }

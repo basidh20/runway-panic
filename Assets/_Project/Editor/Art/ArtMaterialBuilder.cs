@@ -9,20 +9,26 @@ namespace RunwayPanic.ArtTools
 {
     /// <summary>
     /// Builds the shared M_ materials (URP Lit) from the manifests that export_fbx.py writes next to them:
-    /// Art/Materials/Weapons/SM_Gun_Tier1.materials.json -> Art/Materials/Weapons/M_Gun_Polymer.mat, ...
+    /// Art/Materials/Weapons/SM_Gun_Tier1.materials.json -> Art/Materials/Weapons/M_Gun_Tier1_Atlas.mat, ...
     /// Runs automatically when a manifest is imported. Blender is the source of truth: values are overwritten
     /// on every export. Change colours in Blender and re-export, not in the Inspector.
+    /// An atlas entry (M_Bird_Atlas, written by bake_atlas.py) names its textures instead of a colour:
+    /// baseMap = T_..._Atlas_Albedo, maskMap = T_..._Atlas_Mask (R = metallic, A = smoothness), both looked up in
+    /// Art/Textures/&lt;same folder as the manifest&gt;/.
     /// </summary>
     public class ArtMaterialBuilder : AssetPostprocessor
     {
         const string LitShaderName = "Universal Render Pipeline/Lit";
 
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
+        static readonly int MetallicGlossMapId = Shader.PropertyToID("_MetallicGlossMap");
         static readonly int MetallicId = Shader.PropertyToID("_Metallic");
         static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         static readonly int SurfaceId = Shader.PropertyToID("_Surface");
         static readonly int BlendId = Shader.PropertyToID("_Blend");
+        static readonly int PreserveSpecularId = Shader.PropertyToID("_BlendModePreserveSpecular");
         static readonly int SrcBlendId = Shader.PropertyToID("_SrcBlend");
         static readonly int DstBlendId = Shader.PropertyToID("_DstBlend");
         static readonly int SrcBlendAlphaId = Shader.PropertyToID("_SrcBlendAlpha");
@@ -48,6 +54,8 @@ namespace RunwayPanic.ArtTools
             public Color emissionColor;
             public float emissionStrength;
             public bool textured;
+            public string baseMap; // texture names without extension; empty for flat-colour materials
+            public string maskMap;
         }
 
         static bool IsManifest(string path) =>
@@ -56,20 +64,51 @@ namespace RunwayPanic.ArtTools
         static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
         {
             var modelsToReimport = new List<string>();
+            var built = new HashSet<string>();
             foreach (string path in imported)
             {
                 if (!IsManifest(path)) continue;
+                built.Add(path);
                 if (BuildFromManifest(path, out string modelPath) && modelPath != null)
                 {
                     modelsToReimport.Add(modelPath);
                 }
             }
 
-            // A model imported before its materials existed got fallback materials: import it again to pick up the M_ assets.
-            foreach (string modelPath in modelsToReimport)
+            // An atlas texture that arrives without its manifest (or after it): build that folder's manifests again,
+            // so the atlas material picks the texture up.
+            foreach (string path in imported)
             {
-                AssetDatabase.ImportAsset(modelPath, ImportAssetOptions.ForceUpdate);
+                if (!path.StartsWith(ArtBudgets.TexturesRoot)) continue;
+                if (!ArtBudgets.IsAtlas(Path.GetFileNameWithoutExtension(path))) continue;
+
+                string folder = ArtBudgets.MaterialsRoot + ArtBudgets.SubFolderOf(path, ArtBudgets.TexturesRoot);
+                if (!AssetDatabase.IsValidFolder(folder)) continue;
+                foreach (string guid in AssetDatabase.FindAssets("t:TextAsset", new[] { folder }))
+                {
+                    string manifestPath = AssetDatabase.GUIDToAssetPath(guid);
+                    if (!IsManifest(manifestPath) || !built.Add(manifestPath)) continue;
+                    if (BuildFromManifest(manifestPath, out string modelPath) && modelPath != null)
+                    {
+                        modelsToReimport.Add(modelPath);
+                    }
+                }
             }
+
+            // A model imported before its materials existed got fallback materials: import it again to pick up the M_ assets.
+            // Not from inside this callback: a re-import started here, in the refresh that created the materials, kept
+            // the fallback (13 Oct: the hawk stayed light grey until Rebuild Materials From Manifests was run by hand).
+            // delayCall runs it once the refresh has finished. That import brings no manifest, so it cannot loop.
+            // ArtModelPostprocessor also makes each model depend on its material paths, so Unity re-imports the
+            // model by itself when a material appears; this call only makes it happen straight away.
+            if (modelsToReimport.Count == 0) return;
+            EditorApplication.delayCall += () =>
+            {
+                foreach (string modelPath in modelsToReimport)
+                {
+                    AssetDatabase.ImportAsset(modelPath, ImportAssetOptions.ForceUpdate);
+                }
+            };
         }
 
         [MenuItem("Tools/S3/Rebuild Materials From Manifests")]
@@ -108,6 +147,8 @@ namespace RunwayPanic.ArtTools
             }
 
             string folder = Path.GetDirectoryName(manifestPath).Replace('\\', '/');
+            string subFolder = ArtBudgets.SubFolderOf(manifestPath, ArtBudgets.MaterialsRoot);
+            string textureFolder = ArtBudgets.TexturesRoot + (subFolder.Length > 0 ? subFolder + "/" : "");
             int created = 0;
             foreach (var entry in manifest.materials)
             {
@@ -117,8 +158,8 @@ namespace RunwayPanic.ArtTools
                 if (isNew) material = new Material(shader) { name = entry.name };
                 else if (material.shader != shader) material.shader = shader;
 
-                Apply(material, entry);
-                if (entry.textured)
+                Apply(material, entry, textureFolder);
+                if (entry.textured && string.IsNullOrEmpty(entry.baseMap))
                 {
                     Debug.LogWarning($"[Art] {entry.name}: base colour is textured in Blender - assign the T_ texture by hand.");
                 }
@@ -135,7 +176,6 @@ namespace RunwayPanic.ArtTools
                 }
             }
 
-            string subFolder = ArtBudgets.SubFolderOf(manifestPath, ArtBudgets.MaterialsRoot);
             string candidate = $"{ArtBudgets.ModelsRoot}{subFolder}/{manifest.asset}.fbx";
             if (File.Exists(candidate)) modelPath = candidate;
 
@@ -143,7 +183,7 @@ namespace RunwayPanic.ArtTools
             return created > 0;
         }
 
-        static void Apply(Material material, MaterialEntry entry)
+        static void Apply(Material material, MaterialEntry entry, string textureFolder)
         {
             // Material colours are stored in sRGB; Unity converts them back to linear (project is Linear).
             Color baseColor = entry.baseColor.gamma;
@@ -151,6 +191,14 @@ namespace RunwayPanic.ArtTools
             material.SetColor(BaseColorId, baseColor);
             material.SetFloat(MetallicId, entry.metallic);
             material.SetFloat(SmoothnessId, 1f - entry.roughness); // Blender roughness -> Unity smoothness
+
+            // Atlas materials: colour comes from the Albedo; metallic (R) and smoothness (A) from the Mask, which
+            // URP Lit reads as its Metallic Map (it then ignores _Metallic and multiplies Mask.a by _Smoothness).
+            material.SetTexture(BaseMapId, LoadTexture(textureFolder, entry.baseMap, entry.name));
+            Texture2D mask = LoadTexture(textureFolder, entry.maskMap, entry.name);
+            material.SetTexture(MetallicGlossMapId, mask);
+            if (mask != null) material.EnableKeyword("_METALLICSPECGLOSSMAP");
+            else material.DisableKeyword("_METALLICSPECGLOSSMAP");
 
             Color emission = entry.emissionColor * entry.emissionStrength;
             bool emissive = emission.maxColorComponent > 0.001f;
@@ -164,12 +212,27 @@ namespace RunwayPanic.ArtTools
             SetTransparent(material, entry.baseColor.a < 0.999f);
         }
 
+        static Texture2D LoadTexture(string textureFolder, string textureName, string materialName)
+        {
+            if (string.IsNullOrEmpty(textureName)) return null;
+            string path = $"{textureFolder}{textureName}.png";
+            var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (texture == null) Debug.LogWarning($"[Art] {materialName}: texture {path} not found.");
+            return texture;
+        }
+
         // Same keywords / states URP's material inspector sets for Surface Type Opaque vs Transparent (alpha blend).
         static void SetTransparent(Material material, bool transparent)
         {
             material.SetFloat(SurfaceId, transparent ? 1f : 0f);
             material.SetFloat(BlendId, 0f);
-            material.SetFloat(SrcBlendId, (float)(transparent ? BlendMode.SrcAlpha : BlendMode.One));
+            // Alpha blend with URP's default "Preserve Specular Lighting" on: the shader multiplies the colour by
+            // alpha itself (_ALPHAPREMULTIPLY_ON), so the source factor is One, not SrcAlpha. Writing SrcAlpha made
+            // Unity rewrite the .mat back to One whenever it validated the material (a changed file on every rebuild).
+            if (transparent) material.SetFloat(PreserveSpecularId, 1f);
+            if (transparent) material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+            else material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            material.SetFloat(SrcBlendId, (float)BlendMode.One);
             material.SetFloat(DstBlendId, (float)(transparent ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
             material.SetFloat(SrcBlendAlphaId, (float)BlendMode.One);
             material.SetFloat(DstBlendAlphaId, (float)(transparent ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));

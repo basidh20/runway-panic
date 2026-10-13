@@ -8,6 +8,8 @@ Source files for every custom model. This folder is **outside `Assets/`**, so Un
 | `Textures/` | Layered / high-res texture sources (`.psd`, `.kra`, bakes) |
 | `Reference/` | Reference images and sheets |
 | `Tools/export_fbx.py` | Blender → Unity FBX exporter with pre-export checks |
+| `Tools/bake_atlas.py` | Used by `export_fbx.py`: fills an asset's UV islands with its flat material values → `T_<Asset>_Atlas_Albedo` / `_Mask`, so the asset exports with one material `M_<Asset>_Atlas`. Sizes are in its `ATLAS` table. Read-only on the `.blend`. See `DECISIONS.md` (13 Oct) |
+| `Tools/bird_species.json` | Pigeon and crow colours per base material; `bake_atlas.py` fills one Albedo per species on the gull's UVs |
 | `Tools/ingest_fbx.py` | Turns a raw FBX (made outside this pipeline) into a pipeline-ready `.blend` |
 | `Tools/hidden_faces_report.py` | Read-only: tris per mesh and how many are hidden under other meshes (optimisation targets) |
 | `Tools/uv/unwrap_pistol.py`, `Tools/uv/unwrap_generic.py` | Scripted UV unwrap of the guns (box-net seam rules → Blender Unwrap / Smart UV / Average Scale / Pack). Used once on 11 Oct, see `DECISIONS.md`. Args: `-- <in.blend> <out.blend>`. `unwrap_generic.py` needs the `shapely` package in Blender's Python |
@@ -63,11 +65,14 @@ blender SourceArt/Blender/Birds/SK_Bird.blend --background --python SourceArt/To
 | `--all` | every collection starting with `SM_` / `SK_` |
 | `--check` | report only, write nothing (good for budget evidence) |
 | `--mixamo` | unrigged `SK_` mesh for Mixamo upload → `SourceArt/Mixamo/` |
-| `--out DIR` | override the output folder |
+| `--out DIR` | override the output folder (an atlas asset's manifest and textures go there too) |
+| `--atlas-size N` | bake an atlas at N × N even if the asset isn't in `bake_atlas.py` (to try sizes) |
 
 Exit code is 1 if any asset failed its checks.
 
 Every export also writes a **material manifest** `Assets/_Project/Art/Materials/<Folder>/<Asset>.materials.json` (base colour, metallic, roughness, alpha, emission of each `M_` material). Unity builds the URP materials from it, so colours are authored in Blender only.
+
+**Atlas assets** (every asset in the `ATLAS` table of `bake_atlas.py`: birds, player, guns) export with **one material**. The flat colours are filled into the asset's UV islands and written to `Assets/_Project/Art/Textures/<Folder>/T_<Asset>_Atlas_Albedo.png` and `_Mask.png` (R = metallic, A = smoothness). The manifest then lists `M_<Asset>_Atlas` with those textures. Transparent and emissive materials keep their own slot. The `.blend` keeps its flat materials, so to change a colour: change the material in Blender and export again. The report must show **bleed texels 0** and **wrong-colour triangles 0**; if not, raise the size in `ATLAS`.
 
 ### Bringing in a raw FBX (made outside this pipeline)
 FBX files exported with Blender's default settings have a 90° X rotation on every mesh, free-form names and often no UVs. Convert them once into a `.blend` with `ingest_fbx.py`, then export as usual:
@@ -117,17 +122,19 @@ blender SourceArt/Blender/Birds/SK_Bird_Hawk.blend --background --python SourceA
 | `SK_` without armature (unless `--mixamo`) / `SM_` with armature | **Error** |
 | Rotation not applied, root object not at world origin | Warning |
 | Triangles / deform bones over budget | Warning |
-| More than 2 material slots on a mesh | Warning |
+| More than 2 material slots on a mesh (not checked on atlas assets: the export merges the slots) | Warning |
 | Material without the `M_` prefix / empty slot | Warning |
 
 ## 4. Budgets
 
 | Asset | Max tris | Max bones | Texture |
 |---|---|---|---|
-| `SK_Bird*` (base + hawk) | none (reported only) | 15 | Shared palette (256²) |
-| `SM_Gun_Tier*` | none (reported only; was 2,500) | — | Shared palette (256²) |
-| `SK_Player_Officer` | none (reported only; was 8,000) | 52-bone Humanoid | up to 1024² |
-| `SM_Prop_*` | none (reported only; was 500) | — | Shared palette |
+| `SK_Bird*` (base + hawk) | none (reported only) | 15 | Own atlas 256² (Albedo + Mask; one Albedo per species) |
+| `SM_Gun_Tier*` | none (reported only; was 2,500) | — | Own atlas 128² (Albedo + Mask) |
+| `SK_Player_Officer` | none (reported only; was 8,000) | 52-bone Humanoid | Own atlas 512² (Albedo + Mask) |
+| `SM_Prop_*` | none (reported only; was 500) | — | Own atlas (add the asset to `ATLAS` in `bake_atlas.py`) |
+
+Atlas sizes are the smallest that keep the UV islands 2 texels apart; they are set in `bake_atlas.py`, not here.
 
 No model has a triangle limit (decided 11 Oct, see `DECISIONS.md`): the Art Budget Checker and the exporter still report every count, they just never flag it. `Tools/hidden_faces_report.py` shows where triangles are spent on faces nobody can see.
 
@@ -139,7 +146,7 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 
 **Models** (`Art/Models/`, `Art/Animations/`) — `ArtModelPostprocessor.cs`
 - Convert Units on, scale factor 1, no cameras/lights, Read/Write off.
-- Materials: each FBX material slot is mapped **by name** to `Art/Materials/<same folder as the model>/<name>.mat` (e.g. `Models/Weapons/SM_Gun_Tier1.fbx` → `Materials/Weapons/M_Gun_Polymer.mat`). No embedded copies, so all four guns share one `M_Gun_Polymer`.
+- Materials: each FBX material slot is mapped **by name** to `Art/Materials/<same folder as the model>/<name>.mat` (e.g. `Models/Weapons/SM_Gun_Tier1.fbx` → `Materials/Weapons/M_Gun_Tier1_Atlas.mat`). No embedded copies.
 - `Socket_*` transforms lose Blender's `.001` suffix, so every gun has a `Socket_Muzzle`.
 - `SM_`: Rig = None, no animation, mesh compression Low, Generate Lightmap UVs only in `Models/Environment` and `Models/Props`.
 - `SK_Player*`: Rig = **Humanoid**. Other `SK_`: Rig = **Generic**. Both: blend shapes on, mesh compression off.
@@ -148,17 +155,18 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 
 **Materials** (`Art/Materials/`) — `ArtMaterialBuilder.cs`
 - When a `*.materials.json` manifest is imported, it creates or updates one URP Lit material per entry: Blender base colour (linear → sRGB), metallic, smoothness = 1 − roughness, emission (keyword on only if non-black), alpha < 1 → Transparent surface.
+- An atlas entry (`M_<Asset>_Atlas`) names its textures instead of a colour: Base Map = `T_…_Atlas_Albedo`, Metallic Map = `T_…_Atlas_Mask`, both looked up in `Art/Textures/<same folder>/`. An atlas texture that arrives after its manifest rebuilds that folder's materials.
 - Values are overwritten on every export. Change colours in Blender, not in the Inspector.
-- New materials trigger a re-import of the matching model. **Tools → S3 → Rebuild Materials From Manifests** rebuilds everything.
+- New materials trigger a re-import of the matching model, run right after the current refresh has finished. If a model ever shows a plain light-grey fallback material, **Tools → S3 → Rebuild Materials From Manifests** rebuilds everything and re-imports every model.
 
 **Prefabs** — `ArtPrefabBuilder.cs`
 - **Tools → S3 → Build Model Prefabs** creates `Prefabs/Weapons/P_Gun_Tier1-4` (model + fitted BoxCollider on the root), `Prefabs/Player/P_Player_Officer` (model with the importer's Animator + Humanoid avatar) and `Prefabs/Birds/P_Bird_Base` + `P_Bird_Hawk` (model with the Animator + Generic avatar, a body CapsuleCollider along +Z on the root).
 - The model is a nested prefab, so a Blender re-export updates the prefab. Existing prefabs are skipped: delete one to rebuild it.
 
 **Bird species** — `ArtBirdSpeciesBuilder.cs`
-- **Tools → S3 → Build Bird Species Variants** creates or updates the Prefab Variants `Prefabs/Birds/P_Bird_Gull`, `_Pigeon` and `_Crow` of `P_Bird_Base`. Each gets its uniform scale, its species materials (`Materials/Birds/Species/M_Bird_<Species>_<Part>`, copies of the base material with the species colour) and its blend shape weights (`Wings_Spread` 100, `Tail_Spread` per species).
+- **Tools → S3 → Build Bird Species Variants** creates or updates the Prefab Variants `Prefabs/Birds/P_Bird_Gull`, `_Pigeon` and `_Crow` of `P_Bird_Base`. Each gets its uniform scale, its atlas material (`Materials/Birds/M_Bird_Atlas`, `M_Bird_Pigeon_Atlas`, `M_Bird_Crow_Atlas`) and its blend shape weights (`Wings_Spread` 100, `Tail_Spread` per species).
 - The hawk has its own model: `P_Bird_Hawk` comes from **Build Model Prefabs**, and this menu only sets its scale and blend shapes. Run Build Model Prefabs first.
-- The table at the top of the script is the source of truth. Change a colour or scale there and re-run the menu. Only scale, materials and blend shapes are overwritten; components teammates add to a variant are kept.
+- Species **colours** live in `SourceArt/Tools/bird_species.json`: change one there, export `SK_Bird` again, and the species Albedo is rebuilt. Species **scale and shape** live in the table at the top of the script: change them there and re-run the menu. Only scale, material and blend shapes are overwritten; components teammates add to a variant are kept.
 
 **Art Budget Checker** — `ArtBudgetWindow.cs`
 - **Tools → S3 → Art Budget Checker** lists every model (tris, verts, submeshes ≈ draw calls, materials, bones, mesh GPU memory) and texture (imported size, format, mips, memory) against the budgets, with over-budget rows in red.
@@ -174,6 +182,7 @@ The same numbers live in `export_fbx.py` (`BUDGETS`) and `Assets/_Project/Editor
 - `*_Normal` → Normal Map. `*_Mask`, `_ORM`, `_Roughness`, `_Metallic`, `_AO`, `_Height` → sRGB off.
 - Mipmaps on, compression Normal Quality (BC/DXT), Read/Write off.
 - Palette: Point filter + Clamp. Other textures: Bilinear + Repeat.
+- Names containing `_Atlas_` (written by `bake_atlas.py`): **Point filter, Clamp, no mipmaps, High Quality compression (BC7)**. Each UV island is one flat value 2 texels from the next island, so Bilinear or a smaller mip would blend neighbouring islands together. Don't change these in the Inspector.
 
 ## 6. Sandbox
 

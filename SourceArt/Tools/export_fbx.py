@@ -14,6 +14,11 @@ Every export also writes a material manifest next to the Unity materials:
 Unity (ArtMaterialBuilder.cs) turns it into one URP Lit M_ material per Blender material,
 so colours / metallic / roughness stay authored in Blender.
 
+Assets listed in bake_atlas.py (ATLAS) are exported with ONE material instead of one per flat colour:
+the colours are filled into the asset's UV islands (T_<Asset>_Atlas_Albedo / _Mask in Art/Textures/<Folder>/),
+the material slots are swapped for M_<Asset>_Atlas during the export and put back afterwards, and the manifest
+lists the atlas material with its textures. The .blend keeps its flat materials: they stay the authoring source.
+
 The pre-export checks only READ the scene. They warn or abort; they never modify geometry.
 
 USAGE
@@ -28,7 +33,9 @@ USAGE
     --all               export every collection whose name starts with SM_ or SK_
     --check             run the checks and print the report, but write no files
     --mixamo            export an UNRIGGED SK_ mesh for Mixamo upload -> SourceArt/Mixamo/
-    --out DIR           write here instead of the Unity folder (for testing)
+    --out DIR           write the FBX here instead of the Unity folder (for testing); an atlas asset's
+                        manifest and textures go here too
+    --atlas-size N      bake an atlas at N x N even if the asset is not listed in bake_atlas.py (to try sizes)
 
 Keep the routing and budget tables in sync with SourceArt/README.md and
 Assets/_Project/Editor/Art/ArtBudgets.cs.
@@ -52,6 +59,7 @@ TEXT_EDITOR_MIXAMO = False
 # ----------------------------------------------------------------------------
 MODELS_DIR = "Assets/_Project/Art/Models"
 MATERIALS_DIR = "Assets/_Project/Art/Materials"
+TEXTURES_DIR = "Assets/_Project/Art/Textures"
 MIXAMO_DIR = "SourceArt/Mixamo"
 
 # Second token of the asset name -> sub-folder of MODELS_DIR
@@ -193,7 +201,7 @@ def has_unapplied_scale(obj):
 # ----------------------------------------------------------------------------
 # Checks (read-only)
 # ----------------------------------------------------------------------------
-def check_asset(collection, mixamo):
+def check_asset(collection, mixamo, atlas=False):
     name = collection.name
     report = Report(name)
     depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -266,7 +274,7 @@ def check_asset(collection, mixamo):
                 report.warn("%s: material '%s' has no M_ prefix - Unity looks materials up by name"
                             % (obj.name, slot.material.name))
         slots = len(obj.material_slots)
-        if slots > MAX_MATERIAL_SLOTS:
+        if slots > MAX_MATERIAL_SLOTS and not atlas:  # an atlas export merges the slots (see bake_atlas.py)
             report.warn("%s: %d material slots (max %d) - each slot is an extra draw call"
                         % (obj.name, slots, MAX_MATERIAL_SLOTS))
         tris = triangle_count(obj, depsgraph)
@@ -352,19 +360,75 @@ def material_entry(mat):
     return entry
 
 
-def write_material_manifest(collection, meta, repo_root):
+def shown_path(path, repo_root):
+    """Repo-relative for the report; a --out folder on another drive has no relative path."""
+    try:
+        return os.path.relpath(path, repo_root).replace("\\", "/") if repo_root else path
+    except ValueError:
+        return path
+
+
+def load_bake_atlas(repo_root):
+    """bake_atlas.py sits next to this script; from the Text Editor it is found through the repo root."""
+    sys.dont_write_bytecode = True  # no __pycache__ in SourceArt/Tools
+    script = globals().get("__file__", "")
+    folders = [os.path.dirname(os.path.abspath(script))] if script and os.path.isfile(script) else []
+    if repo_root:
+        folders.append(os.path.join(repo_root, "SourceArt", "Tools"))
+    for folder in folders:
+        if os.path.isfile(os.path.join(folder, "bake_atlas.py")):
+            if folder not in sys.path:
+                sys.path.insert(0, folder)
+            import bake_atlas
+            return bake_atlas
+    return None
+
+
+def bake_atlas_for(collection, baker, size_override, report):
+    """Fills the asset's UV islands with its flat material values (bake_atlas.py). None = asset has no atlas."""
+    config = baker.config_for(collection.name) if baker else None
+    if size_override:
+        config = dict(config or {}, size=size_override)
+    if config is None:
+        return None
+    variants = baker.load_variants(config["variants"]) if config.get("variants") else None
+    try:
+        result = baker.bake(collection, config["size"], material_entry, variants)
+    except RuntimeError as e:
+        report.error("atlas: %s" % e)
+        return None
+    for line in result["lines"]:
+        report.note(line)
+    for variant, stats in result["stats"]["variants"].items():
+        if stats["bleed_texels"]:
+            report.error("atlas %s: %d texels are touched by two islands with different colours at %d px "
+                         "(first at %s) - use a larger size"
+                         % (variant or "base", stats["bleed_texels"], config["size"], stats["bleed_sample"][:3]))
+    return result
+
+
+def write_material_manifest(collection, meta, repo_root, out_override=None, atlas=None, baker=None):
     """One manifest per asset; ArtMaterialBuilder.cs builds / updates the M_ materials from it."""
-    used = {}
-    for obj in collection.all_objects:
-        if obj.type != "MESH" or not obj.visible_get():
-            continue
-        for slot in obj.material_slots:
-            if slot.material is not None:
-                used[slot.material.name] = slot.material
-    manifest = dict(asset=collection.name,
-                    source=os.path.relpath(bpy.data.filepath, repo_root).replace("\\", "/") if bpy.data.filepath else "",
-                    materials=[material_entry(used[name]) for name in sorted(used)])
-    folder = os.path.join(repo_root, *MATERIALS_DIR.split("/"), meta["route"])
+    if atlas:
+        stem = baker.asset_stem(collection.name)
+        texture_folder = os.path.abspath(out_override) if out_override else \
+            os.path.join(repo_root, *TEXTURES_DIR.split("/"), meta["route"])
+        materials = baker.manifest_entries(atlas, stem, baker.write_textures(atlas, stem, texture_folder))
+    else:
+        used = {}
+        for obj in collection.all_objects:
+            if obj.type != "MESH" or not obj.visible_get():
+                continue
+            for slot in obj.material_slots:
+                if slot.material is not None:
+                    used[slot.material.name] = slot.material
+        materials = [material_entry(used[name]) for name in sorted(used)]
+    source = ""
+    if bpy.data.filepath and repo_root:
+        source = os.path.relpath(bpy.data.filepath, repo_root).replace("\\", "/")
+    manifest = dict(asset=collection.name, source=source, materials=materials)
+    folder = os.path.abspath(out_override) if out_override else \
+        os.path.join(repo_root, *MATERIALS_DIR.split("/"), meta["route"])
     os.makedirs(folder, exist_ok=True)
     path = os.path.join(folder, collection.name + ".materials.json")
     with open(path, "w", encoding="utf-8", newline="\n") as f:
@@ -389,6 +453,7 @@ def parse_args():
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--mixamo", action="store_true")
     parser.add_argument("--out")
+    parser.add_argument("--atlas-size", type=int)
     args = parser.parse_args(argv)
     if not argv:  # Text Editor run
         args.check = TEXT_EDITOR_CHECK_ONLY
@@ -422,10 +487,15 @@ def main():
         print("export_fbx: no SM_/SK_ collections found")
         return 1
 
+    baker = load_bake_atlas(repo_root)
     all_lines = []
     any_failed = False
     for coll in collections:
-        report, meta = check_asset(coll, args.mixamo)
+        wants_atlas = not args.mixamo and bool(args.atlas_size or (baker and baker.config_for(coll.name)))
+        report, meta = check_asset(coll, args.mixamo, wants_atlas)
+        atlas = None
+        if wants_atlas and meta and not report.errors:
+            atlas = bake_atlas_for(coll, baker, args.atlas_size, report)
         status = "OK"
         if report.errors:
             status = "FAILED - not exported"
@@ -434,13 +504,17 @@ def main():
             status = "checked (--check, not written)"
         else:
             path = output_path(coll.name, meta, repo_root, args.out, args.mixamo)
-            if export_asset(coll, meta, path, args.mixamo):
-                shown = os.path.relpath(path, repo_root) if repo_root else path
-                status = "exported -> " + shown.replace("\\", "/")
-                if not args.mixamo and not args.out:
-                    manifest, count = write_material_manifest(coll, meta, repo_root)
-                    report.note("material manifest: %d material(s) -> %s"
-                                % (count, os.path.relpath(manifest, repo_root).replace("\\", "/")))
+            if atlas:
+                with baker.collapsed(coll, atlas, baker.asset_stem(coll.name)):
+                    exported = export_asset(coll, meta, path, args.mixamo)
+            else:
+                exported = export_asset(coll, meta, path, args.mixamo)
+            if exported:
+                status = "exported -> " + shown_path(path, repo_root)
+                if not args.mixamo and (atlas or not args.out):
+                    manifest, count = write_material_manifest(coll, meta, repo_root, args.out, atlas, baker)
+                    report.note("material manifest: %d material(s)%s -> %s"
+                                % (count, " + atlas textures" if atlas else "", shown_path(manifest, repo_root)))
             else:
                 status = "FAILED - exporter returned an error"
                 any_failed = True
