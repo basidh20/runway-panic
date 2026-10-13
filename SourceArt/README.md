@@ -11,8 +11,10 @@ Source files for every custom model. This folder is **outside `Assets/`**, so Un
 | `Tools/ingest_fbx.py` | Turns a raw FBX (made outside this pipeline) into a pipeline-ready `.blend` |
 | `Tools/hidden_faces_report.py` | Read-only: tris per mesh and how many are hidden under other meshes (optimisation targets) |
 | `Tools/uv/unwrap_pistol.py`, `Tools/uv/unwrap_generic.py` | Scripted UV unwrap of the guns (box-net seam rules → Blender Unwrap / Smart UV / Average Scale / Pack). Used once on 11 Oct, see `DECISIONS.md`. Args: `-- <in.blend> <out.blend>`. `unwrap_generic.py` needs the `shapely` package in Blender's Python |
+| `Tools/uv/unwrap_player.py` | Scripted UV unwrap of `SK_Player_Officer` (all 21 meshes into ONE shared 0–1 space): material/sharp-edge seams, least-visible-side cuts on the organic meshes, shared Average Scale + Pack. Hashes geometry, rig, weights and materials before/after and replaces the `.blend` only if every check passes. Args: `-- <in.blend> <out.blend> [--margin 0.002] [--hidden-scale 0.5] [--report report.json]`. Run it with `--python-use-system-env` so Blender sees `shapely`. See `DECISIONS.md` (12 Oct) |
+| `Tools/uv/unwrap_bird.py` | Scripted UV unwrap of one bird (`SK_Bird` or `SK_Bird_Hawk`: one mesh, shape keys) with the same rules and checks as `unwrap_player.py` (imports it). Bird-specific: sharp-edge seams only on beak / cere / claws, visibility seen from below and in every shape-key pose. Shape keys are part of the before/after hash. Args: `-- <in.blend> <out.blend> [--margin 0.004] [--hidden-scale 0.5] [--report report.json]`, run with `--python-use-system-env` |
 | `Tools/uv/uvmetrics.py` | Read-only UV quality metrics module (overlap, stretch, texel density); needs `shapely` |
-| `Evidence/UV/` | Gun UV layouts before/after (PNG/SVG), checker renders, `uv_report.json` (viva evidence) |
+| `Evidence/UV/` | Gun, player and bird UV layouts before/after (PNG/SVG), checker renders, `uv_report.json` (viva evidence) |
 | `Tools/rig_bird.py` | Turns a raw bird (`.fbx` or `.blend`, separate parts, no armature) into a rigged `SK_Bird*.blend` |
 | `DECISIONS.md` | Design decision log (viva evidence) |
 | `HANDOFF.md` | Notes and requests for other team members |
