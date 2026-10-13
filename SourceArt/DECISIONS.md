@@ -180,3 +180,106 @@ Still to cover: tri + texture budgets in practice, one rig + prefab variants for
 - **Unchanged:** geometry, materials, sockets and pivots (verified by hash). Export: 820 / 2,064 / 6,304 / 1,664 tris, UVMap on every mesh, no errors. The only warnings are the material-slot ones, which stay until the palette atlas pass.
 - **Evidence:** `Evidence/UV/<asset>_UV_before.png` / `_after.png` (Blender UV → Export UV Layout), `<asset>_UV_before_after.png` (islands coloured by method), `<asset>_checker_before_after.png` (checker texture rendered on the gun), `uv_report.json` (all the numbers).
 - **Viva note:** the UVs were produced with scripted rules, not by hand. To be able to show the method live, I unwrap at least one part by hand in Blender: mark a box-net seam ring, Unwrap, check Display Stretch.
+
+## 2026-10-12 — Player (SK_Player_Officer) + bird UV unwrap: scripted seam rules
+- **Context:** All 21 skinned meshes of `SK_Player_Officer.blend` (152,707 tris, 83,290 faces, 49 flat-colour materials) had placeholder UVs: each mesh used the whole 0–1 square on its own, so in the one UV space they share, **78,431 of 83,290 faces overlapped** and up to 4,328 faces were stacked on one spot. Seven meshes also overlapped themselves (Pants 948 faces, Shirt 165, Body 128, Cap 38, Boots 30, Head_Mesh 26, Gloves 3), and texel density varied 156% between islands. A future atlas or texture bake for the player would paint every mesh on top of the others.
+- **Options considered:** A) Smart UV Project on every mesh plus one pack. Quick, but it cuts by face angle, so seams land on the front of the face and torso, and the organic meshes become hundreds of flat chips. B) Hand-cut seams in the Blender UI. The usual way, but too slow for 21 meshes and ~152k tris in the Week 13 window, and hard to keep consistent. C) Scripted seam rules (the gun method): rules for where seams go, applied the same way to every mesh, then Blender's own Unwrap, Average Islands Scale and Pack Islands.
+- **Choice:** C, in `SourceArt/Tools/uv/unwrap_player.py`.
+- **How it was done (tooling):** the seams were **placed by a script**, not by hand in the Blender UI. The script applies the rules below to each mesh, then runs Blender's own operators. The rules are the method; the script applies them consistently to all 21 meshes.
+  1. **Material boundaries are seams** (1,238 edges). The script also cuts every edge shared by 3+ faces (8) and every edge between two faces wound in opposite directions (22), because those would fold.
+  2. **Sharp edges > 60° are seams** on the hard-surface meshes: Boots, Cap, Headset, Radio, Knee_Pads, both pouch meshes, Pouch_Clips, Belt, Belt_Buckle, Belt_Loops, ID_Badge (11,885 edges).
+  3. **Cuts on the least visible side.** Every patch that isn't a flat disk yet (whole organic meshes; tubes, closed shells and patches with holes) is cut open along the edges a camera is least likely to see. A visibility map (rays from 48 directions at the fully assembled character, weighted front > sides > back > underneath) gives every face a visibility value, so the cuts fall inside arms and legs, under the vest and the cap, at the back and under the chin without hard-coding a side per mesh. Faces it marks as hidden: Body 74% and Hair 76% (`hidden_faces_report.py`, which uses a different test, found 69% and 55%). Cutting method: a spanning tree that prefers to cross visible edges (tree-cotree); the leftover, least visible edges become the seam (5,970 edges, 190 closed shells slit open).
+     - Each patch is then unwrapped (angle based; conformal is tried too and kept when it measures better: Belt, Belt_Buckle, Belt_Loops, Cap, ID_Badge, Pouch_Clips).
+     - A patch that is still stretched (more than 25% of its faces off by > 10°, or area ratio spread > ×2) or that folds is cut again along the cheapest hidden border into two balanced halves. Small folded patches first get each saddle vertex (corner angles adding up to more than 360°) cut loose along a short hidden path, then their sharpest creases. This repeats until every patch passes (14,504 more seam edges).
+  4. **Smart UV fallback** (66°, margin 0.02, per mesh) for any mesh still folded or overlapping after rule 3: **no mesh needed it** in the final run. During development, Pants, Head_Mesh, Cap, Gloves and Safety_Vest needed it until the balanced split and the saddle cuts were added.
+  5. **Eyes:** planar projection along Y (front hemisphere seen from the front, back hemisphere from behind, cut at the equator), so the iris and pupil read as circles. 6 islands per eye, no overlaps.
+  6. **One shared 0–1 space:** Average Islands Scale across all 21 meshes together, then Pack Islands (rotate on, CONCAVE shapes, margin **0.002**, as a fraction of the square).
+  7. **Hidden islands at half scale:** 2,901 patches that no ray reaches (fully under clothing: most of Body, the hair under the cap, the shirt under the vest) get 50% of the linear scale before the pack.
+- **Margin choice (0.002, not 0.004–0.01):** measured on the real layout (6,519 islands), UV space used: **0.001 → 47.5%, 0.002 → 35.6%, 0.003 → 23.5%, 0.004 → 13.3%, 0.006 → 0.1%, 0.01 → doesn't fit** (the packer pushed UVs out to 5.25). Every island pays the margin on every side, so with thousands of islands the margin, not the islands, fills the square. 0.002 is about 2 px between islands on a 1024² texture (4 px on 2048²): enough for bilinear filtering at mip 0, and it still uses a third of the square. The cost: from mip level 2 down (256² and below), neighbouring islands bleed into each other. That doesn't matter while every material is a flat colour or a palette bake (the same reasoning as the sniper's 34% in the gun entry). A painted texture would want fewer islands and a 2048² map; re-run with `--margin` then.
+- **Rule 7, measured** (same run with `--hidden-scale 1.0` for comparison): visible surfaces get **224.5 texels/m instead of 199.4 (+12.6%)** on a 1024² texture. The hidden surfaces drop to 112.3 texels/m, where nobody can see them. The price is the texel-density spread: with rule 7 off, 13 of the 21 meshes have ≤ 1% spread between islands. With it on, the spread rises by design, because hidden islands are deliberately at half density.
+- **Why:** The materials are flat colours, so the UVs don't change how the player looks today. They're needed for the planned palette atlas and any texture bake, and an atlas only works if no two faces share a texel. 21 meshes and ~152k tris made hand-cutting slow, so scripted rules were the only way to cut all of them in the time. They also give one consistent texel density across all meshes (one Average Islands Scale over the whole character), and the visibility map puts seams where the third-person camera rarely looks, the same aim as hand-placed seams.
+- **Safety:** before the script touches the file, it hashes vertex positions, face order, loops, vertex groups and every weight, bones, object transforms, parenting, modifiers, material slots, per-face material indices, smoothing flags, collections, visibility and actions. It writes to a temp file, re-opens it and compares again (all **19 checks PASS**, in memory and in the saved file), and only then replaces the `.blend`. The single layer `UVMap` was overwritten in place, never renamed or duplicated. Geometry, rig and materials are byte-identical.
+- **Numbers** (measured with `SourceArt/Tools/uv/uvmetrics.py` on all 21 meshes together in their one shared square, on the `.blend` and again on the exported FBX):
+
+  | | Before | After (`.blend`) | After (exported FBX) |
+  |---|---:|---:|---:|
+  | Overlapping faces (shared square) | 78,431 / 83,290 | **0 / 83,290** | **0 / 83,290** |
+  | Most faces on one UV spot | 4,328 | **1** | **1** |
+  | UVs inside 0–1 | yes | **yes** (0.002–0.9971) | **yes** (0.002–0.9971) |
+  | Islands | 5,750 | 6,519 | 6,519 |
+  | Marked seams | 0 | 33,683 | — (FBX stores no seams) |
+  | Stretch-free faces (every corner within 2°) | 31,306 | **57,187** (69%) | 57,187 |
+  | Faces with angle stretch > 2° | 51,984 | **26,103** | 26,103 |
+  | UV area / 3D area ratio, min–max | 0–4,757.7 | 0–3,677.5 | 0–3,675.0 |
+  | UV area / 3D area ratio, 1st–99th percentile | 0.06–98.7 | **0.21–2.51** | — |
+  | Texel density spread between islands (CV) | 156% | 99.9% (87.3% without rule 7) | 99.0% |
+  | UV space used | — (overlapping) | 35.6% | 35.6% |
+
+  - The "0" minimum ratio and the 180° worst corner (before and after) come from 10 zero-area faces in the source geometry (2 in Head_Mesh, 8 in Radio). Geometry was not allowed to change, so they stay.
+  - Most extreme ratios come from a few dozen faces per mesh at the tips of the hidden cuts (for example Cap: 34 of 5,864 faces above ×16). The 1st–99th percentile row shows the bulk: 98% of faces lie within ×0.21–×2.5, and the ×0.25 end is the deliberate rule 7 half-scale.
+  - The FBX matches the `.blend` (same faces, islands, overlap and bounds; the ratio max and CV differ only by rounding from the export's baked transforms).
+  - **Independent re-check (13 Oct):** Blender's own *UV ▸ Select ▸ Select Overlap* selects **6 faces** on the player (Radio 2, Safety_Vest 4; before: 82,933) and **0** on both birds. A triangle-level test (the GPU draws triangles, `uvmetrics.py` compares whole polygons) also finds micro-folds where a quad is slightly concave in UV space and one of its two render triangles folds over the neighbouring face: player 99 faces / ~29 px total on a 1024² map, SK_Bird ~53 px, SK_Bird_Hawk ~2 px. With flat colours or a palette bake these are invisible; for a painted texture, relax those faces first. Geometry, weights, bones, materials and shape keys were re-checked against the committed files: identical.
+
+  Per mesh (each mesh on its own; the CV in brackets is the same run with rule 7 off):
+
+  | Mesh | Type, unwrap | Overlap before → after | Stretch-free faces before → after / total | Islands before → after | Density spread (CV) before → after (rule 7 off) |
+  |---|---|---:|---:|---:|---:|
+  | Belt | hard, conformal | 0 → **0** | 1,110 → 970 / 1,178 | 64 → 45 | 14% → 89% (92%) |
+  | Belt_Buckle | hard, conformal | 0 → **0** | 194 → 198 / 250 | 28 → 28 | 4% → 16% (0%) |
+  | Belt_Loops | hard, conformal | 0 → **0** | 170 → 123 / 378 | 42 → 48 | 2% → 12% (0%) |
+  | Body | organic, angle based | 128 → **0** | 1,172 → 3,306 / 5,074 | 136 → 643 | 11% → 31% (1%) |
+  | Boots | hard, angle based | 30 → **0** | 6,625 → 10,999 / 14,654 | 2,119 → 2,501 | 9% → 49% (56%) |
+  | Cap | hard, conformal | 38 → **0** | 1,201 → 4,873 / 5,864 | 375 → 496 | 58% → 180% (151%) |
+  | Eye_L | eye, planar | 0 → **0** | 384 → 420 / 656 | 8 → 6 | 2% → 28% (0%) |
+  | Eye_R | eye, planar | 0 → **0** | 384 → 420 / 656 | 8 → 6 | 2% → 28% (0%) |
+  | Gloves | organic, angle based | 3 → **0** | 1,766 → 2,092 / 4,764 | 588 → 312 | 43% → 42% (19%) |
+  | Hair | organic, angle based | 0 → **0** | 1,552 → 2,355 / 4,716 | 234 → 200 | 6% → 21% (0%) |
+  | Head_Mesh | organic, angle based | 26 → **0** | 2,018 → 4,991 / 6,485 | 180 → 140 | 8% → 36% (14%) |
+  | Headset | hard, angle based | 0 → **0** | 2,910 → 3,297 / 5,130 | 246 → 150 | 4% → 25% (0%) |
+  | ID_Badge | hard, conformal | 0 → **0** | 270 → 238 / 342 | 157 → 155 | 3% → 35% (0%) |
+  | Knee_Pads | hard, angle based | 0 → **0** | 1,365 → 1,539 / 2,752 | 175 → 129 | 41% → 128% (140%) |
+  | Pants | organic, angle based | 948 → **0** | 2,040 → 6,155 / 8,092 | 40 → 406 | 223% → 174% (149%) |
+  | Pouch_Clips | hard, conformal | 0 → **0** | 168 → 311 / 518 | 70 → 45 | 5% → 34% (0%) |
+  | Pouches_Black | hard, angle based | 0 → **0** | 837 → 610 / 1,390 | 137 → 83 | 5% → 16% (0%) |
+  | Pouches_Brown | hard, angle based | 0 → **0** | 456 → 455 / 798 | 68 → 45 | 3% → 23% (0%) |
+  | Radio | hard, angle based | 0 → **0** | 470 → 365 / 710 | 141 → 121 | 5% → 28% (0%) |
+  | Safety_Vest | organic, angle based | 0 → **0** | 4,401 → 7,299 / 8,478 | 238 → 407 | 5% → 21% (0%) |
+  | Shirt | organic, angle based | 165 → **0** | 1,813 → 6,171 / 10,405 | 696 → 553 | 24% → 43% (29%) |
+
+- **What got worse, honestly:**
+  - Six small hard-surface meshes have slightly fewer stretch-free faces than their placeholder (Belt 1,110 → 970, Belt_Loops 170 → 123, Pouches_Black 837 → 610, Radio 470 → 365, ID_Badge 270 → 238, Pouches_Brown 456 → 455). Their old Smart-UV-style layout cut every face group flat, but it overlapped with every other mesh in the shared space. Most likely cause: rule 2 keeps bevels below 60° inside one island, so they bend a little when flattened.
+  - Belt, Boots, Cap, Gloves, Head_Mesh, Knee_Pads, Pants and Shirt keep a large density spread even with rule 7 off (14–151%), because a handful of islands are not evened out by Blender's Average Islands Scale. I haven't tracked down the cause; the overlap and stretch results don't depend on it.
+- **Birds (SK_Bird, SK_Bird_Hawk): whole mesh, same rules.** The plan was to fix only the eye faces, but `uvmetrics.py` showed that the rest of each bird was just as broken. The eye faces alone were 0 overlapping (of 672 / 824); everything else was stacked: SK_Bird 7,760 of 12,319 faces, SK_Bird_Hawk 9,650 of 13,646. I stopped and reported, and on 13 Oct the decision was to unwrap the whole bird with the same method. `SourceArt/Tools/uv/unwrap_bird.py` imports the rules, checks and metrics from `unwrap_player.py` (the player script only got a `main()` wrapper; re-running it gives byte-identical UVs and seams) and changes only what differs on a bird:
+  - **Rule 2 by material:** each bird is one mesh, so the sharp-edge rule applies to the hard keratin faces only (materials with Beak, Cere, Claw or Talon in the name: 244 / 316 edges). Feathers, legs and eyes are organic (rule 3).
+  - **Eyes:** no separate projection. Iris, pupil and eyelid / eye ring are their own patches through rule 1 and are unwrapped like the rest.
+  - **Visibility:** a bird flies over the player, so the camera weights are reversed: from below 1.0, from the side 0.8, from above 0.3. Visibility is measured in every shape-key pose (basis, each key at 100%, all keys together) and the highest value counts, so nothing that shows when the wings spread is treated as hidden.
+  - **Margin 0.004** (inside the 0.004–0.01 range), each bird in its own square. Measured UV space used:
+
+    | Margin | 0.002 | **0.004** | 0.006 | 0.01 |
+    |---|---:|---:|---:|---:|
+    | SK_Bird (1,442 islands) | 42.6% | **28.4%** | 17.4% | 3.3% |
+    | SK_Bird_Hawk (1,861 islands) | 34.3% | **21.7%** | 11.7% | 0.9% |
+
+    A bird covers far less of the screen than the player, so its texture will be smaller. At 512², a 0.004 margin is 2 px, the same gap the player gets with 0.002 at 1024².
+  - **Rule 7:** only 264 / 164 patches are fully hidden from every direction in every pose, so the gain is small: visible texels per metre at 1024² go from 375.5 to 388.7 (+3.5%) on SK_Bird and from 305.4 to 312.2 (+2.2%) on the hawk.
+  - **Shape keys:** names, relative keys, values and every key's vertex positions are part of the hash (PASS in memory and in the saved file). The re-imported FBX has identical vertices, faces, weights, bones and `Basis` / `Wings_Spread` / `Tail_Spread` data. Only the UVs differ.
+  - **No Smart UV fallback** on either bird.
+
+  | | SK_Bird before | SK_Bird after | SK_Bird_Hawk before | SK_Bird_Hawk after |
+  |---|---:|---:|---:|---:|
+  | Overlapping faces | 8,192 / 12,991 | **0** | 10,210 / 14,470 | **0** |
+  | Most faces on one UV spot | 4,283 | **1** | 3,700 | **1** |
+  | UVs inside 0–1 | yes | **yes** (0.004–0.991) | yes | **yes** (0.004–0.990) |
+  | Islands | 1,341 | 1,442 | 1,593 | 1,861 |
+  | Marked seams | 0 | 7,483 | 0 | 8,933 |
+  | Stretch-free faces (every corner within 2°) | 964 | **6,919** (53%) | 1,091 | **8,822** (61%) |
+  | Worst corner | 180° | 154.3° | 180° | 88.1° |
+  | UV area / 3D area ratio, min–max | 0–2,722.5 | **0.11–9.94** | 0–152.5 | **0.13–1.95** |
+  | Ratio, 1st–99th percentile | 0.01–108.4 | **0.21–1.60** | 0.02–121.4 | **0.18–1.46** |
+  | Texel density spread (CV) | 146% | 23.3% (8.5% without rule 7) | 157% | 14.9% (0.4% without rule 7) |
+  | UV space used | — (overlapping) | 28.4% | — (overlapping) | 21.7% |
+
+  The exported FBXs measure exactly the same as the `.blend`s (0 overlaps, same islands, bounds, stretch and coverage). Export: no errors, 25,266 / 28,204 tris, 9 deform bones; the 13 / 14 material-slot warnings are the known palette-atlas item, and the material manifests are byte-identical.
+- **Evidence:** `Evidence/UV/SK_Player_Officer_UV_before.png` / `.svg` and `_UV_after.png` / `.svg` (all 21 meshes in the shared square, one colour per mesh; the SVGs show island outlines), `SK_Player_Officer_UV_before_after.png` (side by side with the overlap counts), `SK_Player_Officer_checker_before_after.png` (front and back, Workbench render with a 256×256 checker), and `uv_report.json` (combined, FBX and per-mesh numbers, the margin test, and the rule 7 comparison). The same set exists for `SK_Bird` and `SK_Bird_Hawk`; their checker renders show the underside with the wings spread and a side view of the head and eye. These images were drawn by a small evidence script, not with Blender's Export UV Layout as for the guns: with 83k faces, Blender's export SVG would be very large (estimated ~10 MB).
+- **Export:** `export_fbx.py --all`: no errors, 152,707 tris, `UVMap` on every mesh, 52 deform bones. The 14 material-slot warnings stay until the palette atlas pass. The material manifest is byte-identical.
+- **Viva note:** the seams were placed by scripted rules, not by hand. To show the method live: select an arm tube of `Shirt` in Blender, mark a seam along its underside (the least visible side), Unwrap, and check Display Stretch. That is rule 3 done by hand on one patch.
