@@ -86,6 +86,12 @@ namespace RunwayPanic.ArtTools
 
         public static bool IsPalette(string textureName) => textureName.Contains("Palette");
 
+        /// <summary>
+        /// T_Bird_Atlas_Albedo, T_Bird_Crow_Atlas_Mask, ...: flat material values filled into the model's UV islands
+        /// by SourceArt/Tools/bake_atlas.py. Sizes are set there (the smallest that keeps islands 2 texels apart).
+        /// </summary>
+        public static bool IsAtlas(string textureName) => textureName.Contains("_Atlas_");
+
         public static int TextureMaxSizeFor(string assetPath, string textureName)
         {
             if (IsPalette(textureName)) return PaletteMaxSize;
