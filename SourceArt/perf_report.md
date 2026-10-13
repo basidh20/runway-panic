@@ -205,3 +205,29 @@ Note: in the runs up to 13 Oct 20:24 the row "CPU main thread (ms)" is the Stats
 | Frame timing: render thread (ms) (avg) | 1.05 |
 | Frame timing: GPU frame (ms) (avg) | 1.22 |
 
+## 2026-10-13 20:55 — player + 100 birds, wave casts no shadows
+
+- Scene: `Sandbox_Basidh`, Game view 1920×1080, VSync count 0, target frame rate -1
+- Machine: AMD Ryzen 5 4600H with Radeon Graphics , NVIDIA GeForce RTX 3050 Laptop GPU (Direct3D11), 15.4 GB RAM, Unity 6000.6.4f1
+- Active SkinnedMeshRenderers in the scene: 121
+
+| Metric | Value |
+|---|---:|
+| Average FPS | 115.4 |
+| Lowest FPS (0.5 s windows) | 115.1 |
+| Average frame time (ms) | 8.66 |
+| Triangles (avg) | 5,511,793 |
+| Vertices (avg) | 4,830,071 |
+| Draw calls (Batches) (avg) | 297 |
+| SetPass calls (avg) | 35 |
+| SRP Batcher draw calls (avg) | 251 |
+| Shadow casters (avg) | 12 |
+| Visible skinned meshes (avg) | 121 |
+| Stats panel main thread, waits included (ms) (avg) | 8.67 |
+| Render thread (ms) (avg) | 2.22 |
+| Frame timing: CPU frame (ms) (avg) | 8.67 |
+| Frame timing: main thread (ms) (avg) | 2.81 |
+| Frame timing: main thread waiting for present (ms) (avg) | 3.80 |
+| Frame timing: render thread (ms) (avg) | 1.17 |
+| Frame timing: GPU frame (ms) (avg) | 8.25 |
+

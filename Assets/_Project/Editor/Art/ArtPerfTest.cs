@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 using Random = System.Random;
 
@@ -64,6 +65,28 @@ namespace RunwayPanic.ArtTools
         {
             var existing = FindRoot();
             if (existing != null) Undo.DestroyObjectImmediate(existing);
+        }
+
+        // The wave drawn without its shadow passes: shows how much of the frame is the same triangles drawn again
+        // into the shadow cascades. Changes the scene instances only, never the prefabs.
+        [MenuItem("Tools/S3/Performance Test/Test Wave: Cast Shadows Off")]
+        static void WaveShadowsOff() => SetWaveShadows(ShadowCastingMode.Off);
+
+        [MenuItem("Tools/S3/Performance Test/Test Wave: Cast Shadows On")]
+        static void WaveShadowsOn() => SetWaveShadows(ShadowCastingMode.On);
+
+        static void SetWaveShadows(ShadowCastingMode mode)
+        {
+            var root = FindRoot();
+            if (root == null)
+            {
+                Debug.LogWarning("[Art] Performance test: no test wave in the open scene.");
+                return;
+            }
+            var renderers = root.GetComponentsInChildren<Renderer>(true);
+            Undo.RecordObjects(renderers, "Set Test Wave Shadows");
+            foreach (var renderer in renderers) renderer.shadowCastingMode = mode;
+            Debug.Log($"[Art] Performance test wave: Cast Shadows {mode} on {renderers.Length} renderers.");
         }
 
         static void CreateWave(int perSpecies)
@@ -280,6 +303,11 @@ namespace RunwayPanic.ArtTools
 
             string wave = birds == 0 && !player ? "no test wave (baseline)"
                 : player ? $"player + {birds} birds" : $"{birds} birds, no player";
+            var waveRenderers = children.SelectMany(t => t.GetComponentsInChildren<Renderer>()).ToList();
+            if (waveRenderers.Count > 0 && waveRenderers.All(r => r.shadowCastingMode == ShadowCastingMode.Off))
+            {
+                wave += ", wave casts no shadows";
+            }
             sb.AppendLine($"## {DateTime.Now:yyyy-MM-dd HH:mm} — {wave}");
             sb.AppendLine();
             sb.AppendLine($"- Scene: `{UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}`, Game view {gameView.x:0}×{gameView.y:0}, " +
