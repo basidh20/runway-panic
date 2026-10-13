@@ -139,9 +139,26 @@ namespace RunwayPanic.ArtTools
             ("srpBatcherDrawCalls", "SRP Batcher draw calls"),
             ("shadowCasters", "Shadow casters"),
             ("visibleSkinnedMeshes", "Visible skinned meshes"),
-            ("frameTime", "CPU main thread (ms)"),
+            // The Stats panel's "CPU: main" value. It is the main thread's time for the whole frame, the wait for the
+            // render thread and the GPU included, so on its own it cannot tell a CPU limit from a GPU limit.
+            ("frameTime", "Stats panel main thread, waits included (ms)"),
             ("renderTime", "Render thread (ms)"),
         };
+
+        // FrameTimingManager splits the frame: main thread work, its wait for the present, render thread, GPU.
+        // Main thread minus present wait = real CPU work; a GPU time close to the frame time = GPU limited.
+        static readonly string[] TimingLabels =
+        {
+            "Frame timing: CPU frame (ms)",
+            "Frame timing: main thread (ms)",
+            "Frame timing: main thread waiting for present (ms)",
+            "Frame timing: render thread (ms)",
+            "Frame timing: GPU frame (ms)",
+        };
+
+        static readonly FrameTiming[] latestTiming = new FrameTiming[1];
+        static double[] timingSums;
+        static int timingSamples, gpuSamples;
 
         static bool measuring;
         static double startTime, windowStart;
@@ -158,6 +175,8 @@ namespace RunwayPanic.ArtTools
             startFrame = -1;
             statSums = new double[StatNames.Length];
             statSamples = 0;
+            timingSums = new double[TimingLabels.Length];
+            timingSamples = gpuSamples = 0;
             minWindowFps = double.MaxValue;
             EditorApplication.update += Tick;
             Debug.Log($"[Art] Performance test: measuring for {WarmUpSeconds + MeasureSeconds:0} s - keep the Game view visible.");
@@ -187,6 +206,7 @@ namespace RunwayPanic.ArtTools
 
             for (int i = 0; i < StatNames.Length; i++) statSums[i] += ReadStat(StatNames[i].Property) ?? double.NaN;
             statSamples++;
+            SampleFrameTiming();
 
             if (now - windowStart >= WindowSeconds)
             {
@@ -200,6 +220,25 @@ namespace RunwayPanic.ArtTools
             double avgFps = (Time.frameCount - startFrame) / (now - startTime);
             Stop();
             WriteReport(avgFps);
+        }
+
+        static void SampleFrameTiming()
+        {
+            FrameTimingManager.CaptureFrameTimings();
+            if (FrameTimingManager.GetLatestTimings(1, latestTiming) == 0) return;
+
+            FrameTiming timing = latestTiming[0];
+            timingSums[0] += timing.cpuFrameTime;
+            timingSums[1] += timing.cpuMainThreadFrameTime;
+            timingSums[2] += timing.cpuMainThreadPresentWaitTime;
+            timingSums[3] += timing.cpuRenderThreadFrameTime;
+            timingSamples++;
+            // The GPU time arrives a few frames late and is 0 where the graphics API does not report it.
+            if (timing.gpuFrameTime > 0)
+            {
+                timingSums[4] += timing.gpuFrameTime;
+                gpuSamples++;
+            }
         }
 
         static void Stop()
@@ -260,6 +299,11 @@ namespace RunwayPanic.ArtTools
                 // UnityStats reports frameTime / renderTime in seconds: shown in ms.
                 string value = double.IsNaN(avg) ? "n/a" : StatNames[i].Property.EndsWith("Time") ? (avg * 1000.0).ToString("0.00") : avg.ToString("N0");
                 sb.AppendLine($"| {StatNames[i].Label} (avg) | {value} |");
+            }
+            for (int i = 0; i < TimingLabels.Length; i++)
+            {
+                int samples = i == 4 ? gpuSamples : timingSamples;
+                sb.AppendLine($"| {TimingLabels[i]} (avg) | {(samples > 0 ? (timingSums[i] / samples).ToString("0.00") : "n/a")} |");
             }
             sb.AppendLine();
 
