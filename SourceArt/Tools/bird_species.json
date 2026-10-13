@@ -1,0 +1,38 @@
+{
+  "asset": "SK_Bird",
+  "materialPrefix": "M_Bird_",
+  "note": "Recoloured species of the base bird (gull). Colours are sRGB hex per base material (name without M_Bird_). Parts not listed keep the gull's colour (eye pupil, claws). 'smoothness' replaces the smoothness of the listed parts. export_fbx.py bakes one T_Bird_<Species>_Atlas_Albedo per species from this table; scale and blend shapes live in ArtBirdSpeciesBuilder.cs.",
+  "variants": {
+    "Pigeon": {
+      "colours": {
+        "Feather_White": "#A7AEBB",
+        "Feather_Gray_Light": "#9AA3B0",
+        "Feather_Gray": "#7D8796",
+        "Feather_Gray_Dark": "#4F5663",
+        "Feather_Dark": "#2B2E35",
+        "Beak": "#3A3A3E",
+        "Beak_Spot": "#E6E2DA",
+        "Beak_Tip": "#2A2A2C",
+        "Eye_Iris": "#E2571E",
+        "Eyelid": "#8A8F98",
+        "Legs": "#C9566A"
+      }
+    },
+    "Crow": {
+      "smoothness": 0.45,
+      "colours": {
+        "Feather_White": "#2A2B2F",
+        "Feather_Gray_Light": "#26282C",
+        "Feather_Gray": "#1E1F23",
+        "Feather_Gray_Dark": "#17181B",
+        "Feather_Dark": "#0E0E10",
+        "Beak": "#141416",
+        "Beak_Spot": "#141416",
+        "Beak_Tip": "#0E0E10",
+        "Eye_Iris": "#2B1D14",
+        "Eyelid": "#1B1B1E",
+        "Legs": "#1A1A1C"
+      }
+    }
+  }
+}
