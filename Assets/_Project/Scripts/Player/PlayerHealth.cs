@@ -25,9 +25,12 @@ namespace RunwayPanic.Player
         public float CurrentHP { get; private set; }
         public bool IsAlive => CurrentHP > 0f;
 
+        private PlayerShield shield;
+
         private void Awake()
         {
             CurrentHP = maxHP;
+            shield = GetComponent<PlayerShield>();
         }
 
         private void Start()
@@ -43,6 +46,9 @@ namespace RunwayPanic.Player
         {
             if (!IsAlive || amount <= 0f)
                 return;
+
+            if (shield != null)
+                amount *= shield.DamageMultiplier;
 
             float previousHP = CurrentHP;
             CurrentHP = Mathf.Max(0f, CurrentHP - amount);
