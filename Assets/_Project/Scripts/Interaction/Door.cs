@@ -40,7 +40,7 @@ namespace RunwayPanic.Interaction
         public bool IsLocked { get; private set; }
 
         /// <summary>Current swing in degrees (0 = shut). Sign shows which way it opened.</summary>
-        public float CurrentAngle => hinge != null ? hinge.angle : 0f;
+        public float CurrentAngle => hinge != null && !float.IsNaN(hinge.angle) ? hinge.angle : 0f;   // NaN until the joint first simulates.
 
         public bool CanInteract => !IsLocked;
         public string InteractionPrompt => IsOpen ? closePrompt : openPrompt;
