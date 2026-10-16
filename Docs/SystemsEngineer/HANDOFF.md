@@ -13,6 +13,16 @@ Template:
 
 ---
 
+## 2026-10-17 — to: World Builder — medkits and shields on your pickup markers
+- **What:** `Assets/_Project/Prefabs/Interactables/P_PickupSpawner.prefab` (spawns `P_Pickup_Medkit` and `P_Pickup_Shield`)
+- **Details:**
+  - Uses your `GameplayMarkers/PickupPoints` children (`Pickup_00`–`03`) automatically — no setup needed. Pickups are dropped onto the floor below each marker.
+  - Keeps **2** pickups in the level at random free markers, medkits twice as often as shields. A collected one is replaced after **25 s** at a random free marker; every wave start (via the GameManager) refills straight away.
+  - Tested in `Main` (Play mode only, nothing saved): spawns on your markers, replaces collected pickups on a different marker, refills on `BeginWave`.
+  - Player side: walking over a medkit heals 30 HP (or stores it, Q to use); a shield halves damage for 10 s (or stores it, F to use).
+- **Action needed:** drag one `P_PickupSpawner` into `Main.unity` (anywhere). Add more markers under `PickupPoints` if you want more possible spots; change *Max Active* / *Respawn Delay* on the spawner to tune.
+- **Status:** open
+
 ## 2026-10-16 — to: World Builder + Agent Controller — movable barricades
 - **What:** `Assets/_Project/Prefabs/Interactables/P_Barricade_Movable.prefab` — a **prefab variant** of `P_Greybox_Barricade`
 - **Details:**

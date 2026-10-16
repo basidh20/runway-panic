@@ -25,9 +25,12 @@ namespace RunwayPanic.Player
         public float CurrentHP { get; private set; }
         public bool IsAlive => CurrentHP > 0f;
 
+        private PlayerShield shield;
+
         private void Awake()
         {
             CurrentHP = maxHP;
+            shield = GetComponent<PlayerShield>();
         }
 
         private void Start()
@@ -44,6 +47,9 @@ namespace RunwayPanic.Player
             if (!IsAlive || amount <= 0f)
                 return;
 
+            if (shield != null)
+                amount *= shield.DamageMultiplier;
+
             float previousHP = CurrentHP;
             CurrentHP = Mathf.Max(0f, CurrentHP - amount);
 
@@ -52,6 +58,24 @@ namespace RunwayPanic.Player
 
             if (!IsAlive)
                 Died?.Invoke();
+        }
+
+        /// <summary>
+        /// Restores up to <paramref name="amount"/> HP without passing the maximum. Returns the HP actually restored.
+        /// </summary>
+        public float Heal(float amount)
+        {
+            if (!IsAlive || amount <= 0f)
+                return 0f;
+
+            float previousHP = CurrentHP;
+            CurrentHP = Mathf.Min(maxHP, CurrentHP + amount);
+            float healed = CurrentHP - previousHP;
+
+            if (healed > 0f)
+                HealthChanged?.Invoke(CurrentHP, maxHP);
+
+            return healed;
         }
 
         /// <summary>
