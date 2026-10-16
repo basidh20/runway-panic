@@ -13,6 +13,18 @@ Template:
 
 ---
 
+## 2026-10-16 — to: World Builder + Agent Controller — movable barricades
+- **What:** `Assets/_Project/Prefabs/Interactables/P_Barricade_Movable.prefab` — a **prefab variant** of `P_Greybox_Barricade`
+- **Details:**
+  - Looks exactly like your barricade and follows any change you make to `P_Greybox_Barricade` (your prefab itself is untouched). Adds a 300 kg Rigidbody and the `Barricade` script.
+  - The player pushes it by walking into it: it slides at 1.5 m/s, cannot tip over, and stops as soon as the player stops. Bird bumps barely move it.
+  - A **NavMeshObstacle** carves its footprint out of the NavMesh, but only once it has stood still for 0.5 s (no constant re-carving while it slides). Tested with a temporary NavMesh: the hole follows the barricade.
+  - The `Barricade.Settled` event fires once each time it comes to rest, with its new world-space bounds — use it to refresh the A* grid around that area (the grid will not see carving by itself).
+- **Action needed:**
+  - World Builder: in `Main.unity`, swap the static barricades you want movable for `P_Barricade_Movable` (same position/rotation). Keep some static if you want fixed cover. Leave the movable ones **out of the NavMesh bake** (their obstacle carves instead), or the bake will treat their start position as a permanent wall.
+  - Grid owner: subscribe to `Settled` on each barricade and mark grid nodes inside the bounds unwalkable (and the old area walkable again).
+- **Status:** open
+
 ## 2026-10-16 — to: World Builder — doors for the shelters
 - **What:** `Assets/_Project/Prefabs/Interactables/P_Door_Shelter.prefab`
 - **Details:**

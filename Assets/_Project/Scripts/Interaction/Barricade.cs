@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace RunwayPanic.Interaction
@@ -6,21 +7,48 @@ namespace RunwayPanic.Interaction
     /// Heavy cover the player can shove into place by walking into it. It slides at a slow push speed,
     /// cannot tip over, and stops quickly once the player lets go. Bumps from birds barely move it.
     /// The player side is <see cref="RunwayPanic.Player.PlayerPusher"/>.
+    /// A NavMeshObstacle on the prefab carves its footprint out of the NavMesh once it stops moving;
+    /// <see cref="Settled"/> tells grid-based pathfinding to refresh the same area.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public sealed class Barricade : MonoBehaviour
     {
+        private const float RestSpeed = 0.05f;
+
         [SerializeField, Min(1f)] private float mass = 300f;
         [Tooltip("Sliding speed while pushed, in m/s. Slower than walking, so it feels heavy.")]
         [SerializeField, Min(0.1f)] private float pushSpeed = 1.5f;
         [Tooltip("How fast it comes to rest after the push stops.")]
         [SerializeField, Min(0f)] private float stopDamping = 6f;
 
+        /// <summary>
+        /// Raised once when the barricade comes to rest after being moved.
+        /// Argument: its new world-space footprint, for refreshing a pathfinding grid around it.
+        /// </summary>
+        public event Action<Bounds> Settled;
+
         private Rigidbody body;
         private float lastPushTime = float.NegativeInfinity;
+        private bool isMoving;
 
         /// <summary>True while the player has pushed it within the last physics step or so.</summary>
         public bool IsBeingPushed => Time.time - lastPushTime < 0.1f;
+
+        /// <summary>World-space bounds of all the barricade's colliders.</summary>
+        public Bounds Footprint
+        {
+            get
+            {
+                Collider[] colliders = GetComponentsInChildren<Collider>();
+                if (colliders.Length == 0)
+                    return new Bounds(transform.position, Vector3.zero);
+
+                Bounds bounds = colliders[0].bounds;
+                for (int i = 1; i < colliders.Length; i++)
+                    bounds.Encapsulate(colliders[i].bounds);
+                return bounds;
+            }
+        }
 
         private void Awake()
         {
@@ -32,6 +60,22 @@ namespace RunwayPanic.Interaction
             body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             // Slide only: no tipping or spinning, so it always stays usable as cover.
             body.constraints = RigidbodyConstraints.FreezeRotation;
+        }
+
+        private void FixedUpdate()
+        {
+            Vector3 velocity = body.linearVelocity;
+            bool movingNow = new Vector2(velocity.x, velocity.z).magnitude > RestSpeed;
+
+            if (movingNow)
+            {
+                isMoving = true;
+            }
+            else if (isMoving && !IsBeingPushed)
+            {
+                isMoving = false;
+                Settled?.Invoke(Footprint);
+            }
         }
 
         /// <summary>
