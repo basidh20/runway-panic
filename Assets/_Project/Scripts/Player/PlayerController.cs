@@ -4,14 +4,15 @@ using UnityEngine.InputSystem;
 namespace RunwayPanic.Player
 {
     /// <summary>
-    /// Camera-relative third-person movement with walk and sprint speeds.
-    /// Jumping and camera control are intentionally handled by later features.
+    /// Camera-relative third-person movement with walking, sprinting, and jumping.
+    /// Camera control is intentionally handled by a separate feature.
     /// </summary>
     [RequireComponent(typeof(CharacterController), typeof(PlayerInput))]
     public sealed class PlayerController : MonoBehaviour
     {
         private const string MoveActionName = "Move";
         private const string SprintActionName = "Sprint";
+        private const string JumpActionName = "Jump";
 
         [Header("Movement")]
         [SerializeField, Min(0f)] private float walkSpeed = 4.5f;
@@ -20,16 +21,19 @@ namespace RunwayPanic.Player
         [SerializeField] private Transform movementReference;
 
         [Header("Grounding")]
+        [SerializeField, Min(0f)] private float jumpHeight = 1.2f;
         [SerializeField] private float gravity = -25f;
         [SerializeField] private float groundedVelocity = -2f;
 
         private CharacterController characterController;
         private InputAction moveAction;
         private InputAction sprintAction;
+        private InputAction jumpAction;
         private float verticalVelocity;
 
         public Vector2 MoveInput { get; private set; }
         public bool IsSprinting { get; private set; }
+        public bool IsGrounded { get; private set; }
         public float CurrentSpeed { get; private set; }
 
         private void Awake()
@@ -39,12 +43,14 @@ namespace RunwayPanic.Player
             PlayerInput playerInput = GetComponent<PlayerInput>();
             moveAction = playerInput.actions?.FindAction(MoveActionName, false);
             sprintAction = playerInput.actions?.FindAction(SprintActionName, false);
+            jumpAction = playerInput.actions?.FindAction(JumpActionName, false);
 
-            if (moveAction == null || sprintAction == null)
+            if (moveAction == null || sprintAction == null || jumpAction == null)
             {
                 Debug.LogError(
-                    $"{nameof(PlayerController)} requires '{MoveActionName}' and " +
-                    $"'{SprintActionName}' actions on {nameof(PlayerInput)}.",
+                    $"{nameof(PlayerController)} requires '{MoveActionName}', " +
+                    $"'{SprintActionName}', and '{JumpActionName}' actions on " +
+                    $"{nameof(PlayerInput)}.",
                     this);
                 enabled = false;
             }
@@ -58,11 +64,13 @@ namespace RunwayPanic.Player
 
             Vector3 moveDirection = GetMoveDirection(MoveInput);
             RotateTowards(moveDirection);
-            ApplyGravity();
+            ApplyVerticalMovement();
 
             Vector3 velocity = moveDirection * (CurrentSpeed * MoveInput.magnitude);
             velocity.y = verticalVelocity;
-            characterController.Move(velocity * Time.deltaTime);
+            CollisionFlags collisionFlags = characterController.Move(velocity * Time.deltaTime);
+            IsGrounded = characterController.isGrounded ||
+                (collisionFlags & CollisionFlags.Below) != 0;
         }
 
         private Vector3 GetMoveDirection(Vector2 input)
@@ -94,12 +102,20 @@ namespace RunwayPanic.Player
                 rotationSpeed * Time.deltaTime);
         }
 
-        private void ApplyGravity()
+        private void ApplyVerticalMovement()
         {
-            if (characterController.isGrounded && verticalVelocity < 0f)
+            IsGrounded = characterController.isGrounded;
+
+            if (IsGrounded && verticalVelocity < 0f)
                 verticalVelocity = groundedVelocity;
-            else
-                verticalVelocity += gravity * Time.deltaTime;
+
+            if (IsGrounded && jumpAction.WasPressedThisFrame())
+            {
+                verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                IsGrounded = false;
+            }
+
+            verticalVelocity += gravity * Time.deltaTime;
         }
 
         private void OnValidate()
@@ -107,7 +123,8 @@ namespace RunwayPanic.Player
             walkSpeed = Mathf.Max(0f, walkSpeed);
             sprintSpeed = Mathf.Max(walkSpeed, sprintSpeed);
             rotationSpeed = Mathf.Max(0f, rotationSpeed);
-            gravity = Mathf.Min(0f, gravity);
+            jumpHeight = Mathf.Max(0f, jumpHeight);
+            gravity = Mathf.Min(-0.01f, gravity);
             groundedVelocity = Mathf.Min(0f, groundedVelocity);
         }
     }
