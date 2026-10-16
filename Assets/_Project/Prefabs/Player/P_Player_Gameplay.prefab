@@ -615,6 +615,8 @@ GameObject:
   - component: {fileID: 7746201983355024917}
   - component: {fileID: 3620981744512093368}
   - component: {fileID: 6158392047716240853}
+  - component: {fileID: 1847302956610427739}
+  - component: {fileID: 5530917486220197364}
   m_Layer: 0
   m_Name: P_Player_Gameplay
   m_TagString: Player
@@ -800,6 +802,36 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Weapons.WeaponSwitcher
   ownedWeapons:
   - {fileID: 1999475667265713908, guid: 0df22bac4d62bec47b0b105ac2477415, type: 3}
+--- !u!114 &1847302956610427739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8402448470462990780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 771d7cde178700349940362443532ecb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Player.CoinManager
+  startingCoins: 0
+--- !u!114 &5530917486220197364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8402448470462990780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b578af1bdd21ba42bdbd9996b72da9c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Player.PlayerInventory
+  itemLimits:
+  - item: 0
+    maxCount: 3
+  - item: 1
+    maxCount: 2
 --- !u!1 &8930974583446172621
 GameObject:
   m_ObjectHideFlags: 0
