@@ -68,7 +68,7 @@ Template:
 - **What:** `Prefabs/Player/P_Player_Gameplay.prefab`, `Prefabs/Core/P_GameManager.prefab`, `Scripts/Player/Checkpoint.cs`
 - **Details:**
   - `P_Player_Gameplay` is the complete player: movement, third-person camera, health, 3 lives, respawn, guns, coins, inventory, E to interact, crosshair and prompt HUD. It brings its own camera.
-  - `P_GameManager` holds the game state (Playing / Shopping / Paused / Game Over / Victory). Escape pauses. Only one per scene.
+  - `P_GameManager` holds the game state (Playing / Shopping / Paused / Game Over / Victory). Escape pauses. Only one per scene. It also brings the **Pause, Game Over and Victory screens** (Resume / Restart / Quit), shown automatically for those states. For *Restart* to work in a build, `Main` must be in File → Build Profiles' scene list (it already is).
   - `Checkpoint` sets the player's respawn point when they walk through its trigger.
 - **Action needed:** in `Main.unity`:
   1. Drag in `P_Player_Gameplay` at `PlayerStart` and **disable `GreyboxPreview_TEMPORARY`** (as your GreyboxGuide already says), so only one camera and audio listener are active.
