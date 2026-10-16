@@ -13,6 +13,17 @@ Template:
 
 ---
 
+## 2026-10-17 — to: World Builder — the between-wave shop (logic + screen)
+- **What:** `Assets/_Project/Prefabs/Core/P_Shop.prefab` (ShopManager + shop screen), items in `ScriptableObjects/Shop/`
+- **Details:**
+  - The screen opens by itself when the GameManager enters *Shopping* (after `CompleteWave()` on waves 1–3) and hides on *Next wave*, pause or game over. The mouse cursor is freed while it is open.
+  - Sells the Assault Rifle (40), Sniper (75), RPG (100), Medkit (15) and Shield (25). Gun prices come from the weapon assets' *Cost*; item prices from the shop assets.
+  - Buttons show BUY / OWNED / FULL / NEED x; refused purchases explain why. A bought gun is equipped immediately.
+  - *Next wave* calls `GameManager.CloseShop()` → `ShopClosed` event → your WaveManager starts the next wave.
+  - Tested in my sandbox: buy, refusals (closed / owned / too poor / full), pause and resume, next wave.
+- **Action needed:** drag one `P_Shop` into `Main.unity`. The screen is plain greybox UI — restyle it freely (it is all in the prefab's `ShopCanvas`), just keep the object names `Name`, `Description`, `Price`, `BuyButton/Label` in the row template.
+- **Status:** open
+
 ## 2026-10-17 — to: World Builder — medkits and shields on your pickup markers
 - **What:** `Assets/_Project/Prefabs/Interactables/P_PickupSpawner.prefab` (spawns `P_Pickup_Medkit` and `P_Pickup_Shield`)
 - **Details:**
