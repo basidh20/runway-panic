@@ -55,6 +55,24 @@ namespace RunwayPanic.Player
         }
 
         /// <summary>
+        /// Restores up to <paramref name="amount"/> HP without passing the maximum. Returns the HP actually restored.
+        /// </summary>
+        public float Heal(float amount)
+        {
+            if (!IsAlive || amount <= 0f)
+                return 0f;
+
+            float previousHP = CurrentHP;
+            CurrentHP = Mathf.Min(maxHP, CurrentHP + amount);
+            float healed = CurrentHP - previousHP;
+
+            if (healed > 0f)
+                HealthChanged?.Invoke(CurrentHP, maxHP);
+
+            return healed;
+        }
+
+        /// <summary>
         /// Restores full HP. Used when the player respawns.
         /// </summary>
         public void ResetHealth()

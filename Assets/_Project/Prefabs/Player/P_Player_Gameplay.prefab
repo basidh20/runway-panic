@@ -619,6 +619,7 @@ GameObject:
   - component: {fileID: 5530917486220197364}
   - component: {fileID: 4389620117755316402}
   - component: {fileID: 7124563890215634087}
+  - component: {fileID: 3956810274463825192}
   m_Layer: 0
   m_Name: P_Player_Gameplay
   m_TagString: Player
@@ -865,6 +866,19 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Player.PlayerPusher
   maxDownwardness: 0.3
+--- !u!114 &3956810274463825192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8402448470462990780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8e102ab61a6f2440ade751c9dbbc0d6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Player.PlayerItemUser
+  medkitHealAmount: 30
 --- !u!1 &3318840271655917203
 GameObject:
   m_ObjectHideFlags: 0
