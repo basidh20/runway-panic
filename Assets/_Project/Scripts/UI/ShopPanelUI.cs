@@ -3,8 +3,6 @@ using RunwayPanic.Core;
 using RunwayPanic.Data;
 using RunwayPanic.Player;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace RunwayPanic.UI
@@ -37,7 +35,7 @@ namespace RunwayPanic.UI
             if (shop == null)
                 shop = GetComponentInParent<ShopManager>();
 
-            EnsureEventSystem();
+            UiEventSystem.Ensure();
             BuildRows();
             nextWaveButton.onClick.AddListener(() => shop.ContinueToNextWave());
             panelRoot.SetActive(false);
@@ -148,16 +146,6 @@ namespace RunwayPanic.UI
                 button.onClick.AddListener(() => shop.TryBuy(captured));
                 rows.Add((item, button, label));
             }
-        }
-
-        private static void EnsureEventSystem()
-        {
-            // Buttons need an EventSystem; Main may not have one yet.
-            if (EventSystem.current != null || FindAnyObjectByType<EventSystem>() != null)
-                return;
-
-            var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
-            DontDestroyOnLoad(eventSystem);
         }
     }
 }
