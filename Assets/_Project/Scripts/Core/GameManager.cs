@@ -26,16 +26,37 @@ namespace RunwayPanic.Core
         [SerializeField] private GameState initialState = GameState.Playing;
         [Tooltip("Player whose last lost life ends the game. Found in the scene if left empty.")]
         [SerializeField] private PlayerLifeManager playerLives;
+        [Tooltip("Completing this wave wins the game.")]
+        [SerializeField, Min(1)] private int totalWaves = 4;
 
         public static GameManager Instance { get; private set; }
 
         /// <summary>Raised after every state change. Arguments: previous state, new state.</summary>
         public event Action<GameState, GameState> StateChanged;
 
+        /// <summary>Raised when a wave begins. Argument: wave number (1-based).</summary>
+        public event Action<int> WaveStarted;
+
+        /// <summary>Raised when a wave is completed, before the shop opens or Victory. Argument: wave number.</summary>
+        public event Action<int> WaveCompleted;
+
+        /// <summary>Raised when the between-wave shop opens. Argument: the wave that was just completed.</summary>
+        public event Action<int> ShopOpened;
+
+        /// <summary>Raised when the shop closes. The WaveManager starts the next wave in response.</summary>
+        public event Action ShopClosed;
+
         private GameState stateBeforePause;
 
         public GameState CurrentState { get; private set; }
         public bool IsPaused => CurrentState == GameState.Paused;
+        public bool IsShopOpen => CurrentState == GameState.Shopping;
+        public int TotalWaves => totalWaves;
+
+        /// <summary>Wave in progress or last completed (1-based). 0 before the first wave.</summary>
+        public int CurrentWave { get; private set; }
+        public bool IsWaveActive { get; private set; }
+        public bool IsFinalWave => CurrentWave >= totalWaves;
 
         private void Awake()
         {
@@ -101,6 +122,11 @@ namespace RunwayPanic.Core
                 stateBeforePause = previous;
 
             CurrentState = newState;
+
+            // A game that ends or returns to the menu mid-wave must not leave that wave marked as running.
+            if (newState == GameState.GameOver || newState == GameState.Victory || newState == GameState.MainMenu)
+                IsWaveActive = false;
+
             ApplyStateEffects();
             StateChanged?.Invoke(previous, newState);
             return true;
@@ -124,6 +150,61 @@ namespace RunwayPanic.Core
                 Resume();
             else
                 Pause();
+        }
+
+        // ---------- Wave and shop hooks (called by the WaveManager and the shop) ----------
+
+        /// <summary>
+        /// Starts wave <paramref name="waveNumber"/>. Only works while Playing with no wave running.
+        /// </summary>
+        public bool BeginWave(int waveNumber)
+        {
+            if (CurrentState != GameState.Playing || IsWaveActive || waveNumber < 1 || waveNumber > totalWaves)
+                return false;
+
+            CurrentWave = waveNumber;
+            IsWaveActive = true;
+            WaveStarted?.Invoke(waveNumber);
+            return true;
+        }
+
+        /// <summary>
+        /// Ends the running wave (timer ran out or all birds died). Opens the shop, or wins the game after the final wave.
+        /// </summary>
+        public bool CompleteWave()
+        {
+            if (CurrentState != GameState.Playing || !IsWaveActive)
+                return false;
+
+            IsWaveActive = false;
+            WaveCompleted?.Invoke(CurrentWave);
+
+            if (IsFinalWave)
+                TriggerVictory();
+            else
+                OpenShop();
+
+            return true;
+        }
+
+        /// <summary>Opens the between-wave shop. Only allowed while Playing with no wave running.</summary>
+        public bool OpenShop()
+        {
+            if (IsWaveActive || !ChangeState(GameState.Shopping))
+                return false;
+
+            ShopOpened?.Invoke(CurrentWave);
+            return true;
+        }
+
+        /// <summary>Closes the shop and returns to Playing so the next wave can start.</summary>
+        public bool CloseShop()
+        {
+            if (!IsShopOpen || !ChangeState(GameState.Playing))
+                return false;
+
+            ShopClosed?.Invoke();
+            return true;
         }
 
         public void TriggerGameOver() => ChangeState(GameState.GameOver);

@@ -46,3 +46,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Core.GameManager
   initialState: 1
   playerLives: {fileID: 0}
+  totalWaves: 4
