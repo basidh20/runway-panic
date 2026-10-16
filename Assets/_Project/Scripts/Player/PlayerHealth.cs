@@ -54,6 +54,15 @@ namespace RunwayPanic.Player
                 Died?.Invoke();
         }
 
+        /// <summary>
+        /// Restores full HP. Used when the player respawns.
+        /// </summary>
+        public void ResetHealth()
+        {
+            CurrentHP = maxHP;
+            HealthChanged?.Invoke(CurrentHP, maxHP);
+        }
+
         private void OnValidate()
         {
             maxHP = Mathf.Max(1f, maxHP);
