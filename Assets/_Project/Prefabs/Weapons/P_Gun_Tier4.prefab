@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2603306574288101877}
   - component: {fileID: 6482813678817067954}
+  - component: {fileID: 8114552246555860967}
   m_Layer: 0
   m_Name: P_Gun_Tier4
   m_TagString: Untagged
@@ -54,6 +55,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.106002, y: 0.18364316, z: 1.5720019}
   m_Center: {x: -0.00800002, y: 0.038179442, z: 0.25399995}
+--- !u!114 &8114552246555860967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3410607387069786918}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da1e605225a93e54f9324322b6e6c5cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Weapons.WeaponBase
+  data: {fileID: 11400000, guid: 7b35ec9f9e50b674283e9615b329a24f, type: 2}
+  muzzle: {fileID: 0}
 --- !u!1001 &6307157746123240104
 PrefabInstance:
   m_ObjectHideFlags: 0
