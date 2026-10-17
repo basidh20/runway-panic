@@ -12,49 +12,53 @@ namespace RunwayPanic.Agents.Hawk
     /// The hawk's brain: a two-level (hierarchical) state machine. The top level is the <see cref="HawkMode"/>
     /// (Hunt, Herd, Withdraw, Dead); Hunt has its own sub-states (<see cref="HuntPhase"/>). Every mode and phase has
     /// an enter and an exit step and its own timer.
-    /// <para>The FSM decides <i>what</i> the hawk does; utility AI (<see cref="PerchSelector"/>) decides <i>which perch</i>.
-    /// SelectPerch picks the best-scoring perch, FlyToPerch flies there along an A* path (re-scoring every
-    /// <c>perchReevaluateInterval</c>, switching only for a clearly better perch) and lands facing the player, Perched
-    /// re-scores too and relocates when the player hides, turns to keep facing the player, and attacks when the
-    /// <see cref="PlayerWeaknessModel"/>'s meter is full while a weakness window is open (or after <c>maxPerchTime</c>).</para>
-    /// <para>Attack (H4): against a slow gun it may first <b>feint</b> (dive, pull up short, wait out the player's refire
-    /// time, then dive for real). ApproachStoop flies to a start point on the sun's side of the player
-    /// (<see cref="StoopPlanner"/>), Scream hovers at the top, Stoop dives at where the player will be, Recover climbs away.</para>
+    /// <para>The FSM decides <i>what</i> the hawk does; utility AI (<see cref="PerchSelector"/>) decides <i>where it
+    /// watches from</i>. The hawk never sits still (a still bird is an easy shot): SelectVantage scores every Perch marker
+    /// as a vantage point, FlyToVantage flies there along an A* path, Soaring circles above it (re-scoring every
+    /// <c>perchReevaluateInterval</c>, moving only for a clearly better vantage) and attacks when the
+    /// <see cref="PlayerWeaknessModel"/>'s meter is full while a weakness window is open (or after <c>maxWatchTime</c>).</para>
+    /// <para>Attack: against a slow gun it may first <b>feint</b> (dive, pull up short, circle while the player's gun
+    /// refires, then dive for real). ApproachStoop flies to a start point on the sun's side of the player
+    /// (<see cref="StoopPlanner"/>), Scream hovers at the top, Stoop dives through where the player will be, Recover
+    /// climbs away.</para>
     /// <para>Not built yet: Herd and Withdraw just wait <c>skeletonPhaseDuration</c> and return to Hunt (H5–H6).</para>
     /// </summary>
     public sealed class HawkBrain : BirdBrain
     {
         private const string LogPrefix = "[HawkFSM]";
+        // Within this share of the soaring radius from the circle (and height), the hawk counts as on it and starts circling.
+        private const float JoinCircleTolerance = 0.5f;
+        // m/s: below this the dive direction is noise, so "passed the player" is not judged.
+        private const float MinPassSpeed = 1f;
+        // The ground guard triggers at 1.5 × the predicted pull-out drop: the motor shares its turn rate between pulling
+        // up and turning sideways, so a turning dive levels out slower than the pure pitch-up the formula assumes.
+        private const float GroundGuardSafety = 1.5f;
 
         // Cached label strings, indexed by the enums: CurrentStateName never allocates.
         private static readonly string[] HuntPhaseNames = BuildHuntPhaseNames();
         private static readonly string[] ModeNames = { "Hunt", "Herd", "Withdraw", "Dead" };
 
-        // Perches taken by a hawk (chosen or sat on), so two hawks never pick the same one.
+        // Vantage points taken by a hawk, so two hawks never circle the same one.
         private static readonly List<BirdPoint> ClaimedPerches = new List<BirdPoint>(8);
 
-        // "Hunt/Perched  meter 60 [Reloading]" labels, built once per (meter step, window) on first use: no per-frame allocation.
+        // "Hunt/Soaring  meter 60 [Reloading]" labels, built once per (meter step, window) on first use: no per-frame allocation.
         private const int MeterLabelSteps = 10;
-        private static readonly string[,] PerchedLabels = new string[MeterLabelSteps + 1, (int)WeaknessWindow.Busy + 2];
+        private static readonly string[,] SoaringLabels = new string[MeterLabelSteps + 1, (int)WeaknessWindow.Busy + 2];
 
         [Tooltip("The hawk's strategy numbers (ScriptableObjects/Birds/Strategy/HawkStrategyConfig).")]
         [SerializeField] private HawkStrategyConfig config;
-        [Tooltip("Height of the hawk's pivot above the perch surface when it sits there, in metres (feet to centre of mass).")]
-        [SerializeField, Min(0f)] private float perchPivotHeight = 0.24f;
-        [Tooltip("Height above the perch surface the line-of-sight check starts from (the hawk's eyes), in metres.")]
-        [SerializeField, Min(0f)] private float eyeHeight = 0.3f;
-        [Tooltip("How fast the perched hawk turns (yaw only) to keep facing the player, in degrees per second.")]
-        [SerializeField, Min(0f)] private float perchTurnSpeed = 120f;
+        [Tooltip("How fast the motor turns, in degrees per second — must match the motion profile (BirdMotion_Hawk: maxTurnRate 90). " +
+                 "Used to start the feint's pull-up early enough to level out before reaching the player.")]
+        [SerializeField, Min(1f)] private float motorTurnRate = 90f;
         [Tooltip("Height above the player's feet the dive aims at, in metres (chest height).")]
         [SerializeField, Min(0f)] private float stoopAimHeight = 1.2f;
-        [Tooltip("How hard the motor can brake, in m/s² — must match the motor (SimpleBirdMotor.acceleration on P_Bird_Hawk = 40). " +
-                 "Used to start the feint's pull-up and the stoop's flare early enough: braking distance = speed² / (2 × this).")]
-        [SerializeField, Min(1f)] private float diveBrakeAcceleration = 40f;
-        [Tooltip("The dive levels out this far above the aim point (chest), in metres, so it never runs into the ground.")]
+        [Tooltip("The dive never aims lower than this far above the aim point (chest), in metres, so it sweeps in over the player instead of into the ground.")]
         [SerializeField, Min(0f)] private float stoopFlareHeight = 1f;
-        [Tooltip("Share of the motor's braking assumed free for pulling out of the dive. Below 1 because the motor also turns " +
-                 "to chase a moving player with the same acceleration (playtest 17 Oct: at 1.0 the hawk skimmed the runway at 0.2 m).")]
-        [SerializeField, Range(0.1f, 1f)] private float flareBrakeShare = 0.5f;
+        [Tooltip("Ground guard: the hawk never dives lower than this above the player's feet, in metres. It levels out early " +
+                 "enough for its pull-out arc (radius = speed / turn rate), so it never goes into the ground.")]
+        [SerializeField, Min(0f)] private float minDiveClearance = 1.5f;
+        [Tooltip("A dive counts as having passed the player when it is this much further away than its closest approach, in metres.")]
+        [SerializeField, Min(0.1f)] private float stoopPassMargin = 2f;
         [Tooltip("Distance that counts as arrived at the stoop start point, in metres.")]
         [SerializeField, Min(0.1f)] private float stoopStartArriveDistance = 2f;
         [Tooltip("Optional scream played at the top of every dive (the audio tell). Skipped if empty.")]
@@ -63,7 +67,7 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField] private AudioSource screamSource;
         [Tooltip("Skeleton modes only (Herd, Withdraw): seconds before returning to Hunt. Replaced by real behaviour in H5–H6.")]
         [SerializeField, Min(0.1f)] private float skeletonPhaseDuration = 2f;
-        [Tooltip("Write every mode/phase change and perch choice to the Console / Editor.log (prefix [HawkFSM]).")]
+        [Tooltip("Write every mode/phase change, vantage choice and attack event to the Console / Editor.log (prefix [HawkFSM]).")]
         [SerializeField] private bool logTransitions = true;
 
         private readonly List<BirdPoint> perches = new List<BirdPoint>(16);
@@ -72,33 +76,33 @@ namespace RunwayPanic.Agents.Hawk
         private PlayerWeaknessModel weakness;
 
         private HawkMode mode = HawkMode.Hunt;
-        private HuntPhase phase = HuntPhase.SelectPerch;
+        private HuntPhase phase = HuntPhase.SelectVantage;
         private float modeTime;
         private float phaseTime;
         private bool started;
 
+        // Vantage (H2).
         private BirdPoint currentPerch;
         private PerchScore currentScore;
         private BirdPoint unreachablePerch;
         private float nextReevaluateTime;
         private float commitUntil;
         private bool needsPath;
-        private bool landing;
         private bool warnedNoPerches;
-        private Vector3 perchFacing;
 
-        // Attack state (H4).
-        private const float MinPassSpeed = 1f; // m/s: below this the dive direction is noise, so "passed the player" is not judged
+        // Attack (H4).
         private bool planFeint;
         private bool feintedThisEngagement;
         private bool feintPulledUp;
-        private bool stoopWasClosing;
+        private float stoopClosest;
         private float feintWaitUntil;
+        private float feintClosest;
         private float shotTimeAtFeintStart;
         private bool hasStoopStart;
         private Vector3 stoopStart;
         private float stoopYaw;
         private float nextRepathTime;
+        private Vector3 recoverTarget;
 
         private Light sun;
         private bool sunSearched;
@@ -110,8 +114,8 @@ namespace RunwayPanic.Agents.Hawk
             {
                 if (mode != HawkMode.Hunt)
                     return ModeNames[(int)mode];
-                if (phase == HuntPhase.Perched && weakness != null && config != null)
-                    return PerchedLabel(weakness.Meter / config.MeterMax, weakness.StrongestOpenWindow);
+                if (phase == HuntPhase.Soaring && weakness != null && config != null)
+                    return SoaringLabel(weakness.Meter / config.MeterMax, weakness.StrongestOpenWindow);
                 return HuntPhaseNames[(int)phase];
             }
         }
@@ -131,13 +135,13 @@ namespace RunwayPanic.Agents.Hawk
         /// <summary>Seconds of active gameplay spent in the current Hunt phase.</summary>
         public float PhaseTime => phaseTime;
 
-        /// <summary>The perch the hawk is flying to or sitting on (null if none).</summary>
+        /// <summary>The vantage point (Perch marker) the hawk is flying to or circling over (null if none).</summary>
         public BirdPoint CurrentPerch => currentPerch;
 
         /// <summary>Score of <see cref="CurrentPerch"/> at its last evaluation.</summary>
         public PerchScore CurrentPerchScore => currentScore;
 
-        /// <summary>This hawk's memory of perches where it was shot.</summary>
+        /// <summary>This hawk's memory of vantage points where it was shot.</summary>
         public PerchMemory Memory => memory;
 
         /// <summary>This hawk's model of the player (weakness windows, aggression meter, learned weights).</summary>
@@ -176,12 +180,12 @@ namespace RunwayPanic.Agents.Hawk
         {
             started = true;
             modeTime = 0f;
-            EnterMode(mode, HuntPhase.SelectPerch);
+            EnterMode(mode, HuntPhase.SelectVantage);
         }
 
         private void Update()
         {
-            // Timers only run during active gameplay, so pausing or the shop never counts as perch time.
+            // Timers only run during active gameplay, so pausing or the shop never counts as watching time.
             if (!IsGameplayActive)
                 return;
 
@@ -213,14 +217,14 @@ namespace RunwayPanic.Agents.Hawk
 
             switch (phase)
             {
-                case HuntPhase.SelectPerch:
-                    UpdateSelectPerch();
+                case HuntPhase.SelectVantage:
+                    UpdateSelectVantage();
                     break;
-                case HuntPhase.FlyToPerch:
-                    UpdateFlyToPerch();
+                case HuntPhase.FlyToVantage:
+                    UpdateFlyToVantage();
                     break;
-                case HuntPhase.Perched:
-                    UpdatePerched();
+                case HuntPhase.Soaring:
+                    UpdateSoaring();
                     break;
                 case HuntPhase.ApproachStoop:
                     UpdateApproachStoop();
@@ -237,12 +241,12 @@ namespace RunwayPanic.Agents.Hawk
                     break;
                 case HuntPhase.Recover:
                     if (Motor.ReachedDestination || phaseTime >= config.MaxManoeuvreTime)
-                        ChangePhase(HuntPhase.SelectPerch);
+                        ChangePhase(HuntPhase.SelectVantage);
                     break;
             }
         }
 
-        private void UpdateSelectPerch()
+        private void UpdateSelectVantage()
         {
             if (Time.time < nextReevaluateTime)
                 return;
@@ -251,57 +255,54 @@ namespace RunwayPanic.Agents.Hawk
             int best = ScorePerches(false);
             if (best < 0)
             {
-                // Nothing reachable: forget the failed perch and try everything again next time.
+                // Nothing reachable: forget the failed vantage and try everything again next time.
                 unreachablePerch = null;
                 if (!warnedNoPerches)
                 {
                     warnedNoPerches = true;
-                    Debug.LogWarning($"{LogPrefix} {name}: no free Perch BirdPoint in the scene; the hawk hovers until one exists.", this);
+                    Debug.LogWarning($"{LogPrefix} {name}: no free Perch BirdPoint in the scene; the hawk waits until one exists.", this);
                 }
                 return;
             }
 
             SetPerch(scores[best]);
-            ChangePhase(HuntPhase.FlyToPerch);
+            ChangePhase(HuntPhase.FlyToVantage);
         }
 
-        private void UpdateFlyToPerch()
+        private void UpdateFlyToVantage()
         {
             if (currentPerch == null || !currentPerch.isActiveAndEnabled)
             {
-                ChangePhase(HuntPhase.SelectPerch);
+                ChangePhase(HuntPhase.SelectVantage);
                 return;
             }
 
-            Vector3 landPoint = LandPoint(currentPerch);
-            if (landing)
+            if (phaseTime >= config.TravelTimeout)
             {
-                if (Motor.IsLanded)
-                    ChangePhase(HuntPhase.Perched);
+                Log($"{LogPrefix} {name} vantage {currentPerch.name} not reached after {config.TravelTimeout:0}s, circling from here");
+                ChangePhase(HuntPhase.Soaring);
                 return;
             }
 
-            // Close enough (or at the end of the path): the last leg is a straight hop. The path's last cell always
-            // has a clear line to the perch (F1 snapping rule), so the hop never goes through a roof edge.
-            float landRadius = currentPerch.Radius;
-            if ((landPoint - Motor.Position).sqrMagnitude < landRadius * landRadius || (!needsPath && Motor.ReachedDestination))
+            // On (or near) the circle, or at the end of the path: start circling. The orbit steering pulls it onto the circle.
+            Vector3 center = SoarCenter(currentPerch);
+            if (IsNearCircle(center) || (!needsPath && Motor.ReachedDestination))
             {
-                landing = true;
-                Motor.LandAt(landPoint, FacingPlayer(landPoint));
+                ChangePhase(HuntPhase.Soaring);
                 return;
             }
 
             if (needsPath)
             {
-                if (RequestPath(landPoint))
+                if (RequestPath(SoarEntryPoint(center)))
                 {
                     needsPath = false;
                 }
                 else if (!LastRequestWasThrottled)
                 {
-                    Log($"{LogPrefix} {name} no path to {currentPerch.name}, choosing another perch");
+                    Log($"{LogPrefix} {name} no path to vantage {currentPerch.name}, choosing another");
                     unreachablePerch = currentPerch;
-                    ChangePhase(HuntPhase.SelectPerch);
+                    ChangePhase(HuntPhase.SelectVantage);
                 }
                 return;
             }
@@ -314,35 +315,42 @@ namespace RunwayPanic.Agents.Hawk
             }
         }
 
-        private void UpdatePerched()
+        private void UpdateSoaring()
         {
-            // Attack when the meter is full AND the player is weak right now; or after maxPerchTime anyway (never passive).
+            if (currentPerch == null || !currentPerch.isActiveAndEnabled)
+            {
+                ChangePhase(HuntPhase.SelectVantage);
+                return;
+            }
+
+            // Attack when the meter is full AND the player is weak right now; or after maxWatchTime anyway (never passive).
             bool ready = weakness.IsMeterFull && weakness.AnyWindowOpen;
-            if (ready || phaseTime >= config.MaxPerchTime)
+            if (ready || phaseTime >= config.MaxWatchTime)
             {
                 if (ready)
-                    Log($"{LogPrefix} {name} attack: meter full, window {weakness.StrongestOpenWindow} open, after {phaseTime:0.0}s perched");
+                    Log($"{LogPrefix} {name} attack: meter full, window {weakness.StrongestOpenWindow} open, after {phaseTime:0.0}s soaring");
                 else
-                    Log($"{LogPrefix} {name} attack: max perch time {config.MaxPerchTime:0}s (meter {weakness.Meter:0})");
+                    Log($"{LogPrefix} {name} attack: max watch time {config.MaxWatchTime:0}s (meter {weakness.Meter:0})");
                 weakness.ConsumeMeter();
                 PlanAttack();
                 ChangePhase(HuntPhase.ApproachStoop);
                 return;
             }
 
-            FacePlayer();
+            // Keep circling: a moving target is much harder to shoot than a perched one.
+            Motor.FlyTo(StoopPlanner.GetOrbitTarget(SoarCenter(currentPerch), config.SoarRadius, config.SoarLeadAngle, Motor.Position));
 
             if (Time.time < nextReevaluateTime)
                 return;
             nextReevaluateTime = Time.time + config.PerchReevaluateInterval;
 
-            // The player hid or moved away: take off for a clearly better perch.
+            // The player hid or moved away: move to a clearly better vantage point.
             if (TrySwitchToBetterPerch())
-                ChangePhase(HuntPhase.FlyToPerch);
+                ChangePhase(HuntPhase.FlyToVantage);
         }
 
-        // Re-scores every perch; switches when one beats the current perch by more than the hysteresis margin.
-        // Not during the commit time after a choice or landing (decision inertia).
+        // Re-scores every vantage point; switches when one beats the current one by more than the hysteresis margin.
+        // Not during the commit time after a choice or arrival (decision inertia).
         private bool TrySwitchToBetterPerch()
         {
             if (Time.time < commitUntil)
@@ -371,7 +379,7 @@ namespace RunwayPanic.Agents.Hawk
 
         // ---------------------------------------------------------------- Attack phases (H4)
 
-        // Decided once when leaving the perch: feint only against a slow gun (it exploits the refire time), once per engagement.
+        // Decided once when leaving the vantage: feint only against a slow gun (it exploits the refire time), once per engagement.
         private void PlanAttack()
         {
             float fireInterval = Hub.CurrentWeapon != null && Hub.CurrentWeapon.Data != null ? Hub.CurrentWeapon.Data.FireInterval : 0f;
@@ -421,33 +429,27 @@ namespace RunwayPanic.Agents.Hawk
         private void UpdateFeint()
         {
             Vector3 aim = AimPoint();
+            float distance = Vector3.Distance(aim, Motor.Position);
             if (!feintPulledUp)
             {
-                Motor.FlyTo(StoopPlanner.GetLeadPoint(aim, Hub.PlayerVelocity, config.StoopLeadTime));
+                // The fake dive aims pullUpDistance ABOVE the player's chest: it looks like a stoop, but geometrically it
+                // cannot come closer than that (a turn-limited bird can't be trusted to pull up in time on command).
+                feintClosest = Mathf.Min(feintClosest, distance);
+                Motor.FlyTo(DiveTarget(aim, config.PullUpDistance));
 
-                // Pull up early enough that, after braking, the closest approach is still pullUpDistance.
-                Vector3 toAim = aim - Motor.Position;
-                float distance = toAim.magnitude;
-                float closingSpeed = distance > 0.001f ? Vector3.Dot(Motor.Velocity, toAim / distance) : 0f;
-                if (distance - BrakingDistance(closingSpeed) <= config.PullUpDistance)
+                Vector3 flat = aim - Motor.Position;
+                flat.y = 0f;
+                if (flat.sqrMagnitude <= config.PullUpDistance * config.PullUpDistance)
                 {
-                    // Pull up and swing back, then wait out the player's refire time before the real dive.
-                    Vector3 away = Motor.Position - aim;
-                    away.y = 0f;
-                    away = away.sqrMagnitude > 0.0001f ? away.normalized : -transform.forward;
-                    Vector3 pullUp = Motor.Position + Vector3.up * config.FeintPullUpHeight + away * config.FeintPullUpBack;
-                    if (FlightGrid.Instance != null)
-                        pullUp = StoopPlanner.ClampToVolume(pullUp, FlightGrid.Instance.VolumeBounds, FlightGrid.Instance.CellSize);
-                    Motor.FlyTo(pullUp);
-
                     float refire = Hub.CurrentWeapon != null && Hub.CurrentWeapon.Data != null ? Hub.CurrentWeapon.Data.FireInterval : 0f;
                     feintPulledUp = true;
                     feintedThisEngagement = true;
                     feintWaitUntil = phaseTime + refire;
+                    Motor.SpeedMultiplier = 1f;
                     Anim.SetDiving(false);
                     Anim.SetWingsSpread(1f);
-                    Log($"{LogPrefix} {name} feint: pulled up {distance:0.0} m from the player at {closingSpeed:0} m/s " +
-                        $"(braking {BrakingDistance(closingSpeed):0.0} m), waiting {refire:0.00}s (refire time)");
+                    Log($"{LogPrefix} {name} feint: pulled up {distance:0.0} m from the player ({Motor.Position.y - aim.y:0.0} m above the chest) " +
+                        $"at {Motor.Velocity.magnitude:0} m/s, circling for {refire:0.00}s (refire time)");
                 }
                 else if (phaseTime >= config.MaxManoeuvreTime)
                 {
@@ -456,52 +458,89 @@ namespace RunwayPanic.Agents.Hawk
                 return;
             }
 
+            // Waiting out the refire time: circle above the player, out of reach, still moving.
+            feintClosest = Mathf.Min(feintClosest, distance);
+            Vector3 center = aim + Vector3.up * config.FeintPullUpHeight;
+            Motor.FlyTo(StoopPlanner.GetOrbitTarget(center, config.FeintOrbitRadius, config.SoarLeadAngle, Motor.Position));
+
             if (phaseTime >= feintWaitUntil)
             {
                 bool baited = Hub.LastShotTime > shotTimeAtFeintStart;
-                Log($"{LogPrefix} {name} feint {(baited ? "BAITED a shot" : "drew no shot")}, real stoop now");
-                ChangePhase(HuntPhase.Stoop); // straight from here: the point is to hit during the refire
+                Log($"{LogPrefix} {name} feint {(baited ? "BAITED a shot" : "drew no shot")} (closest {feintClosest:0.0} m), real stoop now");
+                ChangePhase(HuntPhase.Stoop); // from here: the point is to hit during the refire
             }
         }
 
         private void UpdateStoop()
         {
             Vector3 aim = AimPoint();
-            Vector3 target = StoopPlanner.GetLeadPoint(aim, Hub.PlayerVelocity, config.StoopLeadTime);
+            Motor.FlyTo(DiveTarget(aim, 0f));
 
-            // Flare: once the hawk could no longer stop above the flare height, aim level at it instead of at the chest.
-            // It then sweeps in just above the player (still inside the attack range) rather than into the ground.
-            float flareY = aim.y + stoopFlareHeight;
-            float lowestPoint = Motor.Position.y - BrakingDistance(Mathf.Max(0f, -Motor.Velocity.y)) / flareBrakeShare;
-            if (lowestPoint <= flareY)
-                target.y = Mathf.Max(target.y, flareY);
-            Motor.FlyTo(target);
+            // Turn first, then dive: the turn circle grows with speed (r = v / ω), so line up at normal speed and only
+            // then accelerate to dive speed.
+            Vector3 heading = Motor.Velocity;
+            heading.y = 0f;
+            if (heading.sqrMagnitude < MinPassSpeed * MinPassSpeed)
+                heading = new Vector3(transform.forward.x, 0f, transform.forward.z);
+            bool linedUp = Vector3.Angle(heading, FlatDirectionToPlayer()) <= config.StoopTurnInAngle;
+            Motor.SpeedMultiplier = linedUp ? config.StoopSpeedMultiplier : 1f;
 
+            // In range = the F3 rule (bird pivot to the closest point of the player's collider), so the hawk sweeping over
+            // the player's head counts. Without a BirdContactAttack: distance to the chest.
             Vector3 toAim = aim - Motor.Position;
             float range = Species != null ? Species.AttackRange : 0f;
-            if (toAim.sqrMagnitude <= range * range)
+            bool inRange = Attack != null ? Attack.IsPlayerInRange() : toAim.sqrMagnitude <= range * range;
+            if (inRange)
             {
                 float damage = (Species != null ? Species.AttackDamage : 0f) * config.StoopDamageMultiplier;
                 bool dealt = Attack != null && Attack.TryAttackWithDamage(damage);
-                Log($"{LogPrefix} {name} stoop HIT range after {phaseTime:0.0}s: damage {damage:0} " +
-                    $"{(dealt ? "dealt" : "not dealt (BirdContactAttack refused: F2 stub until F3, or cooldown)")}");
+                Log($"{LogPrefix} {name} stoop HIT range after {phaseTime:0.0}s at {Motor.Velocity.magnitude:0} m/s: damage {damage:0} " +
+                    $"{(dealt ? "dealt" : "not dealt (BirdContactAttack refused: cooldown or out of its range)")}");
                 ChangePhase(HuntPhase.Recover);
                 return;
             }
 
-            // "Passed the player" only counts after the dive has been closing in: at the start the hawk may still carry
-            // velocity away from the player (from the approach or the feint's climb).
-            Vector3 velocity = Motor.Velocity;
-            bool moving = velocity.sqrMagnitude > MinPassSpeed * MinPassSpeed;
-            float closing = Vector3.Dot(velocity, toAim);
-            if (moving && closing > 0f)
-                stoopWasClosing = true;
-            bool passed = stoopWasClosing && moving && closing < 0f;
+            // "Passed the player" = it really came close (within the overshoot) and is now clearly further away again.
+            // Judging by the velocity alone fails for a turn-limited bird: while it turns in from the feint's circle
+            // its velocity swings toward and away from the player.
+            float distance = toAim.magnitude;
+            stoopClosest = Mathf.Min(stoopClosest, distance);
+            bool passed = stoopClosest < config.StoopOvershoot && distance > stoopClosest + stoopPassMargin;
             if (passed || phaseTime >= config.MaxManoeuvreTime)
             {
-                Log($"{LogPrefix} {name} stoop MISSED ({(passed ? "passed the player" : "timed out")}, {toAim.magnitude:0.0} m away)");
+                Log($"{LogPrefix} {name} stoop MISSED ({(passed ? "passed the player" : "timed out")}, closest {stoopClosest:0.0} m, now {distance:0.0} m)");
                 ChangePhase(HuntPhase.Recover);
             }
+        }
+
+        // Through the lead point (raised by heightAboveAim; 0 for the real stoop) and beyond — the motor brakes to stop at a
+        // seek target — never below chest + flare height, and with the ground guard applied.
+        private Vector3 DiveTarget(Vector3 aim, float heightAboveAim)
+        {
+            Vector3 lead = StoopPlanner.GetLeadPoint(aim, Hub.PlayerVelocity, config.StoopLeadTime) + Vector3.up * heightAboveAim;
+            float minHeight = aim.y + Mathf.Max(heightAboveAim, stoopFlareHeight);
+            return GuardAltitude(StoopPlanner.GetStrikeThroughTarget(Motor.Position, lead, config.StoopOvershoot, minHeight));
+        }
+
+        // Ground guard. Levelling out from a dive of angle θ at speed v and turn rate ω drops r·(1 − cos θ), r = v / ω.
+        // If that (with a safety factor) would take the hawk below the floor, it only pulls up — level, straight ahead,
+        // no turning — until it is safe: the motor levels out fastest when it doesn't also have to turn.
+        private Vector3 GuardAltitude(Vector3 target)
+        {
+            float floor = Hub.PlayerPosition.y + minDiveClearance;
+            Vector3 position = Motor.Position;
+            Vector3 velocity = Motor.Velocity;
+            float speed = velocity.magnitude;
+            float descent = speed > MinPassSpeed ? Mathf.Asin(Mathf.Clamp(-velocity.y / speed, 0f, 1f)) : 0f;
+            float pullOutDrop = speed / (motorTurnRate * Mathf.Deg2Rad) * (1f - Mathf.Cos(descent));
+            if (position.y - pullOutDrop * GroundGuardSafety > floor)
+                return target;
+
+            Vector3 ahead = new Vector3(velocity.x, 0f, velocity.z);
+            ahead = ahead.sqrMagnitude > 1e-4f ? ahead.normalized : FlatDirectionToPlayer();
+            Vector3 level = position + ahead * Mathf.Max(speed, MinPassSpeed);
+            level.y = Mathf.Max(position.y, floor);
+            return level;
         }
 
         // Sun-side start point with a clear dive line to the player; steps around the player when a building is in the way.
@@ -514,16 +553,23 @@ namespace RunwayPanic.Agents.Hawk
             FlightGrid grid = FlightGrid.Instance;
             LayerMask mask = grid != null ? grid.ObstacleMask : (LayerMask)Physics.DefaultRaycastLayers;
 
-            Vector3 fallback = StoopPlanner.GetStoopStart(player, sunForward, config.StoopStartDistance, config.MinStoopHeight, 0f);
+            Vector3 fallback = StoopPlanner.GetStoopStart(player, sunForward, config.StoopStartDistance, config.MinStoopHeight, config.MaxStoopAngle, 0f);
             bool haveFallback = false;
             int attempts = 1 + 2 * config.StoopYawTries;
             for (int i = 0; i < attempts; i++)
             {
                 // 0, +step, -step, +2·step, -2·step, ...
                 float yaw = (i + 1) / 2 * config.StoopYawStep * (i % 2 == 1 ? 1f : -1f);
-                Vector3 start = StoopPlanner.GetStoopStart(player, sunForward, config.StoopStartDistance, config.MinStoopHeight, yaw);
+                Vector3 start = StoopPlanner.GetStoopStart(player, sunForward, config.StoopStartDistance, config.MinStoopHeight, config.MaxStoopAngle, yaw);
                 if (grid != null)
+                {
+                    // Pulling the start back inside the grid (player near the edge) shortens it and makes the dive
+                    // steeper: lower it again so the angle stays within what the motor can fly.
                     start = StoopPlanner.ClampToVolume(start, grid.VolumeBounds, grid.CellSize);
+                    Vector3 offset = start - player;
+                    float maxHeight = player.y + new Vector2(offset.x, offset.z).magnitude * Mathf.Tan(config.MaxStoopAngle * Mathf.Deg2Rad);
+                    start.y = Mathf.Min(start.y, maxHeight);
+                }
                 if (!StoopPlanner.TrySnapUpToFlyable(start, paths, config.StoopSnapSearchHeight, config.StoopSnapStep, out start))
                     continue;
 
@@ -553,19 +599,22 @@ namespace RunwayPanic.Agents.Hawk
             // Once per approach (the start is re-planned every repath while the player moves).
             if (hasStoopStart && Mathf.Approximately(yaw, stoopYaw))
                 return;
-            Log($"{LogPrefix} {name} stoop start {start} ({yaw:+0;-0;0}° from the sun side, {start.y - Hub.PlayerPosition.y:0.0} m above the player, " +
+            Vector3 fromPlayer = start - Hub.PlayerPosition;
+            float angle = Mathf.Atan2(fromPlayer.y, new Vector2(fromPlayer.x, fromPlayer.z).magnitude) * Mathf.Rad2Deg;
+            Log($"{LogPrefix} {name} stoop start {start} ({yaw:+0;-0;0}° from the sun side, {fromPlayer.y:0.0} m up, dive angle {angle:0}°, " +
                 $"{(clearLine ? "clear dive line" : "NO clear dive line found")})");
-        }
-
-        // Distance the motor needs to shed 'speed' (m/s) at diveBrakeAcceleration: v² / 2a.
-        private float BrakingDistance(float speed)
-        {
-            return speed > 0f ? speed * speed / (2f * diveBrakeAcceleration) : 0f;
         }
 
         private Vector3 AimPoint()
         {
             return Hub.PlayerPosition + Vector3.up * stoopAimHeight;
+        }
+
+        private Vector3 FlatDirectionToPlayer()
+        {
+            Vector3 toPlayer = Hub != null && Hub.HasPlayer ? Hub.PlayerPosition - Motor.Position : transform.forward;
+            toPlayer.y = 0f;
+            return toPlayer.sqrMagnitude > 1e-4f ? toPlayer.normalized : Vector3.forward;
         }
 
         // Fills 'scores' with every free Perch marker; returns the index of the best one, or -1 if there is none.
@@ -583,8 +632,9 @@ namespace RunwayPanic.Agents.Hawk
                 if (perch == unreachablePerch || IsClaimedByOther(perch))
                     continue;
 
+                // Sight is checked from the soaring height: that is where the hawk watches from.
                 PerchScore score = PerchSelector.Score(perch, Hub.PlayerPosition, Hub.PlayerHeadPosition, sunForward,
-                    memory, config, withdrawMode, eyeHeight, mask);
+                    memory, config, withdrawMode, config.SoarHeight, mask);
                 scores.Add(score);
                 if (best < 0 || score.Total > scores[best].Total)
                     best = scores.Count - 1;
@@ -599,7 +649,7 @@ namespace RunwayPanic.Agents.Hawk
         /// <paramref name="next"/>. Entering Hunt starts at <paramref name="huntEntryPhase"/>, so e.g. Herd can jump
         /// straight into <see cref="HuntPhase.Stoop"/>. Dead is final: no change leaves it.
         /// </summary>
-        private void ChangeMode(HawkMode next, HuntPhase huntEntryPhase = HuntPhase.SelectPerch)
+        private void ChangeMode(HawkMode next, HuntPhase huntEntryPhase = HuntPhase.SelectVantage)
         {
             if (mode == HawkMode.Dead)
                 return;
@@ -669,16 +719,23 @@ namespace RunwayPanic.Agents.Hawk
         {
             switch (entered)
             {
-                case HuntPhase.SelectPerch:
+                case HuntPhase.SelectVantage:
                     nextReevaluateTime = 0f;
                     hasStoopStart = false;
+                    Motor.SpeedMultiplier = 1f;
                     Anim.SetFlying(true);
                     break;
-                case HuntPhase.FlyToPerch:
+                case HuntPhase.FlyToVantage:
                     needsPath = true;
-                    landing = false;
                     nextReevaluateTime = Time.time + config.PerchReevaluateInterval;
                     Anim.SetFlying(true);
+                    break;
+                case HuntPhase.Soaring:
+                    unreachablePerch = null;
+                    commitUntil = Time.time + config.PerchCommitTime;
+                    nextReevaluateTime = Time.time + config.PerchReevaluateInterval;
+                    Anim.SetFlying(true);
+                    Anim.SetWingsSpread(1f);
                     break;
                 case HuntPhase.ApproachStoop:
                     ReleasePerch(); // leaving it: another hawk may take it
@@ -687,28 +744,23 @@ namespace RunwayPanic.Agents.Hawk
                     Motor.SpeedMultiplier = config.ApproachSpeedMultiplier;
                     Anim.SetFlying(true);
                     break;
-                case HuntPhase.Perched:
-                    unreachablePerch = null;
-                    perchFacing = currentPerch != null ? FacingPlayer(LandPoint(currentPerch)) : transform.forward;
-                    commitUntil = Time.time + config.PerchCommitTime;
-                    nextReevaluateTime = Time.time + config.PerchReevaluateInterval;
-                    Anim.SetFlying(false);
-                    break;
                 case HuntPhase.Scream:
-                    // Hover at the top of the dive with wings tucked: the visual + audio tell before every stoop.
-                    Motor.HoldPosition(Motor.Position);
+                    // Hover at the top of the dive with wings tucked: the visual + audio tell before every stoop. The hold
+                    // point is a little toward the player, so the turn-limited motor already starts turning into the dive.
+                    Motor.HoldPosition(Motor.Position + FlatDirectionToPlayer() * stoopStartArriveDistance);
                     Anim.SetWingsSpread(0f);
                     if (screamClip != null && screamSource != null)
                         screamSource.PlayOneShot(screamClip);
                     break;
                 case HuntPhase.Feint:
                     feintPulledUp = false;
+                    feintClosest = float.PositiveInfinity;
                     shotTimeAtFeintStart = Hub != null ? Hub.LastShotTime : 0f;
                     Motor.SpeedMultiplier = config.StoopSpeedMultiplier;
                     Anim.SetDiving(true);
                     break;
                 case HuntPhase.Stoop:
-                    stoopWasClosing = false;
+                    stoopClosest = float.PositiveInfinity;
                     Motor.SpeedMultiplier = config.StoopSpeedMultiplier;
                     Anim.SetWingsSpread(0f);
                     Anim.SetDiving(true);
@@ -718,7 +770,8 @@ namespace RunwayPanic.Agents.Hawk
                     Anim.SetDiving(false);
                     Anim.SetWingsSpread(1f);
                     feintedThisEngagement = false;
-                    Motor.FlyTo(RecoverPoint());
+                    recoverTarget = RecoverPoint();
+                    Motor.FlyTo(recoverTarget);
                     break;
             }
         }
@@ -727,12 +780,6 @@ namespace RunwayPanic.Agents.Hawk
         {
             switch (exited)
             {
-                case HuntPhase.FlyToPerch:
-                    landing = false;
-                    break;
-                case HuntPhase.Perched:
-                    Anim.SetFlying(true);
-                    break;
                 case HuntPhase.Feint:
                 case HuntPhase.Stoop:
                     Anim.SetDiving(false);
@@ -751,43 +798,49 @@ namespace RunwayPanic.Agents.Hawk
 
         // ---------------------------------------------------------------- Helpers
 
-        // Straight up to recoverClimbHeight above the player (never down), kept inside the flight volume.
+        // Centre of the soaring circle: soarHeight above the vantage point, moved so the whole circle stays in the grid.
+        private Vector3 SoarCenter(BirdPoint perch)
+        {
+            Vector3 center = perch.Position + Vector3.up * config.SoarHeight;
+            FlightGrid grid = FlightGrid.Instance;
+            return grid != null ? StoopPlanner.ClampCircleToVolume(center, config.SoarRadius, grid.VolumeBounds, grid.CellSize) : center;
+        }
+
+        // The point of the circle nearest to the hawk: where the A* path ends before circling starts.
+        private Vector3 SoarEntryPoint(Vector3 center)
+        {
+            Vector3 offset = Motor.Position - center;
+            offset.y = 0f;
+            Vector3 direction = offset.sqrMagnitude > 1e-4f ? offset.normalized : Vector3.forward;
+            return center + direction * config.SoarRadius;
+        }
+
+        private bool IsNearCircle(Vector3 center)
+        {
+            Vector3 offset = Motor.Position - center;
+            float flatDistance = new Vector2(offset.x, offset.z).magnitude;
+            float tolerance = config.SoarRadius * JoinCircleTolerance;
+            return Mathf.Abs(flatDistance - config.SoarRadius) <= tolerance && Mathf.Abs(offset.y) <= tolerance;
+        }
+
+        // Climb away ahead of the hawk (forward and up at recoverClimbAngle; the motor can't climb straight up) to
+        // recoverClimbHeight above the player, inside the flight volume.
         private Vector3 RecoverPoint()
         {
-            Vector3 point = Motor.Position;
+            Vector3 position = Motor.Position;
+            Vector3 forward = Motor.Velocity;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 1e-4f)
+                forward = new Vector3(transform.forward.x, 0f, transform.forward.z);
+            forward = forward.sqrMagnitude > 1e-4f ? forward.normalized : Vector3.forward;
+
             float playerY = Hub != null && Hub.HasPlayer ? Hub.PlayerPosition.y : 0f;
-            point.y = Mathf.Max(point.y, playerY + config.RecoverClimbHeight);
+            float climb = Mathf.Max(0f, playerY + config.RecoverClimbHeight - position.y);
+            float horizontal = Mathf.Max(climb / Mathf.Tan(config.RecoverClimbAngle * Mathf.Deg2Rad), config.SoarRadius);
+            Vector3 point = position + forward * horizontal + Vector3.up * climb;
+
             FlightGrid grid = FlightGrid.Instance;
             return grid != null ? StoopPlanner.ClampToVolume(point, grid.VolumeBounds, grid.CellSize) : point;
-        }
-
-        private Vector3 LandPoint(BirdPoint perch)
-        {
-            return perch.Position + Vector3.up * perchPivotHeight;
-        }
-
-        private Vector3 FacingPlayer(Vector3 from)
-        {
-            Vector3 toPlayer = Hub.PlayerPosition - from;
-            toPlayer.y = 0f;
-            return toPlayer.sqrMagnitude > 0.0001f ? toPlayer : transform.forward;
-        }
-
-        // While perched: turn (yaw only) toward the player at perchTurnSpeed. Goes through the motor (LandAt on the same
-        // spot with a new facing), only on frames where the facing actually changes.
-        private void FacePlayer()
-        {
-            if (currentPerch == null)
-                return;
-
-            Vector3 landPoint = LandPoint(currentPerch);
-            Vector3 target = FacingPlayer(landPoint);
-            Vector3 turned = Vector3.RotateTowards(perchFacing, target, perchTurnSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f);
-            if (turned == perchFacing)
-                return;
-
-            perchFacing = turned;
-            Motor.LandAt(landPoint, perchFacing);
         }
 
         private void SetPerch(PerchScore score)
@@ -798,7 +851,7 @@ namespace RunwayPanic.Agents.Hawk
             commitUntil = Time.time + config.PerchCommitTime;
             if (currentPerch != null)
                 ClaimedPerches.Add(currentPerch);
-            Log($"{LogPrefix} {name} perch -> {currentPerch.name} total {score.Total:0.00} " +
+            Log($"{LogPrefix} {name} vantage -> {currentPerch.name} total {score.Total:0.00} " +
                 $"(height {score.Height:0.00}, sight {score.LineOfSight:0}, distance {score.Distance:0.00} @ {score.Metres:0.0} m, sun {score.Sun:0.00}, shot {score.RecentlyShot:0.00})");
         }
 
@@ -861,15 +914,15 @@ namespace RunwayPanic.Agents.Hawk
                 Debug.Log(message, this);
         }
 
-        private static string PerchedLabel(float meterFraction, WeaknessWindow? window)
+        private static string SoaringLabel(float meterFraction, WeaknessWindow? window)
         {
             int step = Mathf.Clamp(Mathf.FloorToInt(meterFraction * MeterLabelSteps), 0, MeterLabelSteps);
             int column = window.HasValue ? (int)window.Value + 1 : 0;
-            string label = PerchedLabels[step, column];
+            string label = SoaringLabels[step, column];
             if (label == null)
             {
-                label = $"Hunt/Perched  meter {step * 100 / MeterLabelSteps}" + (window.HasValue ? $" [{window.Value}]" : "");
-                PerchedLabels[step, column] = label;
+                label = $"Hunt/Soaring  meter {step * 100 / MeterLabelSteps}" + (window.HasValue ? $" [{window.Value}]" : "");
+                SoaringLabels[step, column] = label;
             }
             return label;
         }
@@ -882,7 +935,7 @@ namespace RunwayPanic.Agents.Hawk
             return names;
         }
 
-        // Statics survive Play mode when domain reload is off: start every session with no claimed perches.
+        // Statics survive Play mode when domain reload is off: start every session with no claimed vantage points.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
@@ -921,12 +974,12 @@ namespace RunwayPanic.Agents.Hawk
         }
 
 #if UNITY_EDITOR
-        // Select the hawk in Play mode: every scored perch shows its total and terms (H height, L sight, D distance,
-        // S sun, X recently shot) from the last evaluation; the chosen perch is yellow, others green (can see the player)
-        // or red (can't).
+        // Select the hawk in Play mode: every scored vantage point shows its total and terms (H height, L sight,
+        // D distance, S sun, X recently shot) from the last evaluation; the chosen one is yellow with its soaring circle,
+        // others green (can see the player) or red (can't).
         private void OnDrawGizmosSelected()
         {
-            if (!Application.isPlaying)
+            if (!Application.isPlaying || config == null)
                 return;
 
             var style = new GUIStyle(EditorStyles.boldLabel);
@@ -938,7 +991,7 @@ namespace RunwayPanic.Agents.Hawk
 
                 bool chosen = score.Perch == currentPerch;
                 Color colour = chosen ? Color.yellow : score.LineOfSight > 0f ? Color.green : Color.red;
-                Vector3 point = LandPoint(score.Perch);
+                Vector3 point = SoarCenter(score.Perch);
                 Gizmos.color = colour;
                 Gizmos.DrawWireSphere(point, chosen ? 0.6f : 0.4f);
 
@@ -950,8 +1003,11 @@ namespace RunwayPanic.Agents.Hawk
 
             if (currentPerch != null)
             {
+                Vector3 center = SoarCenter(currentPerch);
+                Handles.color = Color.yellow;
+                Handles.DrawWireDisc(center, Vector3.up, config.SoarRadius);
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(transform.position, LandPoint(currentPerch));
+                Gizmos.DrawLine(transform.position, center);
             }
 
             // Stoop (H4): sun ray from the player towards the sun, the planned start point, and the dive line.
