@@ -60,13 +60,16 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
   - Crow (17 Oct, `fix/is-crow-vigil-landing`): vigil crows that haven't landed after `CrowStrategyConfig.vigilLandTimeout` (3 s) call `Motor.Stop()` the next time their circle passes within 1.5 m of the exit, and hover there. `HoldPosition` is not a workaround — it steers the same way. Remove the timeout once `LandAt` is fixed.
 - **Status:** open
 
-## 2026-10-17 — to: World Builder — crow markers and shelter zones for `Main`
-- **What:** `BirdPoint` markers and `Scripts/Agents/Crow/ShelterZone.cs`; working example in `Scenes/Sandbox/Sandbox_IS_Crow.unity`
+## 2026-10-17 — to: World Builder — crow setup for `Main`: drag in one prefab
+- **What:** `Prefabs/Birds/Crow/P_CrowSetup_Main.prefab` (replaces the earlier "place crow markers" request).
 - **Details:**
-  - 2 × `BirdPoint` type **Stash**, at ground level in places the player can **walk to** (e.g. behind the hangar, beside the terminal) — never on a roof. Crows drop stolen pickups there.
-  - 1 × `BirdPoint` type **ShelterExit** just outside each shelter entrance, `group` = `ShelterA` / `ShelterB`.
-  - 1 × `ShelterZone` per shelter: a trigger `BoxCollider` filling the interior, `group` matching its exits. Crows guard the exits while the player hides inside.
-- **Action needed:** World Builder — add them to `Main` (copy the positions from the crow sandbox if they fit).
+  - Everything the crow needs in a level, already positioned for `Main` (its shelters, hangar and terminal sit exactly where the crow sandbox has them):
+    - `Stashes/` — 2 × `BirdPoint` **Stash** on open ground the player can walk to: behind the hangar (−47.4, 0, −16.2) and beside the terminal (25.0, 0, 37.5). Crows drop stolen pickups there.
+    - `ShelterA/`, `ShelterB/` — a `ShelterZone` trigger filling each shelter and a `BirdPoint` **ShelterExit** at its doorway. Crows guard the exit while the player hides inside.
+  - Checked in `Main` (17 Oct): zones inside the shelters, exits at the doorways with a clear view in, stashes on `Ground_100x80` with nothing in the way.
+  - Keep the prefab root at (0, 0, 0). If you move a shelter, the hangar or the terminal, tell the crow owner (or move the matching child with it).
+  - The crow also needs, in `Main`: a **`FlightGrid`** (pathfinding; without it crows fly in straight lines) and a **`P_PickupSpawner`** (otherwise there is nothing to steal).
+- **Action needed:** World Builder — drag `P_CrowSetup_Main` into `Main` at the origin; add a `FlightGrid` and a `P_PickupSpawner`.
 - **Status:** open
 
 ## 2026-10-17 — to: Systems Engineer — crows steal pickups (no change needed)
