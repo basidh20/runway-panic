@@ -12,8 +12,14 @@ namespace RunwayPanic.PlayerTools
     /// <c>Art/Animations/Player/</c> and wires it onto <c>P_Player_Gameplay</c>. Re-runnable: the controller keeps its
     /// asset (and GUID) and is rebuilt from scratch each time, so the result never depends on hand edits.
     /// <para>
-    /// Clips are found by name: <c>A_Player_Idle</c>, <c>A_Player_Walk</c>, <c>A_Player_Run</c>. If any is missing,
-    /// <see cref="PlayerClipGenerator"/> generates them from the officer's rig first. A downloaded clip can replace a
+    /// Base layer: <c>Locomotion</c> (idle → walk → run by <c>Speed</c>) and the jump states
+    /// <c>JumpStart → Fall → Land</c> (<c>Jump</c> trigger, <c>IsGrounded</c>, <c>VerticalSpeed</c>); walking off a
+    /// ledge goes straight to <c>Fall</c>.
+    /// </para>
+    /// <para>
+    /// Clips are found by name (<c>A_Player_Idle</c>, <c>_Walk</c>, <c>_Run</c>, <c>_JumpStart</c>, <c>_Fall</c>,
+    /// <c>_Land</c>). If any is missing, <see cref="PlayerClipGenerator"/> generates them from the officer's rig first.
+    /// A downloaded clip can replace a
     /// generated one: <c>ArtModelPostprocessor</c> imports every FBX in <c>Art/Animations/Player/</c> as Humanoid and
     /// names its clip after the file, so <c>A_Player_Run.fbx</c> gives the clip <c>A_Player_Run</c> (delete the
     /// generated <c>.anim</c> of the same name).
@@ -28,8 +34,20 @@ namespace RunwayPanic.PlayerTools
         private const string IdleClip = "A_Player_Idle";
         private const string WalkClip = "A_Player_Walk";
         private const string RunClip = "A_Player_Run";
+        private const string JumpStartClip = "A_Player_JumpStart";
+        private const string FallClip = "A_Player_Fall";
+        private const string LandClip = "A_Player_Land";
+
+        private static readonly string[] RequiredClips = { IdleClip, WalkClip, RunClip, JumpStartClip, FallClip, LandClip };
 
         private const string SpeedParameter = "Speed";
+        private const string JumpParameter = "Jump";
+        private const string IsGroundedParameter = "IsGrounded";
+        private const string VerticalSpeedParameter = "VerticalSpeed";
+
+        // Walking off a ledge counts as falling once the player drops faster than this (m/s). Grounded, the
+        // controller holds -2 m/s, so stairs and small steps never trigger a fall.
+        private const float LedgeFallSpeed = -4f;
 
         // Used only when the prefab's PlayerController can't be read.
         private const float FallbackWalkSpeed = 4.5f;
@@ -39,20 +57,17 @@ namespace RunwayPanic.PlayerTools
         public static void Build()
         {
             Dictionary<string, AnimationClip> clips = FindClips();
-            if (!clips.ContainsKey(IdleClip) || !clips.ContainsKey(WalkClip) || !clips.ContainsKey(RunClip))
+            if (RequiredClips.Any(name => !clips.ContainsKey(name)))
             {
-                // No clips yet (none downloaded): generate them from the officer's rig.
-                PlayerClipGenerator.GenerateLocomotion();
+                // Clips missing (none downloaded): generate them from the officer's rig.
+                PlayerClipGenerator.GenerateAll();
                 clips = FindClips();
             }
 
-            if (!clips.TryGetValue(IdleClip, out AnimationClip idle) |
-                !clips.TryGetValue(WalkClip, out AnimationClip walk) |
-                !clips.TryGetValue(RunClip, out AnimationClip run))
+            string[] missing = RequiredClips.Where(name => !clips.ContainsKey(name)).ToArray();
+            if (missing.Length > 0)
             {
-                Debug.LogError($"[Player Animator] Missing clips in {ClipsFolder}. Expected FBX files named " +
-                               $"{IdleClip}, {WalkClip} and {RunClip}. Found: " +
-                               (clips.Count > 0 ? string.Join(", ", clips.Keys) : "none") + ".");
+                Debug.LogError($"[Player Animator] Missing clips in {ClipsFolder}: {string.Join(", ", missing)}.");
                 return;
             }
 
@@ -60,7 +75,9 @@ namespace RunwayPanic.PlayerTools
 
             AnimatorController controller = LoadOrCreateController();
             ResetController(controller);
-            BuildLocomotion(controller, idle, walk, run, walkSpeed, sprintSpeed);
+            AnimatorState locomotion = BuildLocomotion(controller, clips[IdleClip], clips[WalkClip], clips[RunClip],
+                walkSpeed, sprintSpeed);
+            BuildJump(controller, locomotion, clips[JumpStartClip], clips[FallClip], clips[LandClip]);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
 
@@ -117,24 +134,27 @@ namespace RunwayPanic.PlayerTools
         // Empties the controller but keeps the asset, so its GUID (and every reference to it) survives a rebuild.
         private static void ResetController(AnimatorController controller)
         {
-            foreach (BlendTree tree in AssetDatabase.LoadAllAssetsAtPath(ControllerPath).OfType<BlendTree>().ToArray())
-                Object.DestroyImmediate(tree, true);
+            AnimatorControllerLayer baseLayer = controller.layers[0];
+            AnimatorStateMachine baseMachine = baseLayer.stateMachine;
 
-            for (int i = controller.layers.Length - 1; i > 0; i--)
-                controller.RemoveLayer(i);
+            // Delete every state, transition, blend tree and nested machine stored in the file (the base machine
+            // itself stays), so nothing from an older build is left behind as an orphan sub-asset.
+            foreach (Object sub in AssetDatabase.LoadAllAssetsAtPath(ControllerPath).ToArray())
+            {
+                if (sub is AnimatorState || sub is AnimatorStateTransition || sub is AnimatorTransition ||
+                    sub is BlendTree || (sub is AnimatorStateMachine machine && machine != baseMachine))
+                    Object.DestroyImmediate(sub, true);
+            }
 
-            AnimatorStateMachine baseMachine = controller.layers[0].stateMachine;
-            foreach (ChildAnimatorState child in baseMachine.states)
-                baseMachine.RemoveState(child.state);
-            foreach (ChildAnimatorStateMachine child in baseMachine.stateMachines)
-                baseMachine.RemoveStateMachine(child.stateMachine);
-            foreach (AnimatorStateTransition transition in baseMachine.anyStateTransitions)
-                baseMachine.RemoveAnyStateTransition(transition);
-
+            baseMachine.states = new ChildAnimatorState[0];
+            baseMachine.stateMachines = new ChildAnimatorStateMachine[0];
+            baseMachine.anyStateTransitions = new AnimatorStateTransition[0];
+            baseMachine.entryTransitions = new AnimatorTransition[0];
+            controller.layers = new[] { baseLayer };
             controller.parameters = new AnimatorControllerParameter[0];
         }
 
-        private static void BuildLocomotion(AnimatorController controller, AnimationClip idle, AnimationClip walk,
+        private static AnimatorState BuildLocomotion(AnimatorController controller, AnimationClip idle, AnimationClip walk,
             AnimationClip run, float walkSpeed, float sprintSpeed)
         {
             controller.AddParameter(SpeedParameter, AnimatorControllerParameterType.Float);
@@ -149,6 +169,62 @@ namespace RunwayPanic.PlayerTools
             tree.AddChild(run, sprintSpeed);
 
             controller.layers[0].stateMachine.defaultState = locomotion;
+            return locomotion;
+        }
+
+        //   Locomotion ──Jump──► JumpStart ──(clip ends)──► Fall ──IsGrounded──► Land ──(clip ends)──► Locomotion
+        //   Locomotion ──off a ledge (not grounded, falling fast)──► Fall
+        //   Land ──Jump──► JumpStart (hop again) · Land ──moving──► Locomotion early (keep running)
+        private static void BuildJump(AnimatorController controller, AnimatorState locomotion,
+            AnimationClip jumpStartClip, AnimationClip fallClip, AnimationClip landClip)
+        {
+            controller.AddParameter(JumpParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(new AnimatorControllerParameter
+            {
+                name = IsGroundedParameter, type = AnimatorControllerParameterType.Bool, defaultBool = true,
+            });
+            controller.AddParameter(VerticalSpeedParameter, AnimatorControllerParameterType.Float);
+
+            AnimatorStateMachine machine = controller.layers[0].stateMachine;
+            AnimatorState jumpStart = machine.AddState("JumpStart");
+            jumpStart.motion = jumpStartClip;
+            AnimatorState fall = machine.AddState("Fall");
+            fall.motion = fallClip;
+            AnimatorState land = machine.AddState("Land");
+            land.motion = landClip;
+
+            AnimatorStateTransition t = Transition(locomotion, jumpStart, 0.05f);
+            t.AddCondition(AnimatorConditionMode.If, 0f, JumpParameter);
+
+            t = Transition(jumpStart, fall, 0.1f, exitTime: 0.95f);
+
+            t = Transition(locomotion, fall, 0.15f);
+            t.AddCondition(AnimatorConditionMode.IfNot, 0f, IsGroundedParameter);
+            t.AddCondition(AnimatorConditionMode.Less, LedgeFallSpeed, VerticalSpeedParameter);
+
+            t = Transition(fall, land, 0.05f);
+            t.AddCondition(AnimatorConditionMode.If, 0f, IsGroundedParameter);
+
+            t = Transition(land, jumpStart, 0.05f);
+            t.AddCondition(AnimatorConditionMode.If, 0f, JumpParameter);
+
+            t = Transition(land, locomotion, 0.1f, exitTime: 0.35f);
+            t.AddCondition(AnimatorConditionMode.Greater, 2f, SpeedParameter);
+
+            Transition(land, locomotion, 0.15f, exitTime: 0.8f);
+        }
+
+        // A transition with a fixed blend time in seconds; with exitTime set, it waits for that point of the clip.
+        private static AnimatorStateTransition Transition(AnimatorState from, AnimatorState to, float duration,
+            float? exitTime = null)
+        {
+            AnimatorStateTransition transition = from.AddTransition(to);
+            transition.hasFixedDuration = true;
+            transition.duration = duration;
+            transition.hasExitTime = exitTime.HasValue;
+            transition.exitTime = exitTime ?? 0f;
+            transition.interruptionSource = TransitionInterruptionSource.None;
+            return transition;
         }
 
         // ---- Prefab ----
