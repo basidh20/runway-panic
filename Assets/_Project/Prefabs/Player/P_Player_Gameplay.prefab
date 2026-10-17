@@ -1715,6 +1715,7 @@ GameObject:
   - component: {fileID: 9101243093440750850}
   - component: {fileID: 6817391851223279392}
   - component: {fileID: 3485412674391604826}
+  - component: {fileID: 6052845187304252278}
   m_Layer: 0
   m_Name: P_Player_Gameplay
   m_TagString: Player
@@ -1813,6 +1814,8 @@ MonoBehaviour:
   sprintSpeed: 7.5
   rotationSpeed: 12
   movementReference: {fileID: 4172546093885229929}
+  maxAimAngle: 60
+  maxAimAngleWhileShooting: 20
   jumpHeight: 1.2
   gravity: -25
   groundedVelocity: -2
@@ -2021,10 +2024,37 @@ MonoBehaviour:
   aimDistance: 40
   blendSpeed: 8
   hitAimLoss: 0.7
+  shootingFacingTime: 0.6
   pistolSupport: {x: -0.03, y: -0.03, z: 0}
   rifleSupportAlongBarrel: 0.5
   rifleSupportMaxDistance: 0.33
   rifleSupportBelowBarrel: 0.05
+--- !u!114 &6052845187304252278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8402448470462990780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ab687af81ee10641acb7d7154157720, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Weapons.ShotEffects
+  effectMaterial: {fileID: 2100000, guid: f7ebbaa4b668c8243833d5ce171be68d, type: 2}
+  maxShots: 8
+  flashColor: {r: 1, g: 0.82, b: 0.45, a: 1}
+  flashDuration: 0.05
+  flashLength: 0.28
+  flashWidth: 0.14
+  lightIntensity: 4
+  lightRange: 5
+  tracerColor: {r: 1, g: 0.72, b: 0.35, a: 1}
+  tracerDuration: 0.07
+  tracerWidth: 0.025
+  impactColor: {r: 1, g: 0.9, b: 0.6, a: 1}
+  impactDuration: 0.08
+  impactSize: 0.18
 --- !u!1 &8930974583446172621
 GameObject:
   m_ObjectHideFlags: 0
