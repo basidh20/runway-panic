@@ -20,14 +20,23 @@ Template:
 |---|---|---|---|
 | F1 Pathfinding (3D flight grid + A*) | `Scripts/AI/` | Basidh (Hawk owner) | ✅ merged (PR #18/#19) |
 | F2 Player event hub, registries, `BirdPoint` markers, base brain | `Scripts/Agents/Shared/` | Basidh (Hawk owner) | ✅ merged (PR #18/#19) |
-| F3 `BirdHealth`, `BirdContactAttack` | `Scripts/Agents/Shared/` | Agent Controller | open — stubs in place |
-| F4 Real `BirdMotor` + Animator-based bird animator | `Scripts/Agents/Movement/` | Agent Controller (GV graded) | open — stand-ins in place |
+| F3 `BirdHealth`, `BirdContactAttack` | `Scripts/Agents/Shared/` | Agent Controller | ✅ merged (PR #23) |
+| F4 Real `BirdMotor` + Animator-based bird animator | `Scripts/Agents/Movement/` | Agent Controller (GV graded) | ✅ merged (PR #23) — landing bug open (below) |
 | F5 Shared components on the bird prefabs | `Prefabs/Birds/` | Core Developer (Basidh) | ✅ merged (PR #19) |
-| Species brains | `Scripts/Agents/<Species>/` | one owner per species | open — can start now |
+| Species brains | `Scripts/Agents/<Species>/` | one owner per species | Hawk H1–H4 on `feature/is-hawk` (PR #24); others open |
 
 Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → Crow → Hawk (wave 4, toughest)**.
 
 ---
+
+## 2026-10-17 (evening) — to: Agent Controller + species owners — `BirdMotor.LandAt` can circle its landing point forever
+- **What:** `Scripts/Agents/Movement/BirdMotor.cs` — `LandAt` (and `HoldPosition`) via `SteerToTarget` / `SteerToPoint`.
+- **Details:**
+  - Seen with the hawk (`P_Bird_Hawk`, `BirdMotion_Hawk`: turn 90°/s, acceleration 5): after an attack it was sent `LandAt` the control-tower roof and **circled it from t = 42 s to t = 98 s+** (`Logs/Editor.log`: height swinging 13.8 ↔ 15.9 m every ~2 s, never `IsLanded`). The first landing worked only because the hawk arrived head-on.
+  - Cause (reading the code): near the point the target speed is `min(cornering speed, √(2·a·d))`, but the heading may only turn `maxTurnRate`. When the point is beside the bird, the turn radius `v / ω` stays larger than the distance, so it orbits at ~3–4 m and never gets within `landSnapDistance` (0.3 m). The orbit is stable: braking lowers `v`, but `√(2·a·d)` keeps it just high enough.
+  - It will hit every brain that lands: pigeon roosts, crow stashes, gull debris — and any bird whose approach isn't head-on.
+- **Action needed:** Agent Controller — e.g. in `Land`/`Hold` mode, within a few metres, let the bird slow to a hover and move straight to the point regardless of turn rate (a flutter-in), or cap speed so `v / maxTurnRate < distance`. Species owners: until then, give your `LandAt` calls a timeout. The hawk no longer lands at all (it soars over its vantage point instead), so it is not blocked.
+- **Status:** open
 
 ## 2026-10-17 — to: species owners + Agent Controller — the bird prefabs now carry the shared AI components (F5)
 - **What:** `Prefabs/Birds/P_Bird_Base` (inherited by `P_Bird_Gull`, `_Pigeon`, `_Crow`) and `P_Bird_Hawk` (own prefab, set up separately). Re-runnable tool: `Tools > S3 > Add Bird AI Components`.
