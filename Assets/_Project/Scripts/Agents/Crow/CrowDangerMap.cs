@@ -1,4 +1,5 @@
 using RunwayPanic.AI;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace RunwayPanic.Agents.Crow
@@ -80,9 +81,12 @@ namespace RunwayPanic.Agents.Crow
                 Instance = null;
         }
 
+        private static readonly ProfilerMarker UpdateMarker = new ProfilerMarker("CrowDangerMap.Update");
+
         private void Update()
         {
-            TickDecay();
+            using (UpdateMarker.Auto())
+                TickDecay();
         }
 
         /// <summary>

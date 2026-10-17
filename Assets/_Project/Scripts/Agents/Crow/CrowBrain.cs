@@ -1,5 +1,6 @@
 using System;
 using RunwayPanic.Core;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace RunwayPanic.Agents.Crow
@@ -83,7 +84,16 @@ namespace RunwayPanic.Agents.Crow
             EnterState(state);
         }
 
+        // Profiler marker for the script-cost measurement (NOTES §7): every crow's decisions, A* searches included.
+        private static readonly ProfilerMarker UpdateMarker = new ProfilerMarker("CrowBrain.Update");
+
         private void Update()
+        {
+            using (UpdateMarker.Auto())
+                Think();
+        }
+
+        private void Think()
         {
             if (!started || state == CrowState.Dead)
                 return;
