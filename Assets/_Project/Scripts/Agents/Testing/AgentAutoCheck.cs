@@ -42,7 +42,7 @@ namespace RunwayPanic.Agents.Testing
 
         private sealed class FlightStats
         {
-            public BirdAgent Bird;
+            public BirdMotor Bird;
             public Vector3 LastPosition;
             public float LastYaw;
             public float MaxBank;
@@ -83,10 +83,10 @@ namespace RunwayPanic.Agents.Testing
                 yield break;
             }
 
-            var birds = new List<BirdAgent>();
+            var birds = new List<BirdMotor>();
             foreach (Transform bird in rig.Birds)
             {
-                var agent = bird != null ? bird.GetComponent<BirdAgent>() : null;
+                var agent = bird != null ? bird.GetComponent<BirdMotor>() : null;
                 birds.Add(agent);
                 if (agent != null)
                     flight.Add(new FlightStats { Bird = agent, LastPosition = agent.transform.position, LastYaw = agent.transform.eulerAngles.y });
@@ -118,14 +118,14 @@ namespace RunwayPanic.Agents.Testing
             {
                 rig.Follow(1);
                 yield return new WaitForSeconds(1.5f);
-                BirdAgent pigeon = birds[1];
-                pigeon.Health.TakeDamage(1f, pigeon.Species != null ? pigeon.Species.RequiredWeaponRarity : default);
+                BirdHealth pigeon = birds[1].GetComponent<BirdHealth>();
+                pigeon.TakeDamage(1f, pigeon.Species != null ? pigeon.Species.RequiredWeaponRarity : default);
                 yield return new WaitForSeconds(0.08f);
                 yield return Shot("20_hit_flinch");
 
                 rig.Follow(0);
                 yield return new WaitForSeconds(1.5f);
-                birds[0].Health.Kill();
+                birds[0].GetComponent<BirdHealth>().Kill();
                 yield return new WaitForSeconds(0.3f);
                 yield return Shot("21_death_0.3s");
                 yield return new WaitForSeconds(0.7f);
@@ -137,14 +137,14 @@ namespace RunwayPanic.Agents.Testing
             // 3. Stress test, one run per configuration, with the test birds out of the way.
             foreach (TestPathFeeder feeder in FindObjectsByType<TestPathFeeder>())
                 feeder.gameObject.SetActive(false);
-            foreach (BirdAgent bird in birds)
+            foreach (BirdMotor bird in birds)
             {
                 if (bird != null)
                     bird.gameObject.SetActive(false);
             }
             rig.ShowOverview();
 
-            BirdAgent[] prefabs = FindStressPrefabs();
+            BirdMotor[] prefabs = FindStressPrefabs();
             if (prefabs == null)
             {
                 Debug.LogWarning("[Agents] Automated check: no StressTest object with prefabs in the scene.");
@@ -180,11 +180,11 @@ namespace RunwayPanic.Agents.Testing
 
             foreach (FlightStats stats in flight)
             {
-                BirdAgent bird = stats.Bird;
+                BirdMotor bird = stats.Bird;
                 if (bird == null || !bird.gameObject.activeInHierarchy)
                     continue;
 
-                BirdPathFollower follower = bird.Follower;
+                BirdMotor follower = bird;
                 Transform t = bird.transform;
                 float yaw = t.eulerAngles.y;
 
@@ -194,7 +194,7 @@ namespace RunwayPanic.Agents.Testing
 
                 // How far the bird moved this frame compared with the furthest it could move at top speed:
                 // above 1 would mean a jump (snap), not flight.
-                float allowed = Mathf.Max(follower.MaxSpeed * Time.deltaTime, 1e-4f);
+                float allowed = Mathf.Max(follower.BaseSpeed * Time.deltaTime, 1e-4f);
                 stats.WorstStepRatio = Mathf.Max(stats.WorstStepRatio, (t.position - stats.LastPosition).magnitude / allowed);
 
                 stats.LastPosition = t.position;
@@ -227,7 +227,7 @@ namespace RunwayPanic.Agents.Testing
                 BirdMotionProfile motion = stats.Bird.Motion;
                 text.AppendLine(string.Format(CultureInfo.InvariantCulture,
                     "| `{0}` | {1:0.0} | {2:0.0} | {3:0} | {4:0.0} | {5:0} | {6:0} | {7:0} | {8:0.00} |",
-                    stats.Bird.name, stats.Bird.Follower.MaxSpeed, stats.MaxBank, motion.MaxBank, stats.MaxPitch, motion.MaxPitch,
+                    stats.Bird.name, stats.Bird.BaseSpeed, stats.MaxBank, motion.MaxBank, stats.MaxPitch, motion.MaxPitch,
                     stats.MaxTurnRate, motion.MaxTurnRate, stats.WorstStepRatio));
             }
             text.AppendLine();
@@ -241,7 +241,7 @@ namespace RunwayPanic.Agents.Testing
         }
 
         /// <summary>The prefabs of the (disabled) StressTest object in the open scene.</summary>
-        private static BirdAgent[] FindStressPrefabs()
+        private static BirdMotor[] FindStressPrefabs()
         {
             foreach (BirdStressTest test in Resources.FindObjectsOfTypeAll<BirdStressTest>())
             {

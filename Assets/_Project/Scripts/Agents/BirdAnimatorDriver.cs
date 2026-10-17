@@ -6,10 +6,10 @@ namespace RunwayPanic.Agents
     /// Feeds the bird's Animator (AC_Bird, on the model child) from its movement: how fast it flies and how fast it
     /// climbs or dives pick the wing motion in the Locomotion blend tree. Attack, Hit and Death are one-shot triggers
     /// fired by the bird's attack and health components.
-    /// Root motion is off (the path follower moves the bird) and off-screen birds skip writing their bones.
+    /// Root motion is off (BirdMotor moves the bird) and off-screen birds skip writing their bones.
     /// </summary>
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(BirdPathFollower))]
+    [RequireComponent(typeof(BirdMotor))]
     public sealed class BirdAnimatorDriver : MonoBehaviour
     {
         // Parameter names, shared with the editor tool that builds AC_Bird.
@@ -37,15 +37,13 @@ namespace RunwayPanic.Agents
         [Tooltip("Seconds Speed and VerticalSpeed take to follow the bird, so the blend does not flicker.")]
         [SerializeField, Range(0f, 0.5f)] private float parameterDampTime = 0.15f;
 
-        private BirdPathFollower follower;
-        private BirdAgent agent;
+        private BirdMotor motor;
         private bool hasController;
         private bool dead;
 
         private void Awake()
         {
-            follower = GetComponent<BirdPathFollower>();
-            agent = GetComponent<BirdAgent>();
+            motor = GetComponent<BirdMotor>();
             if (animator == null)
                 animator = GetComponentInChildren<Animator>();
 
@@ -57,7 +55,7 @@ namespace RunwayPanic.Agents
                 return;
             }
 
-            // The path follower moves the bird; clips only rotate bones.
+            // BirdMotor moves the bird; clips only rotate bones.
             animator.applyRootMotion = false;
             // Off-screen birds keep their state machine running (triggers still work) but skip writing bones.
             animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
@@ -74,12 +72,12 @@ namespace RunwayPanic.Agents
             if (dead)
                 return;
 
-            float maxSpeed = Mathf.Max(follower.MaxSpeed, 0.01f);
-            float speed01 = Mathf.Clamp01(follower.Speed / maxSpeed);
+            float maxSpeed = Mathf.Max(motor.BaseSpeed, 0.01f);
+            float speed01 = Mathf.Clamp01(motor.Speed / maxSpeed);
 
             // -1 = diving at the steepest allowed angle and full speed, +1 = climbing the same way.
-            float maxClimbRate = maxSpeed * Mathf.Sin(follower.MaxPitch * Mathf.Deg2Rad);
-            float vertical = Mathf.Clamp(follower.Velocity.y / Mathf.Max(maxClimbRate, 0.01f), -1f, 1f);
+            float maxClimbRate = maxSpeed * Mathf.Sin(motor.MaxPitch * Mathf.Deg2Rad);
+            float vertical = Mathf.Clamp(motor.Velocity.y / Mathf.Max(maxClimbRate, 0.01f), -1f, 1f);
 
             animator.SetFloat(SpeedId, speed01, parameterDampTime, Time.deltaTime);
             animator.SetFloat(VerticalSpeedId, vertical, parameterDampTime, Time.deltaTime);
@@ -126,7 +124,7 @@ namespace RunwayPanic.Agents
         /// </summary>
         private void Desynchronise()
         {
-            float multiplier = agent != null ? agent.Motion.FlapSpeedMultiplier : 1f;
+            float multiplier = motor.Motion.FlapSpeedMultiplier;
             animator.SetFloat(CycleOffsetId, Random.value);
             animator.SetFloat(FlapSpeedId, multiplier * Random.Range(1f - flapSpeedVariation, 1f + flapSpeedVariation));
         }

@@ -14,7 +14,7 @@ namespace RunwayPanic.Agents.Testing
     public sealed class TestPathFeeder : MonoBehaviour
     {
         [Tooltip("The bird to drive (a scene instance).")]
-        [SerializeField] private BirdAgent bird;
+        [SerializeField] private BirdMotor bird;
         [Tooltip("Grid cell size in metres: the route is sent as one waypoint per cell, like an A* path.")]
         [SerializeField, Min(0.25f)] private float cellSize = 2f;
 
@@ -39,7 +39,6 @@ namespace RunwayPanic.Agents.Testing
         private readonly List<Vector3> corners = new List<Vector3>(16);
         private readonly List<Vector3> route = new List<Vector3>(128);
         private readonly List<Vector3> pathBuffer = new List<Vector3>(128);
-        private BirdPathFollower follower;
         private BirdHealth health;
         private float nextRepathTime;
         private bool shifted;
@@ -53,19 +52,18 @@ namespace RunwayPanic.Agents.Testing
                 return;
             }
 
-            follower = bird.GetComponent<BirdPathFollower>();
             health = bird.GetComponent<BirdHealth>();
-            follower.PathCompleted += HandlePathCompleted;
+            bird.PathCompleted += HandlePathCompleted;
 
             BuildRoute();
-            follower.Teleport(route[0], route[1] - route[0]);
+            bird.Teleport(route[0], route[1] - route[0]);
             SendPath();
         }
 
         private void OnDestroy()
         {
-            if (follower != null)
-                follower.PathCompleted -= HandlePathCompleted;
+            if (bird != null)
+                bird.PathCompleted -= HandlePathCompleted;
         }
 
         private void Update()
@@ -85,7 +83,7 @@ namespace RunwayPanic.Agents.Testing
                 return;
 
             if (keyboard.hKey.wasPressedThisFrame && health.IsAlive)
-                health.TakeDamage(damagePerPress, bird.Species != null ? bird.Species.RequiredWeaponRarity : default);
+                health.TakeDamage(damagePerPress, health.Species != null ? health.Species.RequiredWeaponRarity : default);
             if (keyboard.kKey.wasPressedThisFrame)
                 health.Kill();
             if (keyboard.rKey.wasPressedThisFrame)
@@ -98,7 +96,7 @@ namespace RunwayPanic.Agents.Testing
             health.Revive();
             shifted = false;
             BuildRoute();
-            follower.Teleport(route[0], route[1] - route[0]);
+            bird.Teleport(route[0], route[1] - route[0]);
             SendPath();
         }
 
@@ -124,7 +122,7 @@ namespace RunwayPanic.Agents.Testing
             for (int i = 1; i <= route.Count; i++)
                 pathBuffer.Add(route[(nearest + i) % route.Count]);
 
-            follower.SetPath(pathBuffer);
+            bird.FollowPath(pathBuffer);
             nextRepathTime = Time.time + repathInterval;
         }
 

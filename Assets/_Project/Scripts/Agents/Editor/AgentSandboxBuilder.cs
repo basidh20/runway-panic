@@ -40,7 +40,7 @@ namespace RunwayPanic.Agents.EditorTools
 
             // Opening a scene unloads every asset nothing in it references, which destroys prefab references loaded
             // before the switch. Load them again now.
-            BirdAgent[] prefabs = LoadPrefabs();
+            BirdMotor[] prefabs = LoadPrefabs();
 
             var light = new GameObject("Directional Light").AddComponent<Light>();
             light.type = LightType.Directional;
@@ -99,24 +99,24 @@ namespace RunwayPanic.Agents.EditorTools
             Debug.Log("[Agents] Automated check started: about 2 minutes, Play mode stops by itself.");
         }
 
-        /// <summary>The BirdAgent of each species prefab, or null (with a warning) if one is not set up yet.</summary>
-        static BirdAgent[] LoadPrefabs()
+        /// <summary>The BirdMotor of each species prefab, or null (with a warning) if one is not set up yet.</summary>
+        static BirdMotor[] LoadPrefabs()
         {
-            var prefabs = new BirdAgent[Species.Length];
+            var prefabs = new BirdMotor[Species.Length];
             for (int i = 0; i < Species.Length; i++)
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}P_Bird_{Species[i]}.prefab");
-                prefabs[i] = prefab != null ? prefab.GetComponent<BirdAgent>() : null;
+                prefabs[i] = prefab != null ? prefab.GetComponent<BirdMotor>() : null;
                 if (prefabs[i] == null)
                 {
-                    Debug.LogWarning($"[Agents] P_Bird_{Species[i]} has no BirdAgent - run Tools > Agents > Setup Bird Prefabs first.");
+                    Debug.LogWarning($"[Agents] P_Bird_{Species[i]} has no BirdMotor - run Tools > Agents > Setup Bird Prefabs first.");
                     return null;
                 }
             }
             return prefabs;
         }
 
-        static GameObject CreateBird(BirdAgent prefab, string species, Vector3 feederPosition, int legs, int legCells,
+        static GameObject CreateBird(BirdMotor prefab, string species, Vector3 feederPosition, int legs, int legCells,
             Transform[] birds, int index)
         {
             var bird = (GameObject)PrefabUtility.InstantiatePrefab(prefab.gameObject);
@@ -135,7 +135,7 @@ namespace RunwayPanic.Agents.EditorTools
             feeder.transform.position = feederPosition;
             using (var serialized = new SerializedObject(feeder.AddComponent<TestPathFeeder>()))
             {
-                serialized.FindProperty("bird").objectReferenceValue = bird.GetComponent<BirdAgent>();
+                serialized.FindProperty("bird").objectReferenceValue = bird.GetComponent<BirdMotor>();
                 serialized.FindProperty("zigzagLegs").intValue = legs;
                 serialized.FindProperty("legCells").intValue = legCells;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -172,7 +172,7 @@ namespace RunwayPanic.Agents.EditorTools
             }
         }
 
-        static void CreateStressTest(BirdAgent[] prefabs)
+        static void CreateStressTest(BirdMotor[] prefabs)
         {
             var stress = new GameObject("StressTest");
             using (var serialized = new SerializedObject(stress.AddComponent<BirdStressTest>()))

@@ -19,7 +19,7 @@ namespace RunwayPanic.Agents.Testing
         public enum Mode
         {
             MovingAndAnimated = 0,  // the real game
-            MovingNoAnimation = 1,  // follower on, Animator off: the cost of movement alone
+            MovingNoAnimation = 1,  // motor on, Animator off: the cost of movement alone
             Static = 2              // everything off: the cost of drawing the birds
         }
 
@@ -27,7 +27,7 @@ namespace RunwayPanic.Agents.Testing
         private const float WindowSeconds = 0.5f;
 
         [Tooltip("Bird prefabs, used in turn (gull, pigeon, crow, hawk).")]
-        [SerializeField] private BirdAgent[] prefabs = Array.Empty<BirdAgent>();
+        [SerializeField] private BirdMotor[] prefabs = Array.Empty<BirdMotor>();
         [SerializeField, Min(1)] private int birdCount = 40;
         [SerializeField] private Mode mode = Mode.MovingAndAnimated;
         [Tooltip("Animator culling mode for the spawned birds, to compare CullUpdateTransforms with AlwaysAnimate.")]
@@ -60,13 +60,13 @@ namespace RunwayPanic.Agents.Testing
         private string result = "Warming up...";
 
         /// <summary>The bird prefabs this test spawns.</summary>
-        public BirdAgent[] Prefabs => prefabs;
+        public BirdMotor[] Prefabs => prefabs;
 
         /// <summary>True once the measurement is written.</summary>
         public bool IsFinished => done;
 
         /// <summary>Sets up a test created from code. Call before its first frame (Start).</summary>
-        public void Configure(BirdAgent[] birdPrefabs, Mode runMode, SkinQuality runSkinQuality = SkinQuality.Auto)
+        public void Configure(BirdMotor[] birdPrefabs, Mode runMode, SkinQuality runSkinQuality = SkinQuality.Auto)
         {
             prefabs = birdPrefabs;
             mode = runMode;
@@ -89,16 +89,16 @@ namespace RunwayPanic.Agents.Testing
             startTime = Time.realtimeSinceStartup;
         }
 
-        private void Spawn(BirdAgent prefab, int index, System.Random random)
+        private void Spawn(BirdMotor prefab, int index, System.Random random)
         {
             Vector3[] loop = BuildLoop(random);
-            BirdAgent bird = Instantiate(prefab, loop[0], Quaternion.identity, transform);
+            BirdMotor bird = Instantiate(prefab, loop[0], Quaternion.identity, transform);
             bird.name = $"{prefab.name}_{index:00}";
 
             foreach (SkinnedMeshRenderer skin in bird.GetComponentsInChildren<SkinnedMeshRenderer>())
                 skin.quality = skinQuality;
 
-            BirdPathFollower follower = bird.GetComponent<BirdPathFollower>();
+            BirdMotor follower = bird;
             follower.DrawPathGizmos = false; // measure the birds, not the debug drawing
             Animator animator = bird.GetComponentInChildren<Animator>();
             if (animator != null)
@@ -118,8 +118,8 @@ namespace RunwayPanic.Agents.Testing
             }
 
             follower.Teleport(loop[0], loop[1] - loop[0]);
-            follower.SetPath(loop);
-            follower.PathCompleted += () => follower.SetPath(loop); // fly the same loop forever
+            follower.FollowPath(loop);
+            follower.PathCompleted += () => follower.FollowPath(loop); // fly the same loop forever
         }
 
         /// <summary>A rectangle of random size and height, sent as one waypoint per grid cell (A* style).</summary>

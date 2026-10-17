@@ -1,25 +1,24 @@
-using RunwayPanic.Data;
 using UnityEditor;
 using UnityEngine;
 
 namespace RunwayPanic.Agents.EditorTools
 {
     /// <summary>
-    /// Tools > Agents > Setup Bird Prefabs: the only way the Agent Controller changes the bird prefabs.
+    /// Tools > Agents > Setup Bird Prefabs: the only way the Agent Controller changes the bird prefabs (F4 of the shared
+    /// bird AI plan: swap the F2 stand-ins for the real components).
     /// 1. Creates the motion profiles in ScriptableObjects/Agents/ if they are missing (existing ones are kept, so
     ///    values tuned in the Inspector survive).
-    /// 2. P_Bird_Base and P_Bird_Hawk (the two prefabs with a model): adds a kinematic, interpolated Rigidbody and
-    ///    BirdAgent (which brings the follower, animator driver, health and attack), and puts AC_Bird / AOC_Bird_Hawk
-    ///    on the Animator of the model child with root motion off and transform culling.
-    /// 3. Sets each species' BirdSpeciesData and motion profile: Pigeon and Crow on their variants, Hawk on its
-    ///    prefab. The Gull has no species asset yet, so it is left empty and a warning is logged.
-    /// Safe to run any number of times: it only adds what is missing and sets the same values again.
-    /// Run Tools > Agents > Build Bird Animations first.
+    /// 2. P_Bird_Base and P_Bird_Hawk (the two prefabs with a model): replaces the stand-in SimpleBirdMotor with
+    ///    BirdMotor, adds BirdAnimatorDriver, makes sure the kinematic interpolated Rigidbody, BirdHealth and
+    ///    BirdContactAttack are there, and puts AC_Bird / AOC_Bird_Hawk on the model child's Animator with root motion
+    ///    off and transform culling.
+    /// 3. Gives each species its motion profile (Pigeon and Crow on their variants, Hawk on its prefab).
+    /// Species stats stay on BirdHealth, set by the Core Developer's Tools > S3 > Add Bird AI Components.
+    /// Safe to run any number of times. Run Tools > Agents > Build Bird Animations first.
     /// </summary>
     public static class BirdPrefabSetup
     {
         const string PrefabFolder = "Assets/_Project/Prefabs/Birds/";
-        const string SpeciesFolder = "Assets/_Project/ScriptableObjects/Birds/";
         const string ProfileParent = "Assets/_Project/ScriptableObjects";
         const string ProfileFolder = ProfileParent + "/Agents";
         const string ControllerPath = "Assets/_Project/Art/Animations/Birds/AC_Bird.controller";
@@ -48,7 +47,7 @@ namespace RunwayPanic.Agents.EditorTools
         //   Pigeon: small and twitchy - fast turns, quick roll, short look-ahead, fast wing beat.
         //   Crow:   in between.
         //   Hawk:   wide, smooth banking turns and slow, powerful wing beats.
-        //   Default (gull and anything without its own profile): calm.
+        //   Default (the gull, and anything without its own profile): calm.
         static readonly Profile[] Profiles =
         {
             //          name                turn  pitch bank  bankTime accel look  flap
@@ -70,23 +69,20 @@ namespace RunwayPanic.Agents.EditorTools
             }
 
             EnsureProfiles();
-            BirdMotionProfile defaultProfile = LoadProfile("BirdMotion_Default");
 
             // Models first, so the variants inherit the new components.
-            SetupModelPrefab("P_Bird_Base", controller, null, defaultProfile);
-            SetupModelPrefab("P_Bird_Hawk", hawkController, LoadSpecies("BirdSpecies_Hawk"), LoadProfile("BirdMotion_Hawk"));
+            SetupModelPrefab("P_Bird_Base", controller, LoadProfile("BirdMotion_Default"));
+            SetupModelPrefab("P_Bird_Hawk", hawkController, LoadProfile("BirdMotion_Hawk"));
 
-            SetupVariant("P_Bird_Pigeon", LoadSpecies("BirdSpecies_Pigeon"), LoadProfile("BirdMotion_Pigeon"));
-            SetupVariant("P_Bird_Crow", LoadSpecies("BirdSpecies_Crow"), LoadProfile("BirdMotion_Crow"));
-            Debug.LogWarning("[Agents] P_Bird_Gull: there is no BirdSpecies_Gull asset (and BirdSpecies_Eagle has no prefab), " +
-                             "so the gull keeps the default profile and fallback stats. See Docs/AgentController/HANDOFF.md.");
+            SetupVariant("P_Bird_Pigeon", LoadProfile("BirdMotion_Pigeon"));
+            SetupVariant("P_Bird_Crow", LoadProfile("BirdMotion_Crow"));
+            // P_Bird_Gull keeps the base prefab's default profile.
 
             AssetDatabase.SaveAssets();
             Debug.Log("[Agents] Setup Bird Prefabs: done.");
         }
 
-        static void SetupModelPrefab(string prefabName, RuntimeAnimatorController controller, BirdSpeciesData species,
-            BirdMotionProfile profile)
+        static void SetupModelPrefab(string prefabName, RuntimeAnimatorController controller, BirdMotionProfile profile)
         {
             string path = PrefabFolder + prefabName + ".prefab";
             GameObject root = PrefabUtility.LoadPrefabContents(path);
@@ -94,14 +90,18 @@ namespace RunwayPanic.Agents.EditorTools
             {
                 if (!root.TryGetComponent(out Rigidbody body))
                     body = root.AddComponent<Rigidbody>();
-                body.isKinematic = true;   // moved by BirdPathFollower, until BirdHealth drops it on death
+                body.isKinematic = true;   // moved by BirdMotor, until BirdHealth drops it on death
                 body.useGravity = false;
                 body.interpolation = RigidbodyInterpolation.Interpolate;
                 body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative; // falling bodies don't tunnel
 
-                if (!root.TryGetComponent(out BirdAgent agent))
-                    agent = root.AddComponent<BirdAgent>(); // RequireComponent adds the follower, driver, health and attack
+                // F4: the real motor replaces the F2 stand-in (brains only see IBirdMotor, so nothing else changes).
+                RemoveIfPresent<SimpleBirdMotor>(root);
+                BirdMotor motor = Ensure<BirdMotor>(root);
+                Ensure<BirdHealth>(root);
+                Ensure<BirdContactAttack>(root);
 
+                BirdAnimatorDriver driver = Ensure<BirdAnimatorDriver>(root);
                 Animator animator = root.GetComponentInChildren<Animator>(true);
                 if (animator == null)
                 {
@@ -112,10 +112,10 @@ namespace RunwayPanic.Agents.EditorTools
                     animator.runtimeAnimatorController = controller;
                     animator.applyRootMotion = false;
                     animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
-                    SetReference(root.GetComponent<BirdAnimatorDriver>(), "animator", animator);
+                    SetReference(driver, "animator", animator);
                 }
 
-                SetAgentAssets(agent, species, profile);
+                SetReference(motor, "motionProfile", profile);
                 PrefabUtility.SaveAsPrefabAsset(root, path, out bool success);
                 Debug.Log(success ? $"[Agents] Set up {path}" : $"[Agents] Could not save {path}");
             }
@@ -125,19 +125,19 @@ namespace RunwayPanic.Agents.EditorTools
             }
         }
 
-        static void SetupVariant(string prefabName, BirdSpeciesData species, BirdMotionProfile profile)
+        static void SetupVariant(string prefabName, BirdMotionProfile profile)
         {
             string path = PrefabFolder + prefabName + ".prefab";
             GameObject root = PrefabUtility.LoadPrefabContents(path);
             try
             {
-                if (!root.TryGetComponent(out BirdAgent agent))
+                if (!root.TryGetComponent(out BirdMotor motor))
                 {
-                    Debug.LogWarning($"[Agents] {prefabName} has no BirdAgent - is it still a variant of P_Bird_Base?");
+                    Debug.LogWarning($"[Agents] {prefabName} has no BirdMotor - is it still a variant of P_Bird_Base?");
                     return;
                 }
 
-                SetAgentAssets(agent, species, profile);
+                SetReference(motor, "motionProfile", profile);
                 PrefabUtility.SaveAsPrefabAsset(root, path, out bool success);
                 Debug.Log(success ? $"[Agents] Set up {path}" : $"[Agents] Could not save {path}");
             }
@@ -147,14 +147,15 @@ namespace RunwayPanic.Agents.EditorTools
             }
         }
 
-        static void SetAgentAssets(BirdAgent agent, BirdSpeciesData species, BirdMotionProfile profile)
+        static T Ensure<T>(GameObject target) where T : Component
         {
-            using (var serialized = new SerializedObject(agent))
-            {
-                serialized.FindProperty("species").objectReferenceValue = species;
-                serialized.FindProperty("motionProfile").objectReferenceValue = profile;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-            }
+            return target.TryGetComponent(out T component) ? component : target.AddComponent<T>();
+        }
+
+        static void RemoveIfPresent<T>(GameObject target) where T : Component
+        {
+            foreach (T component in target.GetComponentsInChildren<T>(true))
+                Object.DestroyImmediate(component, true);
         }
 
         static void SetReference(Object component, string field, Object value)
@@ -199,13 +200,5 @@ namespace RunwayPanic.Agents.EditorTools
 
         static BirdMotionProfile LoadProfile(string name) =>
             AssetDatabase.LoadAssetAtPath<BirdMotionProfile>($"{ProfileFolder}/{name}.asset");
-
-        static BirdSpeciesData LoadSpecies(string name)
-        {
-            var species = AssetDatabase.LoadAssetAtPath<BirdSpeciesData>($"{SpeciesFolder}{name}.asset");
-            if (species == null)
-                Debug.LogWarning($"[Agents] {SpeciesFolder}{name}.asset not found.");
-            return species;
-        }
     }
 }
