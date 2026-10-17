@@ -112,6 +112,7 @@ namespace RunwayPanic.PlayerTools
             public float Bob;         // body rises and falls twice per cycle
             public float Breath;      // chest rise (idle)
             public float ArmSpread;   // how far the arms hang away from the body
+            public float Plant;       // 1 = keep the lower foot on the ground (the hips dip as the legs spread)
 
             public Pose Sample(float phase)
             {
@@ -132,6 +133,7 @@ namespace RunwayPanic.PlayerTools
                     Lean = Lean, Twist = Twist * sin, Breath = breath,
                     // Lowest when the legs are furthest apart (twice per cycle); idle just breathes.
                     Body = ThighSwing > 0f ? Bob * Mathf.Cos(2f * phase) : Bob * sin,
+                    Plant = Plant,
                 };
             }
         }
@@ -142,17 +144,18 @@ namespace RunwayPanic.PlayerTools
             Bob = 0.006f, Breath = 1.5f, ArmSpread = 0.14f,
         };
 
-        // Walk speed is 4.5 m/s (a jog), so the "walk" is a light jog.
+        // Walk speed is 4.5 m/s (a jog), so the "walk" is a light jog. Strides are as long as the officer's short legs
+        // allow; PlayerAnimatorBuilder then plays each clip faster to match the real move speed (no foot sliding).
         private static readonly Gait Walk = new Gait
         {
-            Name = "A_Player_Walk", Period = 0.7f, ThighSwing = 32f, KneeBase = 12f, KneeLift = 70f, FootRoll = 15f,
-            ArmSwing = 32f, Elbow = 70f, Lean = 7f, Twist = 6f, Bob = 0.035f, ArmSpread = 0.12f,
+            Name = "A_Player_Walk", Period = 0.7f, ThighSwing = 42f, KneeBase = 12f, KneeLift = 75f, FootRoll = 18f,
+            ArmSwing = 38f, Elbow = 70f, Lean = 8f, Twist = 7f, ArmSpread = 0.12f, Plant = 1f,
         };
 
         private static readonly Gait Run = new Gait
         {
-            Name = "A_Player_Run", Period = 0.6f, ThighSwing = 45f, KneeBase = 18f, KneeLift = 95f, FootRoll = 20f,
-            ArmSwing = 45f, Elbow = 90f, Lean = 12f, Twist = 9f, Bob = 0.05f, ArmSpread = 0.1f,
+            Name = "A_Player_Run", Period = 0.6f, ThighSwing = 58f, KneeBase = 18f, KneeLift = 100f, FootRoll = 22f,
+            ArmSwing = 50f, Elbow = 90f, Lean = 14f, Twist = 10f, ArmSpread = 0.1f, Plant = 1f,
         };
 
         // ---- Jump key poses ----

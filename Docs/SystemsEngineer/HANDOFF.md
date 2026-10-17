@@ -13,6 +13,21 @@ Template:
 
 ---
 
+## 2026-10-17 — to: all — the player is fully animated (move, jump, guns, reload, hit, death)
+- **What:** `Prefabs/Player/P_Player_Gameplay` (already in `Main`); controller `Art/Animations/Player/AC_Player.controller`; tools `Tools > S2 > Build Player Animator` and `Tools > S2 > Generate Player Clips`.
+- **Details:**
+  - Clips are generated from the officer's own Humanoid rig (no downloads): idle, walk (a jog), run, jump start/fall/land, pistol and rifle aim/fire/equip/reload, hit, death.
+  - Three layers: **Base** (locomotion, jump, death) · **UpperBody** (arms only: holding, firing, drawing and reloading the gun, so the legs keep moving) · **Reactions** (additive hit flinch on spine, head and arms).
+  - Everything is driven by events that already exist — `PlayerController.Jumped`, `PlayerWeaponHolder.WeaponEquipped`, `WeaponBase.Fired / ReloadStarted / ReloadFinished`, `PlayerHealth.Damaged`, health reaching 0. No other script needs to call the Animator.
+  - `PlayerAimIK` twists the torso so the barrel points where the camera aims, and puts the left hand on the held gun (any gun; long guns are held nearer the body).
+  - Reloads last exactly each gun's `ReloadTime`. Manual reload: **R** / gamepad **RB**. Each gun's `WeaponData.holdType` (Pistol / Rifle) picks the arm pose.
+  - Walk and run play faster to keep pace with the move speeds (8% / 19% foot slide left); the builder logs the numbers.
+- **Action needed:**
+  - Core Developer: if `SK_Player_Officer` is re-exported, keep it **Humanoid** with the same bone names, then run `Tools > S2 > Generate Player Clips` and `Build Player Animator`. Don't add an Animator Controller to `P_Player_Officer` itself — `P_Player_Gameplay` sets it.
+  - Anyone adding a gun: set its `holdType` on the weapon asset; nothing else.
+  - Anyone changing `walkSpeed` / `sprintSpeed`: re-run `Build Player Animator` so the foot speed matches again.
+- **Status:** done
+
 ## 2026-10-17 — to: World Builder — the between-wave shop (logic + screen)
 - **What:** `Assets/_Project/Prefabs/Core/P_Shop.prefab` (ShopManager + shop screen), items in `ScriptableObjects/Shop/`
 - **Details:**
