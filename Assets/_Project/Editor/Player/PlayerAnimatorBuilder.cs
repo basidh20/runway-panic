@@ -14,7 +14,8 @@ namespace RunwayPanic.PlayerTools
     /// <para>
     /// Base layer: <c>Locomotion</c> (idle → walk → run by <c>Speed</c>) and the jump states
     /// <c>JumpStart → Fall → Land</c> (<c>Jump</c> trigger, <c>IsGrounded</c>, <c>VerticalSpeed</c>); walking off a
-    /// ledge goes straight to <c>Fall</c>.
+    /// ledge goes straight to <c>Fall</c>. <c>UpperBody</c> layer (arms and fingers only, <c>AM_Player_UpperBody</c>):
+    /// pistol/rifle aim, fire and equip (<c>WeaponType</c>, <c>Fire</c>, <c>Equip</c>).
     /// </para>
     /// <para>
     /// Clips are found by name (<c>A_Player_Idle</c>, <c>_Walk</c>, <c>_Run</c>, <c>_JumpStart</c>, <c>_Fall</c>,
@@ -37,8 +38,29 @@ namespace RunwayPanic.PlayerTools
         private const string JumpStartClip = "A_Player_JumpStart";
         private const string FallClip = "A_Player_Fall";
         private const string LandClip = "A_Player_Land";
+        private const string PistolAimClip = "A_Player_PistolAim";
+        private const string PistolFireClip = "A_Player_PistolFire";
+        private const string PistolEquipClip = "A_Player_PistolEquip";
+        private const string RifleAimClip = "A_Player_RifleAim";
+        private const string RifleFireClip = "A_Player_RifleFire";
+        private const string RifleEquipClip = "A_Player_RifleEquip";
 
-        private static readonly string[] RequiredClips = { IdleClip, WalkClip, RunClip, JumpStartClip, FallClip, LandClip };
+        private static readonly string[] RequiredClips =
+        {
+            IdleClip, WalkClip, RunClip, JumpStartClip, FallClip, LandClip,
+            PistolAimClip, PistolFireClip, PistolEquipClip, RifleAimClip, RifleFireClip, RifleEquipClip,
+        };
+
+        private const string MaskPath = ClipsFolder + "/AM_Player_UpperBody.mask";
+        private const string UpperBodyLayer = "UpperBody";
+        private const string ArmedTag = "Armed"; // PlayerAimIK aims and places the left hand only in these states
+        private const string EquipTag = "Equip";
+
+        private const string WeaponTypeParameter = "WeaponType"; // 0 none, 1 pistol, 2 rifle
+        private const string EquipParameter = "Equip";
+        private const string FireParameter = "Fire";
+        private const int PistolType = 1;
+        private const int RifleType = 2;
 
         private const string SpeedParameter = "Speed";
         private const string JumpParameter = "Jump";
@@ -78,6 +100,7 @@ namespace RunwayPanic.PlayerTools
             AnimatorState locomotion = BuildLocomotion(controller, clips[IdleClip], clips[WalkClip], clips[RunClip],
                 walkSpeed, sprintSpeed);
             BuildJump(controller, locomotion, clips[JumpStartClip], clips[FallClip], clips[LandClip]);
+            BuildUpperBody(controller, LoadOrCreateUpperBodyMask(), clips);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
 
@@ -214,6 +237,93 @@ namespace RunwayPanic.PlayerTools
             Transition(land, locomotion, 0.15f, exitTime: 0.8f);
         }
 
+        // ---- Upper body (weapons) ----
+
+        // Arms and fingers only: the legs and spine keep playing locomotion and jumps underneath.
+        private static AvatarMask LoadOrCreateUpperBodyMask()
+        {
+            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(MaskPath);
+            if (mask == null)
+            {
+                mask = new AvatarMask();
+                AssetDatabase.CreateAsset(mask, MaskPath);
+            }
+
+            for (var part = AvatarMaskBodyPart.Root; part < AvatarMaskBodyPart.LastBodyPart; part++)
+            {
+                bool arms = part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.RightArm ||
+                            part == AvatarMaskBodyPart.LeftFingers || part == AvatarMaskBodyPart.RightFingers ||
+                            part == AvatarMaskBodyPart.LeftHandIK || part == AvatarMaskBodyPart.RightHandIK;
+                mask.SetHumanoidBodyPartActive(part, arms);
+            }
+
+            EditorUtility.SetDirty(mask);
+            return mask;
+        }
+
+        //   Any ──Equip──► PistolEquip / RifleEquip (by WeaponType) ──(clip ends)──► PistolAim / RifleAim
+        //   Any ──Fire──►  PistolFire / RifleFire (restarts on every shot) ──(clip ends)──► aim
+        //   PistolAim ◄──WeaponType──► RifleAim
+        // The layer's weight is set by PlayerAnimator: 0 with no gun, 1 while holding one.
+        private static void BuildUpperBody(AnimatorController controller, AvatarMask mask,
+            Dictionary<string, AnimationClip> clips)
+        {
+            controller.AddParameter(WeaponTypeParameter, AnimatorControllerParameterType.Int);
+            controller.AddParameter(EquipParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(FireParameter, AnimatorControllerParameterType.Trigger);
+
+            controller.AddLayer(UpperBodyLayer);
+            AnimatorControllerLayer[] layers = controller.layers;
+            int layerIndex = layers.Length - 1;
+            layers[layerIndex].avatarMask = mask;
+            layers[layerIndex].blendingMode = AnimatorLayerBlendingMode.Override;
+            layers[layerIndex].defaultWeight = 0f;
+            controller.layers = layers;
+
+            AnimatorStateMachine machine = controller.layers[layerIndex].stateMachine;
+            AnimatorState pistolAim = State(machine, "PistolAim", clips[PistolAimClip], ArmedTag);
+            AnimatorState pistolFire = State(machine, "PistolFire", clips[PistolFireClip], ArmedTag);
+            AnimatorState pistolEquip = State(machine, "PistolEquip", clips[PistolEquipClip], EquipTag);
+            AnimatorState rifleAim = State(machine, "RifleAim", clips[RifleAimClip], ArmedTag);
+            AnimatorState rifleFire = State(machine, "RifleFire", clips[RifleFireClip], ArmedTag);
+            AnimatorState rifleEquip = State(machine, "RifleEquip", clips[RifleEquipClip], EquipTag);
+            machine.defaultState = pistolAim;
+
+            AnyTransition(machine, pistolEquip, EquipParameter, PistolType, 0.05f);
+            AnyTransition(machine, rifleEquip, EquipParameter, RifleType, 0.05f);
+            AnyTransition(machine, pistolFire, FireParameter, PistolType, 0.02f);
+            AnyTransition(machine, rifleFire, FireParameter, RifleType, 0.02f);
+
+            Transition(pistolEquip, pistolAim, 0.08f, exitTime: 0.95f);
+            Transition(rifleEquip, rifleAim, 0.08f, exitTime: 0.95f);
+            Transition(pistolFire, pistolAim, 0.05f, exitTime: 0.95f);
+            Transition(rifleFire, rifleAim, 0.05f, exitTime: 0.95f);
+
+            Transition(pistolAim, rifleAim, 0.15f).AddCondition(AnimatorConditionMode.Equals, RifleType, WeaponTypeParameter);
+            Transition(rifleAim, pistolAim, 0.15f).AddCondition(AnimatorConditionMode.Equals, PistolType, WeaponTypeParameter);
+        }
+
+        private static AnimatorState State(AnimatorStateMachine machine, string name, Motion motion, string tag)
+        {
+            AnimatorState state = machine.AddState(name);
+            state.motion = motion;
+            state.tag = tag;
+            return state;
+        }
+
+        // From any state on a trigger, for one weapon type; may restart itself (every shot re-kicks the recoil).
+        private static void AnyTransition(AnimatorStateMachine machine, AnimatorState to, string trigger,
+            int weaponType, float duration)
+        {
+            AnimatorStateTransition transition = machine.AddAnyStateTransition(to);
+            transition.hasFixedDuration = true;
+            transition.duration = duration;
+            transition.hasExitTime = false;
+            transition.canTransitionToSelf = true;
+            transition.AddCondition(AnimatorConditionMode.If, 0f, trigger);
+            transition.AddCondition(AnimatorConditionMode.Equals, weaponType, WeaponTypeParameter);
+        }
+
         // A transition with a fixed blend time in seconds; with exitTime set, it waits for that point of the clip.
         private static AnimatorStateTransition Transition(AnimatorState from, AnimatorState to, float duration,
             float? exitTime = null)
@@ -253,6 +363,9 @@ namespace RunwayPanic.PlayerTools
                 var serialized = new SerializedObject(playerAnimator);
                 serialized.FindProperty("animator").objectReferenceValue = animator;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
+
+                if (!root.TryGetComponent(out PlayerAimIK _))
+                    root.AddComponent<PlayerAimIK>();
 
                 PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             }
