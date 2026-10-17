@@ -31,8 +31,10 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0.1f)] private float maxHeightBonus = 15f;
         [Tooltip("Seconds between re-scoring the perches while flying to one.")]
         [SerializeField, Min(0.1f)] private float perchReevaluateInterval = 2f;
-        [Tooltip("How fast a perch's 'recently shot' value fades, per second (1 = gone after 1 s).")]
-        [SerializeField, Min(0f)] private float recentlyShotDecayPerSecond = 0.05f;
+        [Tooltip("How fast a perch's 'recently shot' value fades, per second (1 = gone after 1 s). 0.01, not the plan's 0.05: " +
+                 "at 0.05 one hit (0.6) is forgotten after 12 s — before the hawk has flown away, hidden and come back — " +
+                 "so it returned to the vantage where it was shot. At 0.01 one hit lasts 60 s, two hits 100 s.")]
+        [SerializeField, Min(0f)] private float recentlyShotDecayPerSecond = 0.01f;
         [Tooltip("Hysteresis: a new perch must beat the current one's total by more than this before the hawk switches (stops flip-flopping).")]
         [SerializeField, Min(0f)] private float perchSwitchMargin = 0.15f;
         [Tooltip("Decision inertia: after choosing a perch or landing on one, the hawk doesn't consider switching for this many seconds " +
@@ -155,22 +157,32 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0.5f)] private float maxManoeuvreTime = 6f;
 
         [Header("Withdraw")]
-        [Tooltip("Seconds the wounded hawk waits on its hidden perch before hunting again.")]
+        [Tooltip("Seconds the wounded hawk circles over its hidden vantage point before hunting again (counted from arrival).")]
         [SerializeField, Min(0f)] private float withdrawWait = 4f;
+        [Tooltip("Speed multiplier while flying to the hidden vantage point.")]
+        [SerializeField, Min(0.1f)] private float withdrawSpeedMultiplier = 1.3f;
+        [Tooltip("Added to the 'recently shot' value of the vantage the hawk last watched from, per hit (capped at 1): " +
+                 "two hits from the same vantage keep it out of use for most of a wave.")]
+        [SerializeField, Range(0f, 1f)] private float withdrawShotMark = 0.6f;
 
         [Header("Herd")]
         [Tooltip("Fewest other alive birds needed for the hawk to switch to Herd mode.")]
         [SerializeField, Min(1)] private int herdMinOtherBirds = 3;
         [Tooltip("How far behind the flock (away from the player) the herd point is, in metres.")]
         [SerializeField, Min(0f)] private float herdOffset = 10f;
-        [Tooltip("Radius of the circle the hawk flies around the herd point, in metres.")]
-        [SerializeField, Min(0.5f)] private float herdOrbitRadius = 4f;
+        [Tooltip("Radius of the circle the hawk flies around the herd point, in metres. 7, not the plan's 4: like the soaring " +
+                 "circle it must be wider than the hawk's turn circle (8 m/s / 90°/s ≈ 5 m), or the hawk cannot follow it.")]
+        [SerializeField, Min(0.5f)] private float herdOrbitRadius = 7f;
         [Tooltip("Height of the herd point above the flock's centre, in metres.")]
         [SerializeField, Min(0f)] private float herdHeight = 6f;
         [Tooltip("Radius of the fear field the hawk projects while herding, in metres.")]
         [SerializeField, Min(0f)] private float fearRadius = 12f;
         [Tooltip("Strength of the fear field (how hard other birds are pushed away).")]
         [SerializeField, Min(0f)] private float fearStrength = 1.5f;
+        [Tooltip("Seconds between counting the other birds to decide between Hunt and Herd.")]
+        [SerializeField, Min(0.1f)] private float herdCheckInterval = 1f;
+        [Tooltip("While herding, a new path is planned only when the herd point has moved more than this, in metres.")]
+        [SerializeField, Min(0.5f)] private float herdRepathDistance = 5f;
 
         [Header("General")]
         [Tooltip("Seconds between path requests while following a moving target.")]
@@ -302,8 +314,12 @@ namespace RunwayPanic.Agents.Hawk
         /// <summary>Longest dive, feint or recovery climb, in seconds.</summary>
         public float MaxManoeuvreTime => maxManoeuvreTime;
 
-        /// <summary>Seconds waited on the hidden perch after withdrawing.</summary>
+        /// <summary>Seconds circling over the hidden vantage point after withdrawing (from arrival).</summary>
         public float WithdrawWait => withdrawWait;
+        /// <summary>Speed multiplier while flying to the hidden vantage point.</summary>
+        public float WithdrawSpeedMultiplier => withdrawSpeedMultiplier;
+        /// <summary>Recently-shot value added to the last vantage per hit.</summary>
+        public float WithdrawShotMark => withdrawShotMark;
 
         /// <summary>Fewest other alive birds for Herd mode.</summary>
         public int HerdMinOtherBirds => herdMinOtherBirds;
@@ -317,6 +333,10 @@ namespace RunwayPanic.Agents.Hawk
         public float FearRadius => fearRadius;
         /// <summary>Strength of the hawk's fear field.</summary>
         public float FearStrength => fearStrength;
+        /// <summary>Seconds between Hunt/Herd mode checks.</summary>
+        public float HerdCheckInterval => herdCheckInterval;
+        /// <summary>Herd point movement that triggers a new path, in metres.</summary>
+        public float HerdRepathDistance => herdRepathDistance;
 
         /// <summary>Seconds between path requests while following a moving target.</summary>
         public float RepathInterval => repathInterval;
