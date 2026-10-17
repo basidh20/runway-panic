@@ -12,13 +12,16 @@ namespace RunwayPanic.Player
     /// <item><b>Support hand:</b> two-bone IK puts the left hand on the gun actually held — under the grip for a
     /// pistol, on the handguard for a rifle — so it fits every gun model.</item>
     /// </list>
-    /// Active only while the upper-body layer plays an armed state (tag "Armed"), not while drawing the gun.
+    /// Active only while the upper-body layer plays an armed state (tag "Armed"), not while drawing the gun. A hit
+    /// flinch (tag "Hit") briefly loosens the aim so the hit knocks the gun.
     /// </summary>
     [RequireComponent(typeof(PlayerAnimator))]
     public sealed class PlayerAimIK : MonoBehaviour
     {
         private const string ArmedTag = "Armed";
+        private const string HitTag = "Hit";
         private const int UpperBodyLayer = 1;
+        private const int ReactionsLayer = 2;
 
         [Tooltip("Most the torso may twist (degrees) to point the gun at the aim point.")]
         [SerializeField, Range(0f, 120f)] private float maxAimAngle = 70f;
@@ -26,6 +29,8 @@ namespace RunwayPanic.Player
         [SerializeField, Min(1f)] private float aimDistance = 40f;
         [Tooltip("How fast aiming and the support hand blend in and out (per second).")]
         [SerializeField, Min(0.1f)] private float blendSpeed = 8f;
+        [Tooltip("How much aim is lost at the peak of a hit flinch (0 = none, 1 = the gun follows the flinch fully).")]
+        [SerializeField, Range(0f, 1f)] private float hitAimLoss = 0.7f;
         [Tooltip("Left-hand point on a pistol, in the gun's local space (under and beside the grip).")]
         [SerializeField] private Vector3 pistolSupport = new Vector3(-0.03f, -0.03f, 0f);
         [Tooltip("Left-hand point on a rifle as a fraction of the way from the grip to the muzzle.")]
@@ -77,22 +82,32 @@ namespace RunwayPanic.Player
             if (weight <= 0f || gun == null)
                 return;
 
-            AimTorso(gun);
+            AimTorso(gun, weight * (1f - HitAimLoss()));
             PlaceSupportHand(gun);
         }
 
+        // While the hit flinch plays, aim correction dips and recovers (a sine over the clip), so the hit knocks
+        // the gun off target for a moment instead of being cancelled out by the aim.
+        private float HitAimLoss()
+        {
+            if (animator.layerCount <= ReactionsLayer)
+                return 0f;
+            AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(ReactionsLayer);
+            return state.IsTag(HitTag) ? hitAimLoss * Mathf.Sin(Mathf.PI * Mathf.Clamp01(state.normalizedTime)) : 0f;
+        }
+
         // Half the turn on the spine, the rest (re-measured) on the chest, so the barrel ends up on the aim line.
-        private void AimTorso(Transform gun)
+        private void AimTorso(Transform gun, float amount)
         {
             Camera cam = Camera.main;
-            if (cam == null || spine == null || chest == null)
+            if (cam == null || spine == null || chest == null || amount <= 0f)
                 return;
 
             Vector3 aimPoint = cam.transform.position + cam.transform.forward * aimDistance;
 
-            spine.rotation = Quaternion.Slerp(Quaternion.identity, AimRotation(gun, aimPoint), 0.5f * weight) *
+            spine.rotation = Quaternion.Slerp(Quaternion.identity, AimRotation(gun, aimPoint), 0.5f * amount) *
                              spine.rotation;
-            chest.rotation = Quaternion.Slerp(Quaternion.identity, AimRotation(gun, aimPoint), weight) * chest.rotation;
+            chest.rotation = Quaternion.Slerp(Quaternion.identity, AimRotation(gun, aimPoint), amount) * chest.rotation;
         }
 
         private Quaternion AimRotation(Transform gun, Vector3 aimPoint)
