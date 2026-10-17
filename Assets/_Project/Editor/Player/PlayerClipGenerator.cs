@@ -12,7 +12,7 @@ namespace RunwayPanic.PlayerTools
     /// <list type="bullet">
     /// <item>Locomotion cycles: idle, walk (a light jog), run.</item>
     /// <item>Jump: jump start (snap push-off), fall (airborne loop), land (absorb and stand up).</item>
-    /// <item>Weapons (upper body): pistol and rifle aim, fire and equip, holding the real gun the way
+    /// <item>Weapons (upper body): pistol and rifle aim, fire, equip and reload, holding the real gun the way
     /// <c>PlayerWeaponHolder</c> mounts it.</item>
     /// </list>
     /// <para>
@@ -34,6 +34,10 @@ namespace RunwayPanic.PlayerTools
         // Rifle: half way to a typical rifle muzzle (0, 0.10, 0.71), just under the barrel.
         private static readonly Vector3 PistolSupport = new Vector3(-0.03f, -0.03f, 0f);
         private static readonly Vector3 RifleSupport = new Vector3(0f, 0.05f, 0.355f);
+
+        // Where a magazine goes in, in the gun's local space: the bottom of a pistol grip; under a rifle's receiver.
+        private static readonly Vector3 PistolMagWell = new Vector3(0f, -0.10f, -0.02f);
+        private static readonly Vector3 RifleMagWell = new Vector3(0f, -0.10f, 0.10f);
 
         // Finger curl around the grip ("Stretched" muscles: -1 = fully curled). The index finger stays on the trigger.
         private const float FingerCurl = -0.75f;
@@ -62,6 +66,8 @@ namespace RunwayPanic.PlayerTools
             public float Armed;    // 0 = arms from the angles above, 1 = right hand at 'Hand' holding the gun
             public Vector3 Hand;   // right hand relative to the right shoulder: x right, y up, z forward (m)
             public float GunPitch; // barrel angle, + = muzzle up
+            public float GunYaw;   // barrel angle, + = muzzle to the right
+            public float MagBlend; // left hand: 0 = grip / handguard, 1 = magazine well (reloading)
             public float Support;  // 0 = left arm from the angles above, 1 = left hand on the gun
             public float Grip;     // finger curl around the gun, 0..1
             public bool Rifle;     // left hand on a rifle's handguard instead of under a pistol grip
@@ -71,6 +77,7 @@ namespace RunwayPanic.PlayerTools
                 Rifle = a.Rifle || b.Rifle,
                 Armed = Mathf.Lerp(a.Armed, b.Armed, t), Hand = Vector3.Lerp(a.Hand, b.Hand, t),
                 GunPitch = Mathf.Lerp(a.GunPitch, b.GunPitch, t), Support = Mathf.Lerp(a.Support, b.Support, t),
+                GunYaw = Mathf.Lerp(a.GunYaw, b.GunYaw, t), MagBlend = Mathf.Lerp(a.MagBlend, b.MagBlend, t),
                 Grip = Mathf.Lerp(a.Grip, b.Grip, t),
                 ThighL = Mathf.Lerp(a.ThighL, b.ThighL, t), KneeL = Mathf.Lerp(a.KneeL, b.KneeL, t),
                 FootL = Mathf.Lerp(a.FootL, b.FootL, t), ThighR = Mathf.Lerp(a.ThighR, b.ThighR, t),
@@ -329,6 +336,70 @@ namespace RunwayPanic.PlayerTools
             Poses = new[] { RifleLow, RifleAim },
         };
 
+        // Reload: gun tilted in and up, left hand to the belt pouch, up to the magazine well, seat the magazine,
+        // back to the grip. Played at a speed that makes it last exactly the gun's reload time (PlayerAnimator).
+        private static Pose ReloadTilt(Pose aim, Vector3 hand, float pitch, float yaw)
+        {
+            aim.Hand = hand;
+            aim.GunPitch = pitch;
+            aim.GunYaw = yaw;
+            aim.MagBlend = 1f;
+            return aim;
+        }
+
+        private static Pose LeftAtPouch(Pose pose)
+        {
+            pose.Support = 0f;
+            pose.ArmL = -15f;
+            pose.ElbowL = 70f;
+            return pose;
+        }
+
+        private static Pose LeftAt(Pose pose, float support, float magBlend)
+        {
+            pose.Support = support;
+            pose.MagBlend = magBlend;
+            return pose;
+        }
+
+        private static readonly Pose PistolTilt =
+            ReloadTilt(PistolAim, new Vector3(-0.10f, -0.12f, 0.30f), 25f, -15f);
+
+        private static readonly Pose RifleTilt =
+            ReloadTilt(RifleAim, new Vector3(-0.04f, -0.26f, 0.16f), 15f, -10f);
+
+        private static readonly KeyedClip PistolReloadClip = new KeyedClip
+        {
+            Name = "A_Player_PistolReload",
+            Times = new[] { 0f, 0.15f, 0.40f, 0.70f, 0.85f, 1.00f, 1.20f },
+            Poses = new[]
+            {
+                PistolAim,
+                LeftAt(PistolTilt, 0.3f, 1f),                    // gun comes in, left hand lets go
+                LeftAtPouch(PistolTilt),                         // fresh magazine from the belt
+                LeftAt(PistolTilt, 1f, 1f),                      // magazine into the grip
+                Offset(LeftAt(PistolTilt, 1f, 1f), new Vector3(0f, 0.02f, 0f), 3f), // slap it home
+                LeftAt(PistolTilt, 1f, 0f),                      // hand back round the grip
+                PistolAim,
+            },
+        };
+
+        private static readonly KeyedClip RifleReloadClip = new KeyedClip
+        {
+            Name = "A_Player_RifleReload",
+            Times = new[] { 0f, 0.20f, 0.50f, 0.90f, 1.05f, 1.30f, 1.60f },
+            Poses = new[]
+            {
+                RifleAim,
+                LeftAt(RifleTilt, 0.5f, 1f),                     // rifle canted in, left hand to the old magazine
+                LeftAtPouch(RifleTilt),                          // fresh magazine from the belt
+                LeftAt(RifleTilt, 1f, 1f),                       // into the magazine well
+                Offset(LeftAt(RifleTilt, 1f, 1f), new Vector3(0f, 0.02f, 0f), 2f), // seat it
+                LeftAt(RifleTilt, 1f, 0f),                       // back to the handguard
+                RifleAim,
+            },
+        };
+
         // ---- Menu ----
 
         [MenuItem("Tools/S2/Generate Player Clips")]
@@ -349,6 +420,7 @@ namespace RunwayPanic.PlayerTools
                          {
                              JumpStart, Fall, Land,
                              PistolAimClip, PistolFireClip, PistolEquipClip, RifleAimClip, RifleFireClip, RifleEquipClip,
+                             PistolReloadClip, RifleReloadClip,
                          })
                 {
                     KeyedClip k = keyed;
@@ -357,7 +429,7 @@ namespace RunwayPanic.PlayerTools
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Player Animator] Generated locomotion, jump and pistol/rifle clips in {OutputFolder}.");
+            Debug.Log($"[Player Animator] Generated locomotion, jump and pistol/rifle (aim, fire, equip, reload) clips in {OutputFolder}.");
         }
 
         private static void Save(AnimationClip clip, string name)
@@ -639,7 +711,7 @@ namespace RunwayPanic.PlayerTools
                 Vector3 poleR = upperR.position - up * 0.5f + right * 0.5f;
                 TwoBoneIK.Solve(upperR, lowerR, handR, target, poleR, p.Armed);
 
-                Vector3 barrel = Quaternion.AngleAxis(-p.GunPitch, right) * forward;
+                Vector3 barrel = Quaternion.AngleAxis(p.GunYaw, up) * (Quaternion.AngleAxis(-p.GunPitch, right) * forward);
                 Quaternion gunRotation = Quaternion.LookRotation(barrel, up);
                 handR.rotation = Quaternion.Slerp(handR.rotation, gunRotation * Quaternion.Inverse(gripRotation), p.Armed);
 
@@ -649,7 +721,9 @@ namespace RunwayPanic.PlayerTools
                 // Gun pose from the hand, exactly as PlayerWeaponHolder mounts it.
                 Vector3 gunPosition = handR.TransformPoint(gripPosition);
                 Quaternion gunWorld = handR.rotation * gripRotation;
-                Vector3 support = gunPosition + gunWorld * (p.Rifle ? RifleSupport : PistolSupport);
+                Vector3 grip = p.Rifle ? RifleSupport : PistolSupport;
+                Vector3 magWell = p.Rifle ? RifleMagWell : PistolMagWell;
+                Vector3 support = gunPosition + gunWorld * Vector3.Lerp(grip, magWell, p.MagBlend);
 
                 Vector3 leftTarget = Vector3.Lerp(handL.position, support, p.Support);
                 Vector3 poleL = upperL.position - up * 0.5f - right * 0.5f;

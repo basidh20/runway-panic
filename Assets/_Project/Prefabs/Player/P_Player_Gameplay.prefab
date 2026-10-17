@@ -2022,6 +2022,7 @@ MonoBehaviour:
   blendSpeed: 8
   pistolSupport: {x: -0.03, y: -0.03, z: 0}
   rifleSupportAlongBarrel: 0.5
+  rifleSupportMaxDistance: 0.33
   rifleSupportBelowBarrel: 0.05
 --- !u!1 &8930974583446172621
 GameObject:

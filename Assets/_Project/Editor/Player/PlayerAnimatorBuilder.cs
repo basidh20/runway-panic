@@ -15,7 +15,8 @@ namespace RunwayPanic.PlayerTools
     /// Base layer: <c>Locomotion</c> (idle → walk → run by <c>Speed</c>) and the jump states
     /// <c>JumpStart → Fall → Land</c> (<c>Jump</c> trigger, <c>IsGrounded</c>, <c>VerticalSpeed</c>); walking off a
     /// ledge goes straight to <c>Fall</c>. <c>UpperBody</c> layer (arms and fingers only, <c>AM_Player_UpperBody</c>):
-    /// pistol/rifle aim, fire and equip (<c>WeaponType</c>, <c>Fire</c>, <c>Equip</c>).
+    /// pistol/rifle aim, fire, equip and reload (<c>WeaponType</c>, <c>Fire</c>, <c>Equip</c>, <c>Reload</c>,
+    /// <c>IsReloading</c>, <c>ReloadSpeed</c>).
     /// </para>
     /// <para>
     /// Clips are found by name (<c>A_Player_Idle</c>, <c>_Walk</c>, <c>_Run</c>, <c>_JumpStart</c>, <c>_Fall</c>,
@@ -44,21 +45,28 @@ namespace RunwayPanic.PlayerTools
         private const string RifleAimClip = "A_Player_RifleAim";
         private const string RifleFireClip = "A_Player_RifleFire";
         private const string RifleEquipClip = "A_Player_RifleEquip";
+        private const string PistolReloadClip = "A_Player_PistolReload";
+        private const string RifleReloadClip = "A_Player_RifleReload";
 
         private static readonly string[] RequiredClips =
         {
             IdleClip, WalkClip, RunClip, JumpStartClip, FallClip, LandClip,
             PistolAimClip, PistolFireClip, PistolEquipClip, RifleAimClip, RifleFireClip, RifleEquipClip,
+            PistolReloadClip, RifleReloadClip,
         };
 
         private const string MaskPath = ClipsFolder + "/AM_Player_UpperBody.mask";
         private const string UpperBodyLayer = "UpperBody";
         private const string ArmedTag = "Armed"; // PlayerAimIK aims and places the left hand only in these states
         private const string EquipTag = "Equip";
+        private const string ReloadTag = "Reload";
 
         private const string WeaponTypeParameter = "WeaponType"; // 0 none, 1 pistol, 2 rifle
         private const string EquipParameter = "Equip";
         private const string FireParameter = "Fire";
+        private const string ReloadParameter = "Reload";
+        private const string IsReloadingParameter = "IsReloading";
+        private const string ReloadSpeedParameter = "ReloadSpeed"; // clip length ÷ the gun's reload time
         private const int PistolType = 1;
         private const int RifleType = 2;
 
@@ -264,6 +272,7 @@ namespace RunwayPanic.PlayerTools
         //   Any ──Equip──► PistolEquip / RifleEquip (by WeaponType) ──(clip ends)──► PistolAim / RifleAim
         //   Any ──Fire──►  PistolFire / RifleFire (restarts on every shot) ──(clip ends)──► aim
         //   PistolAim ◄──WeaponType──► RifleAim
+        //   Any ──Reload──► PistolReload / RifleReload (speed = ReloadSpeed) ──IsReloading off──► aim
         // The layer's weight is set by PlayerAnimator: 0 with no gun, 1 while holding one.
         private static void BuildUpperBody(AnimatorController controller, AvatarMask mask,
             Dictionary<string, AnimationClip> clips)
@@ -271,6 +280,12 @@ namespace RunwayPanic.PlayerTools
             controller.AddParameter(WeaponTypeParameter, AnimatorControllerParameterType.Int);
             controller.AddParameter(EquipParameter, AnimatorControllerParameterType.Trigger);
             controller.AddParameter(FireParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(ReloadParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(IsReloadingParameter, AnimatorControllerParameterType.Bool);
+            controller.AddParameter(new AnimatorControllerParameter
+            {
+                name = ReloadSpeedParameter, type = AnimatorControllerParameterType.Float, defaultFloat = 1f,
+            });
 
             controller.AddLayer(UpperBodyLayer);
             AnimatorControllerLayer[] layers = controller.layers;
@@ -287,12 +302,27 @@ namespace RunwayPanic.PlayerTools
             AnimatorState rifleAim = State(machine, "RifleAim", clips[RifleAimClip], ArmedTag);
             AnimatorState rifleFire = State(machine, "RifleFire", clips[RifleFireClip], ArmedTag);
             AnimatorState rifleEquip = State(machine, "RifleEquip", clips[RifleEquipClip], EquipTag);
+            AnimatorState pistolReload = State(machine, "PistolReload", clips[PistolReloadClip], ReloadTag);
+            AnimatorState rifleReload = State(machine, "RifleReload", clips[RifleReloadClip], ReloadTag);
             machine.defaultState = pistolAim;
+
+            // Reloads last exactly as long as the gun's reload: PlayerAnimator sets ReloadSpeed per gun.
+            foreach (AnimatorState reload in new[] { pistolReload, rifleReload })
+            {
+                reload.speedParameterActive = true;
+                reload.speedParameter = ReloadSpeedParameter;
+            }
 
             AnyTransition(machine, pistolEquip, EquipParameter, PistolType, 0.05f);
             AnyTransition(machine, rifleEquip, EquipParameter, RifleType, 0.05f);
             AnyTransition(machine, pistolFire, FireParameter, PistolType, 0.02f);
             AnyTransition(machine, rifleFire, FireParameter, RifleType, 0.02f);
+            AnyTransition(machine, pistolReload, ReloadParameter, PistolType, 0.1f, canRestart: false);
+            AnyTransition(machine, rifleReload, ReloadParameter, RifleType, 0.1f, canRestart: false);
+
+            // Leave the moment the gun says the reload is over (or was cancelled by switching guns).
+            Transition(pistolReload, pistolAim, 0.15f).AddCondition(AnimatorConditionMode.IfNot, 0f, IsReloadingParameter);
+            Transition(rifleReload, rifleAim, 0.15f).AddCondition(AnimatorConditionMode.IfNot, 0f, IsReloadingParameter);
 
             Transition(pistolEquip, pistolAim, 0.08f, exitTime: 0.95f);
             Transition(rifleEquip, rifleAim, 0.08f, exitTime: 0.95f);
@@ -311,15 +341,16 @@ namespace RunwayPanic.PlayerTools
             return state;
         }
 
-        // From any state on a trigger, for one weapon type; may restart itself (every shot re-kicks the recoil).
+        // From any state on a trigger, for one weapon type. With canRestart it may restart itself (every shot
+        // re-kicks the recoil).
         private static void AnyTransition(AnimatorStateMachine machine, AnimatorState to, string trigger,
-            int weaponType, float duration)
+            int weaponType, float duration, bool canRestart = true)
         {
             AnimatorStateTransition transition = machine.AddAnyStateTransition(to);
             transition.hasFixedDuration = true;
             transition.duration = duration;
             transition.hasExitTime = false;
-            transition.canTransitionToSelf = true;
+            transition.canTransitionToSelf = canRestart;
             transition.AddCondition(AnimatorConditionMode.If, 0f, trigger);
             transition.AddCondition(AnimatorConditionMode.Equals, weaponType, WeaponTypeParameter);
         }

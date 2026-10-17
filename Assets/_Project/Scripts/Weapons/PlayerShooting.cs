@@ -14,6 +14,7 @@ namespace RunwayPanic.Weapons
     public sealed class PlayerShooting : MonoBehaviour
     {
         private const string AttackActionName = "Attack";
+        private const string ReloadActionName = "Reload";
         private const int MaxHits = 16;
 
         [Tooltip("Camera used for aiming. Uses Camera.main if left empty.")]
@@ -29,11 +30,14 @@ namespace RunwayPanic.Weapons
         private readonly RaycastHit[] hitBuffer = new RaycastHit[MaxHits];
         private PlayerWeaponHolder weaponHolder;
         private InputAction attackAction;
+        private InputAction reloadAction;
 
         private void Awake()
         {
             weaponHolder = GetComponent<PlayerWeaponHolder>();
             attackAction = GetComponent<PlayerInput>().actions?.FindAction(AttackActionName, false);
+            // Optional: without a Reload action, guns still reload automatically when the magazine runs dry.
+            reloadAction = GetComponent<PlayerInput>().actions?.FindAction(ReloadActionName, false);
 
             if (attackAction == null)
             {
@@ -44,7 +48,13 @@ namespace RunwayPanic.Weapons
 
         private void Update()
         {
-            if (attackAction.IsPressed())
+            if (reloadAction != null && reloadAction.WasPressedThisFrame())
+            {
+                WeaponBase weapon = weaponHolder.CurrentWeapon;
+                if (weapon != null)
+                    weapon.StartReload(); // ignored while reloading or with a full magazine
+            }
+            else if (attackAction.IsPressed())
                 TryShoot();
         }
 

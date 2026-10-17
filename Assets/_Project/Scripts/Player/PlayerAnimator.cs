@@ -14,6 +14,8 @@ namespace RunwayPanic.Player
     /// including walking off a ledge.</item>
     /// <item>Weapons: <c>WeaponType</c> (0 none, 1 pistol, 2 rifle), <c>Equip</c> and <c>Fire</c> triggers. The
     /// upper-body layer fades in while a gun is held, so the arms hold it while the legs keep moving.</item>
+    /// <item>Reload: <c>Reload</c> trigger and <c>IsReloading</c>, with <c>ReloadSpeed</c> = clip length ÷ the gun's
+    /// reload time, so the animation ends exactly when the magazine is full again.</item>
     /// </list>
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
@@ -26,6 +28,14 @@ namespace RunwayPanic.Player
         private static readonly int WeaponTypeId = Animator.StringToHash("WeaponType");
         private static readonly int EquipId = Animator.StringToHash("Equip");
         private static readonly int FireId = Animator.StringToHash("Fire");
+        private static readonly int ReloadId = Animator.StringToHash("Reload");
+        private static readonly int IsReloadingId = Animator.StringToHash("IsReloading");
+        private static readonly int ReloadSpeedId = Animator.StringToHash("ReloadSpeed");
+
+        // Reload clips are played faster or slower so they last exactly the gun's reload time.
+        private const string PistolReloadClip = "A_Player_PistolReload";
+        private const string RifleReloadClip = "A_Player_RifleReload";
+        private const float MinReloadTime = 0.1f;
 
         private const int UpperBodyLayer = 1;
         private const int NoWeapon = 0;
@@ -43,6 +53,8 @@ namespace RunwayPanic.Player
         private PlayerController playerController;
         private PlayerWeaponHolder weaponHolder;
         private WeaponBase currentWeapon;
+        private float pistolReloadLength;
+        private float rifleReloadLength;
 
         /// <summary>The Animator being driven (null if the model has none).</summary>
         public Animator Animator => animator;
@@ -64,6 +76,17 @@ namespace RunwayPanic.Player
 
             // Movement belongs to the CharacterController; clips are "In Place".
             animator.applyRootMotion = false;
+
+            if (animator.runtimeAnimatorController != null)
+            {
+                foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+                {
+                    if (clip.name == PistolReloadClip)
+                        pistolReloadLength = clip.length;
+                    else if (clip.name == RifleReloadClip)
+                        rifleReloadLength = clip.length;
+                }
+            }
         }
 
         private void OnEnable()
@@ -130,22 +153,53 @@ namespace RunwayPanic.Player
                 : data.HoldType == WeaponHoldType.Rifle ? RifleWeapon : PistolWeapon;
             animator.SetInteger(WeaponTypeId, type);
             animator.ResetTrigger(FireId);
+            animator.ResetTrigger(ReloadId);
+            // Switching guns cancels a reload (WeaponBase.OnDisable) without a ReloadFinished event.
+            animator.SetBool(IsReloadingId, weapon != null && weapon.IsReloading);
             animator.SetTrigger(EquipId);
         }
 
-        // Listen to the held gun's shots (and stop listening to the previous gun).
+        // Listen to the held gun's shots and reloads (and stop listening to the previous gun).
         private void WatchWeapon(WeaponBase weapon)
         {
             if (currentWeapon != null)
+            {
                 currentWeapon.Fired -= HandleFired;
+                currentWeapon.ReloadStarted -= HandleReloadStarted;
+                currentWeapon.ReloadFinished -= HandleReloadFinished;
+            }
+
             currentWeapon = weapon;
             if (currentWeapon != null)
+            {
                 currentWeapon.Fired += HandleFired;
+                currentWeapon.ReloadStarted += HandleReloadStarted;
+                currentWeapon.ReloadFinished += HandleReloadFinished;
+            }
         }
 
         private void HandleFired()
         {
             animator.SetTrigger(FireId);
+        }
+
+        private void HandleReloadStarted()
+        {
+            WeaponData data = currentWeapon != null ? currentWeapon.Data : null;
+            bool rifle = data != null && data.HoldType == WeaponHoldType.Rifle;
+            float clipLength = rifle ? rifleReloadLength : pistolReloadLength;
+            float reloadTime = data != null ? Mathf.Max(MinReloadTime, data.ReloadTime) : clipLength;
+
+            animator.SetFloat(ReloadSpeedId, clipLength > 0f ? clipLength / reloadTime : 1f);
+            animator.SetBool(IsReloadingId, true);
+            animator.ResetTrigger(FireId);
+            animator.SetTrigger(ReloadId);
+        }
+
+        private void HandleReloadFinished()
+        {
+            animator.SetBool(IsReloadingId, false);
+            animator.ResetTrigger(ReloadId);
         }
     }
 }
