@@ -6,7 +6,8 @@ namespace RunwayPanic.Player
 {
     /// <summary>
     /// Camera-relative third-person movement with walking, sprinting, and jumping.
-    /// Camera control is intentionally handled by a separate feature.
+    /// Camera control is intentionally handled by a separate feature. While a gun is held, <see cref="SetAim"/>
+    /// keeps the body turned towards the aim.
     /// </summary>
     [RequireComponent(typeof(CharacterController), typeof(PlayerInput))]
     public sealed class PlayerController : MonoBehaviour
@@ -20,6 +21,12 @@ namespace RunwayPanic.Player
         [SerializeField, Min(0f)] private float sprintSpeed = 7.5f;
         [SerializeField, Min(0f)] private float rotationSpeed = 12f;
         [SerializeField] private Transform movementReference;
+
+        [Header("Facing the aim (while holding a gun)")]
+        [Tooltip("Most the body may face away from the aim, in degrees. The torso twists the rest of the way.")]
+        [SerializeField, Range(0f, 180f)] private float maxAimAngle = 60f;
+        [Tooltip("The same limit right after shooting, so the officer squares up to the target.")]
+        [SerializeField, Range(0f, 180f)] private float maxAimAngleWhileShooting = 20f;
 
         [Header("Grounding")]
         [SerializeField, Min(0f)] private float jumpHeight = 1.2f;
@@ -42,6 +49,26 @@ namespace RunwayPanic.Player
 
         /// <summary>Raised on the frame the player leaves the ground by jumping.</summary>
         public event Action Jumped;
+
+        private Vector3 aimDirection;
+        private bool aimShooting;
+
+        /// <summary>
+        /// Keeps the body turned towards <paramref name="direction"/> (flattened): it may face where it walks, but no
+        /// further than the aim limit from it. Set every frame while aiming; <see cref="ClearAim"/> when not.
+        /// </summary>
+        public void SetAim(Vector3 direction, bool shooting)
+        {
+            direction.y = 0f;
+            aimDirection = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector3.zero;
+            aimShooting = shooting;
+        }
+
+        /// <summary>Stops facing the aim: the body turns only towards where it walks.</summary>
+        public void ClearAim()
+        {
+            aimDirection = Vector3.zero;
+        }
 
         private void Awake()
         {
@@ -99,10 +126,27 @@ namespace RunwayPanic.Player
 
         private void RotateTowards(Vector3 moveDirection)
         {
-            if (moveDirection.sqrMagnitude < 0.0001f)
+            bool moving = moveDirection.sqrMagnitude >= 0.0001f;
+            Vector3 facing = moving ? moveDirection : transform.forward;
+            facing.y = 0f;
+
+            // Holding a gun: face where we walk, but never further from the aim than the limit allows.
+            if (aimDirection != Vector3.zero)
+            {
+                float limit = aimShooting ? maxAimAngleWhileShooting : maxAimAngle;
+                float angle = Vector3.SignedAngle(aimDirection, facing, Vector3.up);
+                if (Mathf.Abs(angle) > limit)
+                    facing = Quaternion.AngleAxis(Mathf.Sign(angle) * limit, Vector3.up) * aimDirection;
+            }
+            else if (!moving)
+            {
+                return;
+            }
+
+            if (facing.sqrMagnitude < 0.0001f)
                 return;
 
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
+            Quaternion targetRotation = Quaternion.LookRotation(facing, Vector3.up);
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRotation,

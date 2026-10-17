@@ -14,6 +14,15 @@ namespace RunwayPanic.Player
         [Tooltip("Ignore contacts from mostly-downward movement, e.g. standing on top of a barricade.")]
         [SerializeField, Range(0f, 1f)] private float maxDownwardness = 0.3f;
 
+        // Contacts arrive only on frames the controller moves into the barricade, so pushing counts as ongoing
+        // for this long after the last one.
+        private const float PushMemory = 0.15f;
+
+        private float lastPushTime = float.NegativeInfinity;
+
+        /// <summary>True while the player is pushing a barricade.</summary>
+        public bool IsPushing => Time.time - lastPushTime < PushMemory;
+
         private void OnControllerColliderHit(ControllerColliderHit hit)
         {
             Rigidbody body = hit.collider.attachedRigidbody;
@@ -32,6 +41,7 @@ namespace RunwayPanic.Player
                 return;
 
             barricade.Push(move);
+            lastPushTime = Time.time;
         }
     }
 }

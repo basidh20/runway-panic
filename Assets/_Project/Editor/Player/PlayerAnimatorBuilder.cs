@@ -16,7 +16,8 @@ namespace RunwayPanic.PlayerTools
     /// <c>JumpStart → Fall → Land</c> (<c>Jump</c> trigger, <c>IsGrounded</c>, <c>VerticalSpeed</c>); walking off a
     /// ledge goes straight to <c>Fall</c>. <c>UpperBody</c> layer (arms and fingers only, <c>AM_Player_UpperBody</c>):
     /// pistol/rifle aim, fire, equip and reload (<c>WeaponType</c>, <c>Fire</c>, <c>Equip</c>, <c>Reload</c>,
-    /// <c>IsReloading</c>, <c>ReloadSpeed</c>). <c>Death</c> on the base layer (<c>Dead</c>), and an additive
+    /// <c>IsReloading</c>, <c>ReloadSpeed</c>) and actions with the gun lowered (<c>UseMedkit</c>, <c>UseShield</c>,
+    /// <c>Interact</c>, <c>IsPushing</c>). <c>Death</c> on the base layer (<c>Dead</c>), and an additive
     /// <c>Reactions</c> layer (spine, head and arms, <c>AM_Player_Reactions</c>) for the <c>Hit</c> flinch.
     /// </para>
     /// <para>
@@ -57,7 +58,16 @@ namespace RunwayPanic.PlayerTools
             IdleClip, WalkClip, RunClip, JumpStartClip, FallClip, LandClip,
             PistolAimClip, PistolFireClip, PistolEquipClip, RifleAimClip, RifleFireClip, RifleEquipClip,
             PistolReloadClip, RifleReloadClip, StandClip, HitClip, DeathClip,
+            "A_Player_PistolMedkit", "A_Player_RifleMedkit", "A_Player_PistolShield", "A_Player_RifleShield",
+            "A_Player_PistolInteract", "A_Player_RifleInteract", "A_Player_PistolPush", "A_Player_RiflePush",
         };
+
+        // Actions on the upper-body layer: gun lowered, left hand busy. PlayerAimIK leaves these alone.
+        private const string ActionTag = "Action";
+        private const string UseMedkitParameter = "UseMedkit";
+        private const string UseShieldParameter = "UseShield";
+        private const string InteractParameter = "Interact";
+        private const string IsPushingParameter = "IsPushing";
 
         private const string ReactionsMaskPath = ClipsFolder + "/AM_Player_Reactions.mask";
         private const string ReactionsLayer = "Reactions";
@@ -442,6 +452,36 @@ namespace RunwayPanic.PlayerTools
 
             Transition(pistolAim, rifleAim, 0.15f).AddCondition(AnimatorConditionMode.Equals, RifleType, WeaponTypeParameter);
             Transition(rifleAim, pistolAim, 0.15f).AddCondition(AnimatorConditionMode.Equals, PistolType, WeaponTypeParameter);
+
+            BuildActions(controller, machine, clips, pistolAim, rifleAim);
+        }
+
+        //   Any ──UseMedkit / UseShield / Interact──► <Pistol|Rifle><Action> ──(clip ends)──► aim
+        //   Any ──IsPushing (not reloading)──► <Pistol|Rifle>Push (loops) ──not pushing──► aim
+        private static void BuildActions(AnimatorController controller, AnimatorStateMachine machine,
+            Dictionary<string, AnimationClip> clips, AnimatorState pistolAim, AnimatorState rifleAim)
+        {
+            controller.AddParameter(UseMedkitParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(UseShieldParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(InteractParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(IsPushingParameter, AnimatorControllerParameterType.Bool);
+
+            foreach ((string hold, int type, AnimatorState aim) in new[] { ("Pistol", PistolType, pistolAim), ("Rifle", RifleType, rifleAim) })
+            {
+                foreach ((string action, string trigger) in new[]
+                         { ("Medkit", UseMedkitParameter), ("Shield", UseShieldParameter), ("Interact", InteractParameter) })
+                {
+                    AnimatorState state = State(machine, hold + action, clips["A_Player_" + hold + action], ActionTag);
+                    AnyTransition(machine, state, trigger, type, 0.08f, canRestart: false);
+                    Transition(state, aim, 0.12f, exitTime: 0.95f);
+                }
+
+                AnimatorState push = State(machine, hold + "Push", clips["A_Player_" + hold + "Push"], ActionTag);
+                AnimatorStateTransition startPush = AnyTransition(machine, push, null, type, 0.15f, canRestart: false);
+                startPush.AddCondition(AnimatorConditionMode.If, 0f, IsPushingParameter);
+                startPush.AddCondition(AnimatorConditionMode.IfNot, 0f, IsReloadingParameter);
+                Transition(push, aim, 0.15f).AddCondition(AnimatorConditionMode.IfNot, 0f, IsPushingParameter);
+            }
         }
 
         // ---- Reactions (additive) ----
@@ -506,18 +546,20 @@ namespace RunwayPanic.PlayerTools
             return state;
         }
 
-        // From any state on a trigger, for one weapon type. With canRestart it may restart itself (every shot
-        // re-kicks the recoil).
-        private static void AnyTransition(AnimatorStateMachine machine, AnimatorState to, string trigger,
-            int weaponType, float duration, bool canRestart = true)
+        // From any state on a trigger (or, with trigger null, on conditions the caller adds), for one weapon type.
+        // With canRestart it may restart itself (every shot re-kicks the recoil).
+        private static AnimatorStateTransition AnyTransition(AnimatorStateMachine machine, AnimatorState to,
+            string trigger, int weaponType, float duration, bool canRestart = true)
         {
             AnimatorStateTransition transition = machine.AddAnyStateTransition(to);
             transition.hasFixedDuration = true;
             transition.duration = duration;
             transition.hasExitTime = false;
             transition.canTransitionToSelf = canRestart;
-            transition.AddCondition(AnimatorConditionMode.If, 0f, trigger);
+            if (trigger != null)
+                transition.AddCondition(AnimatorConditionMode.If, 0f, trigger);
             transition.AddCondition(AnimatorConditionMode.Equals, weaponType, WeaponTypeParameter);
+            return transition;
         }
 
         // A transition with a fixed blend time in seconds; with exitTime set, it waits for that point of the clip.

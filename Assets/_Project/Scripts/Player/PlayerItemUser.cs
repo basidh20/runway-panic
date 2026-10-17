@@ -1,3 +1,4 @@
+using System;
 using RunwayPanic.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -12,6 +13,12 @@ namespace RunwayPanic.Player
     public sealed class PlayerItemUser : MonoBehaviour
     {
         [SerializeField, Min(1f)] private float medkitHealAmount = 30f;
+
+        /// <summary>Raised after a medkit was used (the player was healed).</summary>
+        public event Action MedkitUsed;
+
+        /// <summary>Raised after a shield was started.</summary>
+        public event Action ShieldUsed;
 
         private PlayerInventory inventory;
         private PlayerHealth health;
@@ -45,7 +52,11 @@ namespace RunwayPanic.Player
                 return false;
 
             inventory.TryUseItem(ItemType.Shield);
-            return shield.TryActivate();
+            if (!shield.TryActivate())
+                return false;
+
+            ShieldUsed?.Invoke();
+            return true;
         }
 
         /// <summary>
@@ -57,6 +68,7 @@ namespace RunwayPanic.Player
                 return false;
 
             health.Heal(medkitHealAmount);
+            MedkitUsed?.Invoke();
             return true;
         }
     }

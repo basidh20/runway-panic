@@ -13,7 +13,8 @@ namespace RunwayPanic.Player
     /// pistol, on the handguard for a rifle — so it fits every gun model.</item>
     /// </list>
     /// Active only while the upper-body layer plays an armed state (tag "Armed"), not while drawing the gun. A hit
-    /// flinch (tag "Hit") briefly loosens the aim so the hit knocks the gun.
+    /// flinch (tag "Hit") briefly loosens the aim so the hit knocks the gun. While a gun is held it also tells
+    /// <see cref="PlayerController"/> where the aim is, so the body turns to keep it within the torso's reach.
     /// </summary>
     [RequireComponent(typeof(PlayerAnimator))]
     public sealed class PlayerAimIK : MonoBehaviour
@@ -31,6 +32,8 @@ namespace RunwayPanic.Player
         [SerializeField, Min(0.1f)] private float blendSpeed = 8f;
         [Tooltip("How much aim is lost at the peak of a hit flinch (0 = none, 1 = the gun follows the flinch fully).")]
         [SerializeField, Range(0f, 1f)] private float hitAimLoss = 0.7f;
+        [Tooltip("Seconds after a shot that the body keeps squared up to the aim (see PlayerController's limits).")]
+        [SerializeField, Min(0f)] private float shootingFacingTime = 0.6f;
         [Tooltip("Left-hand point on a pistol, in the gun's local space (under and beside the grip).")]
         [SerializeField] private Vector3 pistolSupport = new Vector3(-0.03f, -0.03f, 0f);
         [Tooltip("Left-hand point on a rifle as a fraction of the way from the grip to the muzzle.")]
@@ -42,14 +45,38 @@ namespace RunwayPanic.Player
 
         private PlayerAnimator playerAnimator;
         private PlayerWeaponHolder weaponHolder;
+        private PlayerController playerController;
+        private PlayerShooting shooting;
         private Animator animator;
         private Transform spine, chest, leftUpperArm, leftLowerArm, leftHand;
         private float weight;
+        private float lastShotTime = float.NegativeInfinity;
 
         private void Awake()
         {
             playerAnimator = GetComponent<PlayerAnimator>();
             weaponHolder = GetComponent<PlayerWeaponHolder>();
+            playerController = GetComponent<PlayerController>();
+            shooting = GetComponent<PlayerShooting>();
+        }
+
+        private void OnEnable()
+        {
+            if (shooting != null)
+                shooting.ShotFired += HandleShotFired;
+        }
+
+        private void OnDisable()
+        {
+            if (shooting != null)
+                shooting.ShotFired -= HandleShotFired;
+            if (playerController != null)
+                playerController.ClearAim();
+        }
+
+        private void HandleShotFired(Vector3 origin, Vector3 end, RunwayPanic.Core.IDamageable target)
+        {
+            lastShotTime = Time.time;
         }
 
         private void Start()
@@ -75,6 +102,8 @@ namespace RunwayPanic.Player
                 ? weaponHolder.CurrentWeaponObject.transform
                 : null;
 
+            UpdateFacing(gun != null);
+
             bool armed = gun != null && animator.layerCount > UpperBodyLayer &&
                          animator.GetCurrentAnimatorStateInfo(UpperBodyLayer).IsTag(ArmedTag);
             float target = armed ? animator.GetLayerWeight(UpperBodyLayer) : 0f;
@@ -84,6 +113,23 @@ namespace RunwayPanic.Player
 
             AimTorso(gun, weight * (1f - HitAimLoss()));
             PlaceSupportHand(gun);
+        }
+
+        // Holding a gun: the body turns to keep the camera's aim within reach of the torso twist (closer right after
+        // a shot), so the gun can always point where the shots go.
+        private void UpdateFacing(bool holdingGun)
+        {
+            if (playerController == null)
+                return;
+
+            Camera cam = Camera.main;
+            if (!holdingGun || cam == null)
+            {
+                playerController.ClearAim();
+                return;
+            }
+
+            playerController.SetAim(cam.transform.forward, Time.time - lastShotTime < shootingFacingTime);
         }
 
         // While the hit flinch plays, aim correction dips and recovers (a sine over the clip), so the hit knocks
