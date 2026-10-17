@@ -29,6 +29,26 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
 
 ---
 
+## 2026-10-17 — to: Agent Controller — F3 replaces two stubs; F4 implements two interfaces
+- **What:** `Scripts/Agents/Shared/BirdHealth.cs`, `BirdContactAttack.cs` (stubs), `IBirdMotor.cs`, `IBirdAnimator.cs`
+- **Details:**
+  - F2 had to create `BirdHealth` and `BirdContactAttack` so the shared code compiles. They are **API-only stubs**: no damage, never attack. `BirdHealth` already registers with `BirdRegistry` and implements `IDamageable` (pathfinding ignores colliders with an `IDamageable`).
+  - **F3: edit these two files in place** (branch from `develop` after F2 is merged — don't create new files with the same names, or git reports an add/add conflict). Keep every public member and the serialized field name `species` (prefabs store it). On death call `BirdRegistry.NotifyDied(this, LastHitShotOrigin)`.
+  - **F4:** `BirdMotor : MonoBehaviour, IBirdMotor` and an Animator-based `IBirdAnimator`. `SimpleBirdMotor` / `BlendShapeBirdAnimator` are throwaway stand-ins; swap them on the prefabs and no brain changes.
+- **Action needed:** Agent Controller — F3 then F4 as in `00_SHARED_FOUNDATION.md`.
+- **Status:** open
+
+## 2026-10-17 — to: species owners — shared bird plumbing (F2) is available
+- **What:** `Scripts/Agents/Shared/` — `BirdBrain`, `IBirdMotor`, `IBirdAnimator`, `PlayerEventHub`, `BirdRegistry`, `FearRegistry` (+ `IFearSource`, `FearCostModifier`), `BirdPoint`, `BirdStateLabel`, `BirdTestSpawner`; examples/tests in `Scripts/Agents/Shared/Debug/`
+- **Details:**
+  - Your brain: `public sealed class GullBrain : BirdBrain` in `Scripts/Agents/Gull/`. `TestChaseBrain` is a short working example (chases the player with A*).
+  - Move with `Motor.*`, animate with `Anim.*`, read the player only through `Hub` (position, velocity, `CurrentWeapon`, `IsReloading`, events). Path with `RequestPath(target, costModifiers)`; if it returns false and `LastRequestWasThrottled` is true, just retry next frame.
+  - Overriding `Awake` / `OnEnable` / `OnDisable`: call `base.` first. Return cached strings from `CurrentStateName` (it is shown above the bird; **F3** toggles the labels).
+  - Unsubscribe from the hub you subscribed to (store the reference); don't read `PlayerEventHub.Instance` in `OnDestroy`.
+  - Sandbox shortcut: `Tools > IS > Set Up Agents Test Scene` adds a grid, the player (with all four guns), the GameManager, a test hawk and `AgentsDebugLogger` to the open scene.
+- **Action needed:** none until F5 puts the shared components on the bird prefabs; then add only your own brain to your species prefab.
+- **Status:** done
+
 ## 2026-10-17 — to: species owners — flight pathfinding (F1) is available
 - **What:** `Scripts/AI/` — `FlightGrid`, `PathService`, `IPathProvider`, `ICostModifier`; test tool `Scripts/AI/Debug/PathDebugProbe`
 - **Details:**
