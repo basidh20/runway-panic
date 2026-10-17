@@ -64,6 +64,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: P_Bird_Crow
       objectReference: {fileID: 0}
+    - target: {fileID: 5902074243735594570, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+      propertyPath: species
+      value: 
+      objectReference: {fileID: 11400000, guid: 0f7b6716bba34f84db90ae1bf4322735, type: 2}
+    - target: {fileID: 5902074243735594570, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+      propertyPath: motionProfile
+      value: 
+      objectReference: {fileID: 11400000, guid: 7f02d7b738396954dab53d2c26035d7d, type: 2}
     - target: {fileID: 7103815005736095331, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 

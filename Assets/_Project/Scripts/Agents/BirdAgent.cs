@@ -7,9 +7,11 @@ namespace RunwayPanic.Agents
     /// The one component the IS scripts talk to on a bird. It holds the bird's species stats and motion profile and
     /// hands out the other bird components, so AI code needs a single GetComponent&lt;BirdAgent&gt;().
     /// Lives on the prefab root (P_Bird_Base and P_Bird_Hawk); the species variants set their own assets.
+    /// Adding it adds everything a bird needs (RequireComponent), so a prefab cannot end up half set up.
     /// </summary>
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(BirdPathFollower))]
+    [RequireComponent(typeof(Rigidbody), typeof(BirdPathFollower), typeof(BirdAnimatorDriver))]
+    [RequireComponent(typeof(BirdHealth), typeof(BirdAttack))]
     public sealed class BirdAgent : MonoBehaviour
     {
         [Tooltip("Gameplay stats (HP, speed, attack, coins). Empty only on P_Bird_Base, which is never spawned itself.")]
@@ -40,12 +42,26 @@ namespace RunwayPanic.Agents
             }
         }
 
-        /// <summary>Moves the bird along IS paths. Available from Start on.</summary>
+        // Available from Start on (set in Awake).
+
+        /// <summary>Moves the bird along IS paths: SetPath, ClearPath, PathCompleted, WaypointReached.</summary>
         public BirdPathFollower Follower { get; private set; }
+
+        /// <summary>HP and death: IsAlive, Died.</summary>
+        public BirdHealth Health { get; private set; }
+
+        /// <summary>Range and cooldown checked attack: TryAttack, IsInRange.</summary>
+        public BirdAttack Attack { get; private set; }
+
+        /// <summary>Animator parameters and one-shot animations.</summary>
+        public BirdAnimatorDriver AnimatorDriver { get; private set; }
 
         private void Awake()
         {
             Follower = GetComponent<BirdPathFollower>();
+            Health = GetComponent<BirdHealth>();
+            Attack = GetComponent<BirdAttack>();
+            AnimatorDriver = GetComponent<BirdAnimatorDriver>();
 
             if (species == null)
                 Debug.LogWarning($"[Agents] {name} has no BirdSpeciesData: it uses fallback HP and speed.", this);

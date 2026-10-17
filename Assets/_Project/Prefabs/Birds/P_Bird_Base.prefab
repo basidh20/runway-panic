@@ -10,6 +10,12 @@ GameObject:
   m_Component:
   - component: {fileID: 2713844080849973986}
   - component: {fileID: 4804666714081088428}
+  - component: {fileID: 7988171375078121911}
+  - component: {fileID: 6544127052900420248}
+  - component: {fileID: 5959122992686070065}
+  - component: {fileID: 3327474362055228570}
+  - component: {fileID: 4542708867603440772}
+  - component: {fileID: 5902074243735594570}
   m_Layer: 0
   m_Name: P_Bird_Base
   m_TagString: Untagged
@@ -56,6 +62,112 @@ CapsuleCollider:
   m_Height: 0.7016973
   m_Direction: 2
   m_Center: {x: 0, y: 0, z: -0.01954427}
+--- !u!54 &7988171375078121911
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 1
+  m_Constraints: 0
+  m_CollisionDetection: 3
+--- !u!114 &6544127052900420248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f0475770aa70b49a6215c9ba8aec67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPathFollower
+  heightOffset: 0
+  minimumAltitude: 1
+  skipWaypointsWithin: 1
+  collinearTolerance: 2
+  sampleSpacing: 0.25
+  leadInTime: 0.25
+  arrivalRadius: 0.3
+  fallbackSpeed: 5
+  drawPathGizmos: 1
+--- !u!114 &5959122992686070065
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf7192c86a6b0eb4d85811b6869e5514, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdAnimatorDriver
+  animator: {fileID: 1705785994923123580}
+  flapSpeedVariation: 0.1
+  parameterDampTime: 0.15
+--- !u!114 &3327474362055228570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4007861e76d4f7c4788098f02abf19f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdHealth
+  fallbackMaxHP: 30
+  cleanup: 0
+  removeDelay: 2
+  maxFallTime: 6
+  deathTumble: 120
+--- !u!114 &4542708867603440772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 229e6e5171677fd46a58b518903ec98c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdAttack
+--- !u!114 &5902074243735594570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 142e3c497fda93c4bb6bed942721a4d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdAgent
+  species: {fileID: 0}
+  motionProfile: {fileID: 11400000, guid: 7857ae0ebb04264408398796d1a2f210, type: 2}
 --- !u!1001 &5099973612651814637
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -108,11 +220,20 @@ PrefabInstance:
       propertyPath: m_Name
       value: SK_Bird
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: f1630830b5b15fd448ad8e89178bee00, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+--- !u!95 &1705785994923123580 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+  m_PrefabInstance: {fileID: 5099973612651814637}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &4705143989903784198 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
