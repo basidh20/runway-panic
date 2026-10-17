@@ -64,7 +64,8 @@ namespace RunwayPanic.AI
                 if (Grid.IsFlyable(to) && PathSmoother.IsClear(lastCell, to, Grid.SnapLineRadius, Grid.ObstacleMask))
                     pathOut.Add(to);
 
-                PathSmoother.Smooth(pathOut, Grid.Clearance, Grid.ObstacleMask);
+                // Cost-aware smoothing keeps detours that A* made around danger/fear costs.
+                PathSmoother.Smooth(pathOut, Grid.Clearance, Grid.ObstacleMask, costModifiers, Grid.CellSize);
 
                 // The bird is already at 'from'.
                 pathOut.RemoveAt(0);
