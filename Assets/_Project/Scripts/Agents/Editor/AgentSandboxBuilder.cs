@@ -73,6 +73,32 @@ namespace RunwayPanic.Agents.EditorTools
             Debug.Log($"[Agents] Created {ScenePath}. Press Play: keys 1-4 chase a bird, 0 = overview, H/K/R = damage/kill/respawn.");
         }
 
+        /// <summary>
+        /// Tools > Agents > Run Automated Check: opens Sandbox_Chamika and presses Play; <see cref="AgentAutoCheck"/>
+        /// then takes the flight screenshots, runs the three stress-test modes and leaves Play mode by itself.
+        /// </summary>
+        [MenuItem("Tools/Agents/Run Automated Check")]
+        public static void RunAutomatedCheck()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[Agents] Stop Play mode first, then run the automated check.");
+                return;
+            }
+            if (!File.Exists(ScenePath))
+            {
+                Debug.LogWarning("[Agents] Sandbox_Chamika not found - run Tools > Agents > Create Agent Sandbox first.");
+                return;
+            }
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                return;
+
+            EditorSceneManager.OpenScene(ScenePath); // the saved version, so earlier test toggles are gone
+            SessionState.SetBool(AgentAutoCheck.SessionKey, true);
+            EditorApplication.isPlaying = true;
+            Debug.Log("[Agents] Automated check started: about 2 minutes, Play mode stops by itself.");
+        }
+
         /// <summary>The BirdAgent of each species prefab, or null (with a warning) if one is not set up yet.</summary>
         static BirdAgent[] LoadPrefabs()
         {

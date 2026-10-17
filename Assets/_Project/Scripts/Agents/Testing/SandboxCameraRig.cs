@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -30,6 +31,23 @@ namespace RunwayPanic.Agents.Testing
             overviewRotation = transform.rotation;
         }
 
+        /// <summary>The birds the number keys select, in order.</summary>
+        public IReadOnlyList<Transform> Birds => birds;
+
+        /// <summary>Back to the starting overview.</summary>
+        public void ShowOverview()
+        {
+            target = null;
+            transform.SetPositionAndRotation(overviewPosition, overviewRotation);
+        }
+
+        /// <summary>Chases bird <paramref name="index"/> (0-based; key 1 = index 0).</summary>
+        public void Follow(int index)
+        {
+            if (index >= 0 && index < birds.Length && birds[index] != null)
+                target = birds[index];
+        }
+
         private void Update()
         {
             Keyboard keyboard = Keyboard.current;
@@ -37,16 +55,13 @@ namespace RunwayPanic.Agents.Testing
                 return;
 
             if (keyboard.digit0Key.wasPressedThisFrame)
-            {
-                target = null;
-                transform.SetPositionAndRotation(overviewPosition, overviewRotation);
-            }
+                ShowOverview();
 
             int count = Mathf.Min(birds.Length, 9);
             for (int i = 0; i < count; i++)
             {
-                if (keyboard[Key.Digit1 + i].wasPressedThisFrame && birds[i] != null)
-                    target = birds[i];
+                if (keyboard[Key.Digit1 + i].wasPressedThisFrame)
+                    Follow(i);
             }
         }
 
