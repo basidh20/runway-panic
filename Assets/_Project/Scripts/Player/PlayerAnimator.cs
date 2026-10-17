@@ -16,6 +16,8 @@ namespace RunwayPanic.Player
     /// upper-body layer fades in while a gun is held, so the arms hold it while the legs keep moving.</item>
     /// <item>Reload: <c>Reload</c> trigger and <c>IsReloading</c>, with <c>ReloadSpeed</c> = clip length ÷ the gun's
     /// reload time, so the animation ends exactly when the magazine is full again.</item>
+    /// <item>Reactions: <c>Hit</c> trigger on every survivable hit (an additive flinch); <c>Dead</c> while health is
+    /// 0, which plays the death and puts the gun arm down until the respawn heals the player.</item>
     /// </list>
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
@@ -31,6 +33,8 @@ namespace RunwayPanic.Player
         private static readonly int ReloadId = Animator.StringToHash("Reload");
         private static readonly int IsReloadingId = Animator.StringToHash("IsReloading");
         private static readonly int ReloadSpeedId = Animator.StringToHash("ReloadSpeed");
+        private static readonly int HitId = Animator.StringToHash("Hit");
+        private static readonly int DeadId = Animator.StringToHash("Dead");
 
         // Reload clips are played faster or slower so they last exactly the gun's reload time.
         private const string PistolReloadClip = "A_Player_PistolReload";
@@ -52,6 +56,7 @@ namespace RunwayPanic.Player
         private CharacterController characterController;
         private PlayerController playerController;
         private PlayerWeaponHolder weaponHolder;
+        private PlayerHealth playerHealth;
         private WeaponBase currentWeapon;
         private float pistolReloadLength;
         private float rifleReloadLength;
@@ -64,6 +69,7 @@ namespace RunwayPanic.Player
             characterController = GetComponent<CharacterController>();
             playerController = GetComponent<PlayerController>();
             weaponHolder = GetComponent<PlayerWeaponHolder>();
+            playerHealth = GetComponent<PlayerHealth>();
             if (animator == null)
                 animator = GetComponentInChildren<Animator>();
 
@@ -93,6 +99,8 @@ namespace RunwayPanic.Player
         {
             if (playerController != null)
                 playerController.Jumped += HandleJumped;
+            if (playerHealth != null)
+                playerHealth.Damaged += HandleDamaged;
             if (weaponHolder != null)
             {
                 weaponHolder.WeaponEquipped += HandleWeaponEquipped;
@@ -105,6 +113,8 @@ namespace RunwayPanic.Player
         {
             if (playerController != null)
                 playerController.Jumped -= HandleJumped;
+            if (playerHealth != null)
+                playerHealth.Damaged -= HandleDamaged;
             if (weaponHolder != null)
                 weaponHolder.WeaponEquipped -= HandleWeaponEquipped;
             WatchWeapon(null);
@@ -129,9 +139,13 @@ namespace RunwayPanic.Player
                 animator.SetFloat(VerticalSpeedId, playerController.VerticalSpeed);
             }
 
+            // Dead until the respawn resets the health; the Death state holds the body on the ground until then.
+            bool alive = playerHealth == null || playerHealth.IsAlive;
+            animator.SetBool(DeadId, !alive);
+
             if (animator.layerCount > UpperBodyLayer)
             {
-                bool holdingGun = weaponHolder != null && weaponHolder.CurrentWeaponObject != null &&
+                bool holdingGun = alive && weaponHolder != null && weaponHolder.CurrentWeaponObject != null &&
                                   weaponHolder.CurrentWeaponObject.activeInHierarchy;
                 float armsWeight = Mathf.MoveTowards(animator.GetLayerWeight(UpperBodyLayer), holdingGun ? 1f : 0f,
                     armsBlendSpeed * Time.deltaTime);
@@ -142,6 +156,13 @@ namespace RunwayPanic.Player
         private void HandleJumped()
         {
             animator.SetTrigger(JumpId);
+        }
+
+        // The killing blow plays Death instead of a flinch (health is already 0 when Damaged is raised).
+        private void HandleDamaged(float amount)
+        {
+            if (playerHealth.IsAlive)
+                animator.SetTrigger(HitId);
         }
 
         private void HandleWeaponEquipped(WeaponBase weapon)
