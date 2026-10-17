@@ -24,6 +24,7 @@ namespace RunwayPanic.EditorTools
         private static int phase, failures;
         private static double phaseStarted;
         private static bool running;
+        private static float closingOvershoot;
 
         static MainShelterDoorIntegration() { EditorApplication.playModeStateChanged += OnPlayMode; }
 
@@ -61,6 +62,13 @@ namespace RunwayPanic.EditorTools
                     root.localRotation = Quaternion.Euler(0, 180, 0);
                     root.localScale = Vector3.one;
                     PrefabUtility.RecordPrefabInstancePropertyModifications(root);
+                    ConfigureDoor(root);
+                    // Scene-instance overrides only: retain shelter footprint and shared prefab assets.
+                    Resize(shelter.transform.Find("Front_Left"), new Vector3(-2.875f, 2, -3.8f), new Vector3(4.25f, 4, .4f));
+                    Resize(shelter.transform.Find("Front_Right"), new Vector3(2.875f, 2, -3.8f), new Vector3(4.25f, 4, .4f));
+                    Resize(shelter.transform.Find("Door_Lintel"), new Vector3(0, 3.3f, -3.8f), new Vector3(1.5f, 1.4f, .4f));
+                    var stripe = shelter.transform.Find("EntryStripe");
+                    Resize(stripe, stripe.localPosition, new Vector3(1.3f, .01f, .2f));
                 }
                 Undo.FlushUndoRecordObjects();
                 EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
@@ -69,6 +77,47 @@ namespace RunwayPanic.EditorTools
             }
             catch { Undo.RevertAllDownToGroup(group); throw; }
             finally { Undo.CollapseUndoOperations(group); }
+        }
+
+        private static void ConfigureDoor(Transform root)
+        {
+            var panel = root.Find("DoorPanel");
+            Resize(panel.Find("Panel_Mesh"), new Vector3(0, 1.28f, 0), new Vector3(1.4f, 2.4f, .08f));
+            Resize(panel.Find("Kickplate_Stripe"), new Vector3(0, .28f, 0), new Vector3(1.38f, .12f, .09f));
+            foreach (string handle in new[] { "Handle_Inside", "Handle_Outside" })
+            {
+                var part = panel.Find(handle);
+                Resize(part, new Vector3(.52f, 1.08f, part.localPosition.z), part.localScale);
+            }
+            var box = panel.GetComponent<BoxCollider>();
+            Undo.RecordObject(box, "Match narrow door collision");
+            box.size = new Vector3(1.4f, 2.4f, .08f);
+            box.center = new Vector3(0, 1.28f, 0);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(box);
+            var hinge = panel.GetComponent<HingeJoint>();
+            Undo.RecordObject(hinge, "Move hinge to resized panel edge");
+            hinge.anchor = new Vector3(-.7f, 0, 0);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(hinge);
+            var body = panel.GetComponent<Rigidbody>();
+            Undo.RecordObject(body, "Tune door inertia");
+            body.mass = 20;
+            body.angularDamping = 1;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(body);
+            // Door.Awake applies these serialized settings to the joint; overriding the joint spring alone would be lost.
+            var settings = new SerializedObject(panel.GetComponent<Door>());
+            settings.FindProperty("spring").floatValue = 1000;
+            settings.FindProperty("damper").floatValue = 240;
+            settings.ApplyModifiedProperties();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(settings.targetObject);
+        }
+
+        private static void Resize(Transform part, Vector3 position, Vector3 size)
+        {
+            if (part == null) throw new InvalidOperationException("Expected shared prefab geometry is missing.");
+            Undo.RecordObject(part, "Fit narrow shelter entrance");
+            part.localPosition = position;
+            part.localScale = size;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(part);
         }
 
         [MenuItem("Tools/Runway Panic/Run Main Shelter Door Smoke Check")]
@@ -86,6 +135,7 @@ namespace RunwayPanic.EditorTools
             if (state == PlayModeStateChange.EnteredPlayMode)
             {
                 phase = failures = 0;
+                closingOvershoot = 0;
                 running = true;
                 phaseStarted = EditorApplication.timeSinceStartup;
                 Report.Clear();
@@ -104,8 +154,11 @@ namespace RunwayPanic.EditorTools
 
         private static void Tick()
         {
-            if (!running || !EditorApplication.isPlaying || EditorApplication.isPaused ||
-                EditorApplication.timeSinceStartup - phaseStarted < 5) return;
+            if (!running || !EditorApplication.isPlaying || EditorApplication.isPaused) return;
+            if (doors != null && (phase == 2 || phase == 4))
+                foreach (var door in doors)
+                    closingOvershoot = Mathf.Max(closingOvershoot, phase == 2 ? -door.CurrentAngle : door.CurrentAngle);
+            if (EditorApplication.timeSinceStartup - phaseStarted < 1.5) return;
             try
             {
                 if (phase == 0)
@@ -123,6 +176,8 @@ namespace RunwayPanic.EditorTools
                         Check(Vector3.Distance(root.localPosition, new Vector3(0, .055f, -3.8f)) < .001f &&
                             Quaternion.Angle(root.localRotation, Quaternion.Euler(0, 180, 0)) < .1f && root.localScale == Vector3.one,
                             Shelters[i] + " handoff placement and scale");
+                        Check(doors[i].GetComponent<BoxCollider>().size == new Vector3(1.4f, 2.4f, .08f),
+                            Shelters[i] + " panel/collider resized to 1.4 x 2.4 m");
                         Check(!doors[i].IsOpen && !doors[i].IsLocked && !PassageClear(i), Shelters[i] + " closed door blocks passage");
                         doors[i].Open(positions[i] + forwards[i] * 2);
                     }
@@ -139,7 +194,11 @@ namespace RunwayPanic.EditorTools
                         if (phase == 1 || phase == 3) doors[i].Close();
                         else if (phase == 2) doors[i].Open(positions[i] - forwards[i] * 2);
                     }
-                    if (phase == 4) { Finish(); return; }
+                    if (phase == 4)
+                    {
+                        Check(closingOvershoot < 2, "Closing overshoot stays below 2 degrees (actual " + closingOvershoot.ToString("F2") + ")");
+                        Finish(); return;
+                    }
                 }
                 phase++;
                 phaseStarted = EditorApplication.timeSinceStartup;

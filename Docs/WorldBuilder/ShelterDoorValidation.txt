@@ -3,23 +3,26 @@ Unity: 6000.6.4f1
 Uses shared Door.Open/Close APIs, not simulated E input. No full-game regression run.
 PASS: Exactly one shared Door in each shelter, two total
 PASS: Shelter_A handoff placement and scale
+PASS: Shelter_A panel/collider resized to 1.4 x 2.4 m
 PASS: Shelter_A closed door blocks passage
 PASS: Shelter_B handoff placement and scale
+PASS: Shelter_B panel/collider resized to 1.4 x 2.4 m
 PASS: Shelter_B closed door blocks passage
-PASS: Shelter_A physical hinge reaches 90 degrees (actual 90.0)
+PASS: Shelter_A physical hinge reaches 90 degrees (actual 89.9)
 PASS: Shelter_A open doorway has human-sized clearance
-PASS: Shelter_B physical hinge reaches 90 degrees (actual 90.0)
+PASS: Shelter_B physical hinge reaches 90 degrees (actual 89.9)
 PASS: Shelter_B open doorway has human-sized clearance
-PASS: Shelter_A physical hinge reaches 0 degrees (actual -0.6)
+PASS: Shelter_A physical hinge reaches 0 degrees (actual 0.1)
 PASS: Shelter_A closed door blocks passage again
-PASS: Shelter_B physical hinge reaches 0 degrees (actual -0.6)
+PASS: Shelter_B physical hinge reaches 0 degrees (actual 0.1)
 PASS: Shelter_B closed door blocks passage again
-PASS: Shelter_A physical hinge reaches -90 degrees (actual -90.0)
+PASS: Shelter_A physical hinge reaches -90 degrees (actual -89.9)
 PASS: Shelter_A open doorway has human-sized clearance
-PASS: Shelter_B physical hinge reaches -90 degrees (actual -90.0)
+PASS: Shelter_B physical hinge reaches -90 degrees (actual -89.9)
 PASS: Shelter_B open doorway has human-sized clearance
-PASS: Shelter_A physical hinge reaches 0 degrees (actual 0.6)
+PASS: Shelter_A physical hinge reaches 0 degrees (actual 0.0)
 PASS: Shelter_A closed door blocks passage again
-PASS: Shelter_B physical hinge reaches 0 degrees (actual 0.6)
+PASS: Shelter_B physical hinge reaches 0 degrees (actual -0.1)
 PASS: Shelter_B closed door blocks passage again
+PASS: Closing overshoot stays below 2 degrees (actual 0.00)
 Failures: 0
