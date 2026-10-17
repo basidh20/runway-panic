@@ -21,7 +21,8 @@ namespace RunwayPanic.Weapons
         [SerializeField] private LayerMask hitLayers = ~0;
 
         /// <summary>
-        /// Raised for every shot. Arguments: muzzle position, end point, the damageable that was hit (or null).
+        /// Raised for every shot, before damage is applied to the target.
+        /// Arguments: muzzle position, end point, the damageable that was hit (or null).
         /// </summary>
         public event Action<Vector3, Vector3, IDamageable> ShotFired;
 
@@ -76,12 +77,17 @@ namespace RunwayPanic.Weapons
             {
                 endPoint = shotHit.point;
                 target = shotHit.collider.GetComponentInParent<IDamageable>();
-                if (target != null && target.IsAlive)
-                    target.TakeDamage(weapon.Damage, weapon.Rarity);
             }
 
             Debug.DrawLine(origin, endPoint, target != null ? Color.red : Color.yellow, 0.2f);
+
+            // Announce the shot BEFORE applying damage: a bird that dies from this hit reads the shot's
+            // origin (via PlayerEventHub) to know where the shooter stood.
             ShotFired?.Invoke(origin, endPoint, target);
+
+            if (target != null && target.IsAlive)
+                target.TakeDamage(weapon.Damage, weapon.Rarity);
+
             return true;
         }
 
