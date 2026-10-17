@@ -16,6 +16,7 @@ MonoBehaviour:
   rarity: 1
   targetSpecies: 1
   prefab: {fileID: 5690419629382260860, guid: f50ba97cdb6d2474e822799b20816132, type: 3}
+  holdType: 1
   damage: 12
   fireRate: 8
   range: 70
