@@ -6,7 +6,7 @@ Current integration workflow: task-specific feature branches → `develop` → `
 
 ## Current Main scene status
 
-The first gameplay integration is documented in `PlayerIntegration.md`: Main now uses S2's connected gameplay player and GameManager prefabs, and `GreyboxPreview_TEMPORARY` is retained but disabled. `CheckpointIntegration.md` records the follow-up: the two original checkpoint markers now have active triggers, runway-facing respawns and visible floor markings. The greybox geometry below remains the scale/layout reference. Historical cube-stage reports and first-person checks are not final gameplay acceptance.
+The first gameplay integration is documented in `PlayerIntegration.md`: Main now uses S2's connected gameplay player and GameManager prefabs, and `GreyboxPreview_TEMPORARY` is retained but disabled. `CheckpointIntegration.md` records the follow-up: the two original checkpoint markers now have active triggers, runway-facing respawns and visible floor markings. `ShelterDoorIntegration.md` records the connected S2 doors now fitted to both shelters. The greybox geometry below remains the scale/layout reference. Historical cube-stage reports and first-person checks are not final gameplay acceptance.
 
 ## What is built
 
@@ -14,7 +14,7 @@ The first gameplay integration is documented in `PlayerIntegration.md`: Main now
 - Central 75 x 14 m runway (extended by the student), with aligned threshold bars, centre stripes, edge markings, and runway numbers.
 - Four recognisable aircraft greyboxes under Environment/Aircraft, refined from the student's parking cubes. Plane A uses a 12 m-long / 9 m-span utility-aircraft prefab; B/C/D share a 9 m-long / 8 m-span light-aircraft prefab. Each has fuselage, cockpit, wings, tail, engines, wheels, and compound collision. Parking was adjusted for wing clearance and terminal/hangar routes. See `AircraftArtHandoff.md` for final-model specifications.
 - An enterable Hangar_Greybox under Environment/Buildings, converted from the student's massing cube. The original 14 x 25 m footprint and 6 m exterior height are preserved. Its reusable P_Greybox_Hangar prefab has separate walls, floor, roof, a 10 m wide / 4.8 m high runway-facing entrance, and a 2.8 m wide / 3.2 m high north-side exit. Interior lights and flush maintenance-bay markings leave the central path clear.
-- Two 10 x 8 m shelter prefabs at opposite sides of the runway. Each contains a floor, separate walls, roof, and a 2.8 m wide / 3 m high open entrance.
+- Two 10 x 8 m shelter prefabs at opposite sides of the runway. Each contains a floor, separate walls, roof, and a 2.8 m wide / 3 m high entrance, now fitted with an interactable hinged door in Main.
 - Six barricade prefab instances placed beside the runway, with routes left open.
 - A simple control-tower and terminal placeholder to establish airport scale and landmarks.
 - Basic reusable URP colour materials and realtime preview lighting.

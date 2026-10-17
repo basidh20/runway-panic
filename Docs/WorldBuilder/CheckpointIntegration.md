@@ -34,7 +34,7 @@ The recorded run passed all **18 saved-scene checks** and **31 Play-mode checks*
 ## Four real commit-sized milestones
 
 1. **Checkpoints** — this branch: activation, placement/facing, visible zones and real delayed-respawn verification.
-2. **Shelter doors** — next commit on this batch branch: fit both supplied door prefabs and test use from both sides.
+2. **Shelter doors** — see `ShelterDoorIntegration.md`: both supplied prefabs fitted; focused physical opening/closing and passage checks, with manual E-input check documented.
 3. **Pickup spawning** — next commit: install the supplied spawner and test collection/replacement on the level markers.
 4. **Shop** — next commit: install the supplied shop UI and test purchases, refusals and next-wave handoff.
 
