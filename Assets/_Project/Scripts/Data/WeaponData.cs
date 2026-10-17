@@ -16,6 +16,8 @@ namespace RunwayPanic.Data
         [SerializeField] private BirdSpecies targetSpecies;
         [Tooltip("One of the P_Gun_Tier1-4 prefabs.")]
         [SerializeField] private GameObject prefab;
+        [Tooltip("How the officer holds this gun (picks the upper-body animations).")]
+        [SerializeField] private WeaponHoldType holdType;
 
         [Header("Firing")]
         [SerializeField, Min(0f)] private float damage = 10f;
@@ -34,6 +36,7 @@ namespace RunwayPanic.Data
         public WeaponRarity Rarity => rarity;
         public BirdSpecies TargetSpecies => targetSpecies;
         public GameObject Prefab => prefab;
+        public WeaponHoldType HoldType => holdType;
         public float Damage => damage;
         public float FireRate => fireRate;
         public float FireInterval => 1f / fireRate;

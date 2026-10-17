@@ -1,4 +1,5 @@
 using System;
+using RunwayPanic.Player;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -11,6 +12,8 @@ namespace RunwayPanic.PlayerTools
     /// <list type="bullet">
     /// <item>Locomotion cycles: idle, walk (a light jog), run.</item>
     /// <item>Jump: jump start (snap push-off), fall (airborne loop), land (absorb and stand up).</item>
+    /// <item>Weapons (upper body): pistol and rifle aim, fire and equip, holding the real gun the way
+    /// <c>PlayerWeaponHolder</c> mounts it.</item>
     /// </list>
     /// <para>
     /// How it works: a hidden copy of <c>SK_Player_Officer</c> is posed frame by frame from a <see cref="Pose"/>
@@ -25,6 +28,17 @@ namespace RunwayPanic.PlayerTools
     public static class PlayerClipGenerator
     {
         private const string ModelPath = "Assets/_Project/Art/Models/Characters/SK_Player_Officer.fbx";
+        private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Player/P_Player_Gameplay.prefab";
+
+        // Where the left hand holds a gun, in the gun's local space (same rule as PlayerAimIK's defaults).
+        // Rifle: half way to a typical rifle muzzle (0, 0.10, 0.71), just under the barrel.
+        private static readonly Vector3 PistolSupport = new Vector3(-0.03f, -0.03f, 0f);
+        private static readonly Vector3 RifleSupport = new Vector3(0f, 0.05f, 0.355f);
+
+        // Finger curl around the grip ("Stretched" muscles: -1 = fully curled). The index finger stays on the trigger.
+        private const float FingerCurl = -0.75f;
+        private const float IndexCurl = -0.35f;
+        private const float ThumbCurl = -0.3f;
         private const string OutputFolder = "Assets/_Project/Art/Animations/Player";
         private const int FramesPerSecond = 30;
 
@@ -44,8 +58,20 @@ namespace RunwayPanic.PlayerTools
             public float Body;    // extra body height
             public float Plant;   // 1 = lower the body so the lowest foot stays on the ground (crouches)
 
+            // Holding a gun (upper-body clips): the arms are placed with two-bone IK instead of swing angles.
+            public float Armed;    // 0 = arms from the angles above, 1 = right hand at 'Hand' holding the gun
+            public Vector3 Hand;   // right hand relative to the right shoulder: x right, y up, z forward (m)
+            public float GunPitch; // barrel angle, + = muzzle up
+            public float Support;  // 0 = left arm from the angles above, 1 = left hand on the gun
+            public float Grip;     // finger curl around the gun, 0..1
+            public bool Rifle;     // left hand on a rifle's handguard instead of under a pistol grip
+
             public static Pose Lerp(Pose a, Pose b, float t) => new Pose
             {
+                Rifle = a.Rifle || b.Rifle,
+                Armed = Mathf.Lerp(a.Armed, b.Armed, t), Hand = Vector3.Lerp(a.Hand, b.Hand, t),
+                GunPitch = Mathf.Lerp(a.GunPitch, b.GunPitch, t), Support = Mathf.Lerp(a.Support, b.Support, t),
+                Grip = Mathf.Lerp(a.Grip, b.Grip, t),
                 ThighL = Mathf.Lerp(a.ThighL, b.ThighL, t), KneeL = Mathf.Lerp(a.KneeL, b.KneeL, t),
                 FootL = Mathf.Lerp(a.FootL, b.FootL, t), ThighR = Mathf.Lerp(a.ThighR, b.ThighR, t),
                 KneeR = Mathf.Lerp(a.KneeR, b.KneeR, t), FootR = Mathf.Lerp(a.FootR, b.FootR, t),
@@ -219,6 +245,90 @@ namespace RunwayPanic.PlayerTools
             Poses = new[] { LandBrace, LandImpact, Stand },
         };
 
+        // ---- Weapon poses (upper body: only the arms and fingers are used, through an avatar mask) ----
+
+        // Two-handed handgun grip, arms forward at chest height.
+        private static readonly Pose PistolAim = new Pose
+        {
+            KneeL = 4f, KneeR = 4f, ElbowL = 14f, Spread = 0.14f, Lean = 2f,
+            Armed = 1f, Hand = new Vector3(-0.13f, -0.06f, 0.40f), Support = 1f, Grip = 1f,
+        };
+
+        // Gun at the hip, muzzle down: where a draw starts.
+        private static readonly Pose PistolLow = new Pose
+        {
+            KneeL = 4f, KneeR = 4f, ElbowL = 14f, Spread = 0.14f, Lean = 2f,
+            Armed = 1f, Hand = new Vector3(0.06f, -0.46f, 0.08f), GunPitch = -75f, Grip = 1f,
+        };
+
+        // Rifle at the shoulder. The chest is turned 25° (left shoulder forward) while the arms are posed; only the
+        // arms are kept by the mask, so at runtime PlayerAimIK turns the chest back onto the aim line — which gives
+        // the bladed rifle stance and lets the officer's short left arm reach the handguard.
+        private static readonly Pose RifleAim = new Pose
+        {
+            KneeL = 4f, KneeR = 4f, ElbowL = 14f, Spread = 0.14f, Lean = 2f, Twist = 25f,
+            Armed = 1f, Hand = new Vector3(-0.06f, -0.20f, 0.20f), Support = 1f, Grip = 1f, Rifle = true,
+        };
+
+        // Low ready: muzzle angled at the ground in front.
+        private static readonly Pose RifleLow = new Pose
+        {
+            KneeL = 4f, KneeR = 4f, ElbowL = 14f, Spread = 0.14f, Lean = 2f, Twist = 25f,
+            Armed = 1f, Hand = new Vector3(0f, -0.34f, 0.12f), GunPitch = -45f, Support = 0.6f, Grip = 1f, Rifle = true,
+        };
+
+        private static Pose Offset(Pose pose, Vector3 hand, float pitch)
+        {
+            pose.Hand += hand;
+            pose.GunPitch += pitch;
+            return pose;
+        }
+
+        // Aim loops: a slight breathing drift so a held gun never looks frozen.
+        private static readonly KeyedClip PistolAimClip = new KeyedClip
+        {
+            Name = "A_Player_PistolAim", Loop = true,
+            Times = new[] { 0f, 0.8f, 1.6f },
+            Poses = new[] { PistolAim, Offset(PistolAim, new Vector3(0f, 0.006f, 0f), 0.6f), PistolAim },
+        };
+
+        private static readonly KeyedClip RifleAimClip = new KeyedClip
+        {
+            Name = "A_Player_RifleAim", Loop = true,
+            Times = new[] { 0f, 0.8f, 1.6f },
+            Poses = new[] { RifleAim, Offset(RifleAim, new Vector3(0f, 0.005f, 0f), 0.4f), RifleAim },
+        };
+
+        // Fire: a sharp kick back and up, then settle. Short, so fast-firing guns can restart it every shot.
+        private static readonly KeyedClip PistolFireClip = new KeyedClip
+        {
+            Name = "A_Player_PistolFire",
+            Times = new[] { 0f, 0.04f, 0.18f },
+            Poses = new[] { PistolAim, Offset(PistolAim, new Vector3(0f, 0.03f, -0.05f), 12f), PistolAim },
+        };
+
+        private static readonly KeyedClip RifleFireClip = new KeyedClip
+        {
+            Name = "A_Player_RifleFire",
+            Times = new[] { 0f, 0.03f, 0.12f },
+            Poses = new[] { RifleAim, Offset(RifleAim, new Vector3(0f, 0.01f, -0.035f), 4f), RifleAim },
+        };
+
+        // Equip: draw from the hip / low ready up to the aim.
+        private static readonly KeyedClip PistolEquipClip = new KeyedClip
+        {
+            Name = "A_Player_PistolEquip",
+            Times = new[] { 0f, 0.3f },
+            Poses = new[] { PistolLow, PistolAim },
+        };
+
+        private static readonly KeyedClip RifleEquipClip = new KeyedClip
+        {
+            Name = "A_Player_RifleEquip",
+            Times = new[] { 0f, 0.35f },
+            Poses = new[] { RifleLow, RifleAim },
+        };
+
         // ---- Menu ----
 
         [MenuItem("Tools/S2/Generate Player Clips")]
@@ -235,7 +345,11 @@ namespace RunwayPanic.PlayerTools
                     Save(rig.Bake(g.Period, g.KeyStep, true, t => g.Sample(t / g.Period * Mathf.PI * 2f)), g.Name);
                 }
 
-                foreach (KeyedClip keyed in new[] { JumpStart, Fall, Land })
+                foreach (KeyedClip keyed in new[]
+                         {
+                             JumpStart, Fall, Land,
+                             PistolAimClip, PistolFireClip, PistolEquipClip, RifleAimClip, RifleFireClip, RifleEquipClip,
+                         })
                 {
                     KeyedClip k = keyed;
                     Save(rig.Bake(k.Duration, 1, k.Loop, k.Sample), k.Name);
@@ -243,7 +357,7 @@ namespace RunwayPanic.PlayerTools
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Player Animator] Generated idle, walk, run, jump start, fall and land clips in {OutputFolder}.");
+            Debug.Log($"[Player Animator] Generated locomotion, jump and pistol/rifle clips in {OutputFolder}.");
         }
 
         private static void Save(AnimationClip clip, string name)
@@ -285,10 +399,21 @@ namespace RunwayPanic.PlayerTools
             private readonly Vector3 restThighL, restThighR, restShinL, restShinR, restFootL, restFootR;
             private readonly float restFootHeight;
 
-            private Rig(GameObject instance, Animator animator)
+            // How PlayerWeaponHolder mounts a gun on the right hand bone.
+            private readonly Vector3 gripPosition;
+            private readonly Quaternion gripRotation;
+
+            // Muscle index → curl target, for each hand's finger "Stretched" muscles.
+            private readonly (int index, float curl)[] rightFingers, leftFingers;
+
+            private Rig(GameObject instance, Animator animator, Vector3 gripPosition, Quaternion gripRotation)
             {
                 this.instance = instance;
                 this.animator = animator;
+                this.gripPosition = gripPosition;
+                this.gripRotation = gripRotation;
+                rightFingers = FingerMuscles("Right");
+                leftFingers = FingerMuscles("Left");
                 poseHandler = new HumanPoseHandler(animator.avatar, instance.transform);
 
                 transforms = instance.GetComponentsInChildren<Transform>(true);
@@ -335,7 +460,41 @@ namespace RunwayPanic.PlayerTools
                     return null;
                 }
 
-                return new Rig(instance, animator);
+                ReadGrip(out Vector3 gripPosition, out Quaternion gripRotation);
+                return new Rig(instance, animator, gripPosition, gripRotation);
+            }
+
+            private static void ReadGrip(out Vector3 position, out Quaternion rotation)
+            {
+                position = Vector3.zero;
+                rotation = Quaternion.identity;
+
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+                var holder = prefab != null ? prefab.GetComponent<RunwayPanic.Weapons.PlayerWeaponHolder>() : null;
+                if (holder == null)
+                {
+                    Debug.LogWarning($"[Player Animator] No PlayerWeaponHolder on {PlayerPrefabPath}; weapon clips assume no grip offset.");
+                    return;
+                }
+
+                var serialized = new SerializedObject(holder);
+                position = serialized.FindProperty("gripLocalPosition").vector3Value;
+                rotation = Quaternion.Euler(serialized.FindProperty("gripLocalEulerAngles").vector3Value);
+            }
+
+            private static (int, float)[] FingerMuscles(string side)
+            {
+                var result = new System.Collections.Generic.List<(int, float)>();
+                for (int m = 0; m < HumanTrait.MuscleCount; m++)
+                {
+                    string name = HumanTrait.MuscleName[m];
+                    if (!name.StartsWith(side + " ") || !name.EndsWith("Stretched"))
+                        continue;
+                    float curl = name.Contains("Thumb") ? ThumbCurl : name.Contains("Index") ? IndexCurl : FingerCurl;
+                    result.Add((m, curl));
+                }
+
+                return result.ToArray();
             }
 
             public void Dispose()
@@ -370,6 +529,8 @@ namespace RunwayPanic.PlayerTools
 
                     poseHandler.GetHumanPose(ref pose);
                     pose.bodyPosition += up * (body / Mathf.Max(0.01f, animator.humanScale));
+                    CurlFingers(pose.muscles, rightFingers, p.Grip * p.Armed);
+                    CurlFingers(pose.muscles, leftFingers, p.Grip * p.Armed * p.Support);
 
                     for (int m = 0; m < muscleCount; m++)
                         muscleCurves[m].AddKey(time, pose.muscles[m]);
@@ -409,6 +570,14 @@ namespace RunwayPanic.PlayerTools
                 for (int k = 0; k < curve.length; k++)
                     curve.SmoothTangents(k, 0f);
                 AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Animator), attribute), curve);
+            }
+
+            private static void CurlFingers(float[] muscles, (int index, float curl)[] fingers, float amount)
+            {
+                if (amount <= 0f)
+                    return;
+                foreach ((int index, float curl) in fingers)
+                    muscles[index] = Mathf.Lerp(muscles[index], curl, amount);
             }
 
             // Most muscles (fingers, toes, jaw, eyes) never move: 2 keys instead of one per frame keeps clips small.
@@ -452,6 +621,39 @@ namespace RunwayPanic.PlayerTools
                     HumanBodyBones.LeftToes, restThighL, restShinL, restFootL, p.ThighL, p.KneeL, p.FootL);
                 PoseLeg(HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot,
                     HumanBodyBones.RightToes, restThighR, restShinR, restFootR, p.ThighR, p.KneeR, p.FootR);
+
+                if (p.Armed > 0f)
+                    HoldGun(p);
+            }
+
+            // Right hand to 'Hand' (two-bone IK), turned so the mounted gun points along 'GunPitch'; then the left hand
+            // onto the gun's support point. Uses the same IK as PlayerAimIK at runtime.
+            private void HoldGun(Pose p)
+            {
+                Transform upperR = Bone(HumanBodyBones.RightUpperArm), lowerR = Bone(HumanBodyBones.RightLowerArm);
+                Transform handR = Bone(HumanBodyBones.RightHand);
+                Transform upperL = Bone(HumanBodyBones.LeftUpperArm), lowerL = Bone(HumanBodyBones.LeftLowerArm);
+                Transform handL = Bone(HumanBodyBones.LeftHand);
+
+                Vector3 target = upperR.position + right * p.Hand.x + up * p.Hand.y + forward * p.Hand.z;
+                Vector3 poleR = upperR.position - up * 0.5f + right * 0.5f;
+                TwoBoneIK.Solve(upperR, lowerR, handR, target, poleR, p.Armed);
+
+                Vector3 barrel = Quaternion.AngleAxis(-p.GunPitch, right) * forward;
+                Quaternion gunRotation = Quaternion.LookRotation(barrel, up);
+                handR.rotation = Quaternion.Slerp(handR.rotation, gunRotation * Quaternion.Inverse(gripRotation), p.Armed);
+
+                if (p.Support <= 0f)
+                    return;
+
+                // Gun pose from the hand, exactly as PlayerWeaponHolder mounts it.
+                Vector3 gunPosition = handR.TransformPoint(gripPosition);
+                Quaternion gunWorld = handR.rotation * gripRotation;
+                Vector3 support = gunPosition + gunWorld * (p.Rifle ? RifleSupport : PistolSupport);
+
+                Vector3 leftTarget = Vector3.Lerp(handL.position, support, p.Support);
+                Vector3 poleL = upperL.position - up * 0.5f - right * 0.5f;
+                TwoBoneIK.Solve(upperL, lowerL, handL, leftTarget, poleL);
             }
 
             private void PoseArm(HumanBodyBones upperArm, HumanBodyBones lowerArm, HumanBodyBones hand,
