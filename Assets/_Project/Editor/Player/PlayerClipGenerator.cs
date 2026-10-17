@@ -14,6 +14,7 @@ namespace RunwayPanic.PlayerTools
     /// <item>Jump: jump start (snap push-off), fall (airborne loop), land (absorb and stand up).</item>
     /// <item>Weapons (upper body): pistol and rifle aim, fire, equip and reload, holding the real gun the way
     /// <c>PlayerWeaponHolder</c> mounts it.</item>
+    /// <item>Reactions: hit flinch (played additively), death (fall onto the back), and a still stand.</item>
     /// </list>
     /// <para>
     /// How it works: a hidden copy of <c>SK_Player_Officer</c> is posed frame by frame from a <see cref="Pose"/>
@@ -59,8 +60,9 @@ namespace RunwayPanic.PlayerTools
             public float ArmL, ArmR, ElbowL, ElbowR;
             public float Spread;  // how far the arms hang away from the body (0 = straight down)
             public float Lean, Twist, Head, Breath;
-            public float Body;    // extra body height
-            public float Plant;   // 1 = lower the body so the lowest foot stays on the ground (crouches)
+            public float Body;      // extra body height
+            public float Plant;    // 1 = lower the body so the lowest foot stays on the ground (crouches)
+            public float BodyPitch; // whole body tipped backwards around the hips, degrees (90 = lying on the back)
 
             // Holding a gun (upper-body clips): the arms are placed with two-bone IK instead of swing angles.
             public float Armed;    // 0 = arms from the angles above, 1 = right hand at 'Hand' holding the gun
@@ -87,7 +89,7 @@ namespace RunwayPanic.PlayerTools
                 Spread = Mathf.Lerp(a.Spread, b.Spread, t), Lean = Mathf.Lerp(a.Lean, b.Lean, t),
                 Twist = Mathf.Lerp(a.Twist, b.Twist, t), Head = Mathf.Lerp(a.Head, b.Head, t),
                 Breath = Mathf.Lerp(a.Breath, b.Breath, t), Body = Mathf.Lerp(a.Body, b.Body, t),
-                Plant = Mathf.Lerp(a.Plant, b.Plant, t),
+                Plant = Mathf.Lerp(a.Plant, b.Plant, t), BodyPitch = Mathf.Lerp(a.BodyPitch, b.BodyPitch, t),
             };
         }
 
@@ -400,6 +402,64 @@ namespace RunwayPanic.PlayerTools
             },
         };
 
+        // ---- Reactions ----
+
+        // Standing still: the additive Reactions layer's "no reaction" state (its delta from itself is zero).
+        private static readonly KeyedClip StandClip = new KeyedClip
+        {
+            Name = "A_Player_Stand", Loop = true,
+            Times = new[] { 0f, 0.5f },
+            Poses = new[] { Stand, Stand },
+        };
+
+        // Hit: a sharp flinch — chest and head snap back and twist, arms jerk — then recover. Played additively
+        // (only the change from its first frame is added), so it shows on top of running, aiming or reloading.
+        private static readonly Pose Flinch = new Pose
+        {
+            KneeL = 4f, KneeR = 4f, ArmL = 10f, ArmR = 10f, ElbowL = 40f, ElbowR = 40f, Spread = 0.25f,
+            Lean = -8f, Twist = 10f, Head = -14f, Plant = 1f,
+        };
+
+        private static readonly KeyedClip HitClip = new KeyedClip
+        {
+            Name = "A_Player_Hit",
+            Times = new[] { 0f, 0.07f, 0.35f },
+            Poses = new[] { Stand, Flinch, Stand },
+        };
+
+        // Death: knees buckle, the body tips over backwards and lands on its back, arms falling to the sides.
+        private static readonly Pose DeathBuckle = new Pose
+        {
+            ThighL = 28f, KneeL = 65f, ThighR = 22f, KneeR = 55f, ArmL = -5f, ArmR = -5f,
+            ElbowL = 25f, ElbowR = 25f, Spread = 0.25f, Lean = 18f, Head = 15f, Plant = 1f,
+        };
+
+        private static readonly Pose DeathFalling = new Pose
+        {
+            ThighL = 25f, KneeL = 45f, ThighR = 15f, KneeR = 35f, ArmL = 40f, ArmR = 25f,
+            ElbowL = 30f, ElbowR = 40f, Spread = 0.55f, Lean = 5f, Head = -10f, BodyPitch = 45f, Body = -0.33f,
+        };
+
+        private static readonly Pose DeathGround = new Pose
+        {
+            ThighL = 12f, KneeL = 20f, FootL = 10f, ThighR = 5f, KneeR = 10f, FootR = 15f, ArmL = 15f, ArmR = 10f,
+            ElbowL = 35f, ElbowR = 25f, Spread = 0.9f, Lean = -4f, Head = -12f, BodyPitch = 88f, Body = -0.83f,
+        };
+
+        private static Pose Settled(Pose pose)
+        {
+            pose.Body -= 0.02f;
+            pose.Head -= 3f;
+            return pose;
+        }
+
+        private static readonly KeyedClip DeathClip = new KeyedClip
+        {
+            Name = "A_Player_Death",
+            Times = new[] { 0f, 0.25f, 0.6f, 0.9f, 1.2f },
+            Poses = new[] { Stand, DeathBuckle, DeathFalling, DeathGround, Settled(DeathGround) },
+        };
+
         // ---- Menu ----
 
         [MenuItem("Tools/S2/Generate Player Clips")]
@@ -421,6 +481,7 @@ namespace RunwayPanic.PlayerTools
                              JumpStart, Fall, Land,
                              PistolAimClip, PistolFireClip, PistolEquipClip, RifleAimClip, RifleFireClip, RifleEquipClip,
                              PistolReloadClip, RifleReloadClip,
+                             StandClip, HitClip, DeathClip,
                          })
                 {
                     KeyedClip k = keyed;
@@ -429,7 +490,7 @@ namespace RunwayPanic.PlayerTools
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Player Animator] Generated locomotion, jump and pistol/rifle (aim, fire, equip, reload) clips in {OutputFolder}.");
+            Debug.Log($"[Player Animator] Generated locomotion, jump, weapon (aim, fire, equip, reload), hit and death clips in {OutputFolder}.");
         }
 
         private static void Save(AnimationClip clip, string name)
@@ -601,6 +662,8 @@ namespace RunwayPanic.PlayerTools
 
                     poseHandler.GetHumanPose(ref pose);
                     pose.bodyPosition += up * (body / Mathf.Max(0.01f, animator.humanScale));
+                    if (p.BodyPitch != 0f)
+                        pose.bodyRotation = Quaternion.AngleAxis(-p.BodyPitch, right) * pose.bodyRotation;
                     CurlFingers(pose.muscles, rightFingers, p.Grip * p.Armed);
                     CurlFingers(pose.muscles, leftFingers, p.Grip * p.Armed * p.Support);
 

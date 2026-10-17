@@ -2020,6 +2020,7 @@ MonoBehaviour:
   maxAimAngle: 70
   aimDistance: 40
   blendSpeed: 8
+  hitAimLoss: 0.7
   pistolSupport: {x: -0.03, y: -0.03, z: 0}
   rifleSupportAlongBarrel: 0.5
   rifleSupportMaxDistance: 0.33
