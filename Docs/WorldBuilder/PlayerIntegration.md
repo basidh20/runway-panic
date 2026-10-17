@@ -10,7 +10,7 @@ Unity: **6000.6.4f1**. Feature branch: **feature/world-player-integration**. PR 
 - Preserve the airport geometry, all existing markers, materials, shared gameplay scripts, original prefabs and build settings.
 - Supply explicit Editor-only integration/validation tools and repeatable Play-mode smoke checks. These are not runtime level generation.
 
-Only this milestone is installed. Shelter doors/checkpoint triggers, shop/pickup spawner, flight grid/AI markers, wave spawning and safe-room protection remain subsequent integration tasks. Having the GameManager in Main does not start a timed wave. No enemies are spawned by this milestone.
+This file records the first player/core milestone. The follow-up checkpoint integration is documented separately in `CheckpointIntegration.md`; its triggers are now installed. Shelter doors, shop/pickup spawner, flight grid/AI markers, wave spawning and safe-room protection remain subsequent integration tasks. Having the GameManager in Main does not start a timed wave. No enemies are spawned by these milestones.
 
 ## Play Main
 
@@ -21,7 +21,7 @@ Only this milestone is installed. Shelter doors/checkpoint triggers, shop/pickup
 
 The visible officer, gun, camera and HUD come from the Systems Engineer's and modeller's prefabs, not newly copied implementations. Further animation/camera/HUD polish in those shared prefabs belongs with their owners.
 
-If the Game view crops the HUD, reduce its **Scale** to fit the panel: the inspected Editor was zoomed to 1.2x at Full HD. That viewport zoom is not a reason to move the shared HUD anchors. The officer currently uses the supplied rest pose; final player locomotion/weapon-holding animation is not supplied by this milestone.
+If the Game view crops the HUD, reduce its **Scale** to fit the panel: the inspected Editor was zoomed to 1.2x at Full HD. That viewport zoom is not a reason to move the shared HUD anchors. This first milestone did not supply player locomotion/weapon-holding animation; later S2 prefab updates may add it without any World Builder script replacement.
 
 ## Repeatable checks
 

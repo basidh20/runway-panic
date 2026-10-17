@@ -6,7 +6,7 @@ Current integration workflow: task-specific feature branches → `develop` → `
 
 ## Current Main scene status
 
-The first gameplay integration is documented in `PlayerIntegration.md`: Main now uses S2's connected gameplay player and GameManager prefabs, and `GreyboxPreview_TEMPORARY` is retained but disabled. The greybox geometry below remains the scale/layout reference. Historical cube-stage reports and first-person checks are not final gameplay acceptance.
+The first gameplay integration is documented in `PlayerIntegration.md`: Main now uses S2's connected gameplay player and GameManager prefabs, and `GreyboxPreview_TEMPORARY` is retained but disabled. `CheckpointIntegration.md` records the follow-up: the two original checkpoint markers now have active triggers, runway-facing respawns and visible floor markings. The greybox geometry below remains the scale/layout reference. Historical cube-stage reports and first-person checks are not final gameplay acceptance.
 
 ## What is built
 
@@ -18,7 +18,7 @@ The first gameplay integration is documented in `PlayerIntegration.md`: Main now
 - Six barricade prefab instances placed beside the runway, with routes left open.
 - A simple control-tower and terminal placeholder to establish airport scale and landmarks.
 - Basic reusable URP colour materials and realtime preview lighting.
-- Player-start, eight bird-spawn, four pickup, two checkpoint, and reserved-shop markers. These are positions only, not functioning gameplay systems.
+- Player-start, eight bird-spawn, four pickup, two checkpoint, and reserved-shop markers. The two checkpoints are now functional; the other markers remain placement references until their respective integration tasks.
 - A temporary first-person walkthrough rig and overview camera.
 
 The greybox is made of ordinary saved Unity objects and reusable prefabs. It is not generated on every Play. You can edit positions and sizes directly in the Inspector.

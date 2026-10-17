@@ -1,0 +1,22 @@
+Main checkpoint integration — saved-scene checks
+Unity: 6000.6.4f1
+PASS: Exactly two checkpoint components in Main
+PASS: Checkpoint_A original marker retained
+PASS: Checkpoint_A original ground position preserved
+PASS: Checkpoint_A uses the active shared S2 Checkpoint component
+PASS: Checkpoint_A has a 4 x 3 x 4 m trigger above the floor
+PASS: Checkpoint_A respawns facing the runway
+PASS: Checkpoint_A has solid ground underneath
+PASS: Checkpoint_A human-sized respawn volume is clear of solid obstacles
+PASS: Checkpoint_A visible floor marking adds no blocking colliders
+PASS: Checkpoint_B original marker retained
+PASS: Checkpoint_B original ground position preserved
+PASS: Checkpoint_B uses the active shared S2 Checkpoint component
+PASS: Checkpoint_B has a 4 x 3 x 4 m trigger above the floor
+PASS: Checkpoint_B respawns facing the runway
+PASS: Checkpoint_B has solid ground underneath
+PASS: Checkpoint_B human-sized respawn volume is clear of solid obstacles
+PASS: Checkpoint_B visible floor marking adds no blocking colliders
+PASS: One existing gameplay PlayerRespawn will receive checkpoint triggers
+Uses S2 runtime code unchanged. No safe-room protection, doors, checkpoint HUD or cross-session saving added.
+Failures: 0

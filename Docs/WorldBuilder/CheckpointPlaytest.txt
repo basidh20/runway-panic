@@ -1,0 +1,37 @@
+Main checkpoint integration — real trigger / death / delayed respawn checks
+Unity: 6000.6.4f1
+CharacterController walks into each trigger; no direct SetCheckpoint calls or private-field changes.
+Lethal damage is supplied by the test, not a bird. Teleports/test deaths remain Play-mode-only.
+PASS: New session starts without an activated checkpoint
+PASS: Fresh player starts alive with three lives
+PASS: Player starts grounded at the original PlayerStart
+PASS: Checkpoint_A approach starts outside its trigger
+PASS: Checkpoint_A activates through an actual trigger entry
+PASS: Entering checkpoint does not consume a life or damage the player
+PASS: Test death occurs away from Checkpoint_A
+PASS: Death consumes exactly one life
+PASS: Movement is disabled while waiting to respawn
+PASS: Respawn respects the supplied delay instead of teleporting immediately
+PASS: Player returns to Checkpoint_A after death
+PASS: Checkpoint_A respawn is at floor level
+PASS: Checkpoint_A respawn faces the runway
+PASS: Respawn restores full HP and movement
+PASS: Respawn preserves remaining lives and the active checkpoint
+PASS: Checkpoint_A respawn settles on solid ground
+PASS: Checkpoint_B approach starts outside its trigger
+PASS: Checkpoint_B activates through an actual trigger entry
+PASS: Entering checkpoint does not consume a life or damage the player
+PASS: Test death occurs away from Checkpoint_B
+PASS: Death consumes exactly one life
+PASS: Movement is disabled while waiting to respawn
+PASS: Respawn respects the supplied delay instead of teleporting immediately
+PASS: Player returns to Checkpoint_B after death
+PASS: Checkpoint_B respawn is at floor level
+PASS: Checkpoint_B respawn faces the runway
+PASS: Respawn restores full HP and movement
+PASS: Respawn preserves remaining lives and the active checkpoint
+PASS: Checkpoint_B respawn settles on solid ground
+PASS: Last death exhausts lives; checkpoint does not grant free respawns
+PASS: Last death enters GameOver and keeps player movement disabled
+No checkpoint HUD, save-to-disk persistence or bird damage source is tested here.
+Failures: 0
