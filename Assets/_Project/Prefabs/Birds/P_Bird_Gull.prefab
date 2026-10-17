@@ -48,6 +48,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4679255953200266805, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+      propertyPath: species
+      value: 
+      objectReference: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
     - target: {fileID: 5648174821525129418, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
       propertyPath: m_Name
       value: P_Bird_Gull
