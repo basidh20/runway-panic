@@ -34,16 +34,30 @@ namespace RunwayPanic.Agents.Crow
         /// <summary>World centre of the zone.</summary>
         public Vector3 Centre => GetComponent<BoxCollider>().bounds.center;
 
+        // How far outside the box the player's body may be before it counts as having left (absorbs the edge).
+        private const float ExitMargin = 0.5f;
+        private const float BodyHeight = 1f;
+
+        private BoxCollider box;
+        private Transform player;
+
         private void Reset()
         {
             GetComponent<BoxCollider>().isTrigger = true;
         }
 
+        private void Awake()
+        {
+            box = GetComponent<BoxCollider>();
+        }
+
         private void OnTriggerEnter(Collider other)
         {
-            if (other.GetComponentInParent<PlayerHealth>() == null)
+            PlayerHealth health = other.GetComponentInParent<PlayerHealth>();
+            if (health == null)
                 return;
 
+            player = health.transform;
             PlayerInside = this;
             PlayerInsideSince = Time.time;
             PlayerEntered?.Invoke(this);
@@ -51,19 +65,38 @@ namespace RunwayPanic.Agents.Crow
 
         private void OnTriggerExit(Collider other)
         {
-            if (PlayerInside != this || other.GetComponentInParent<PlayerHealth>() == null)
-                return;
-
-            PlayerInside = null;
-            PlayerExited?.Invoke(this);
+            if (PlayerInside == this && other.GetComponentInParent<PlayerHealth>() != null)
+                PlayerLeft();
         }
 
-        private void OnDisable()
+        // Unity sends no OnTriggerExit when the player is moved with its CharacterController switched off — which is how
+        // PlayerRespawn moves a player who died in here. So the zone holding the player also checks it is still inside.
+        private void Update()
         {
             if (PlayerInside != this)
                 return;
 
+            if (player == null || !player.gameObject.activeInHierarchy)
+            {
+                PlayerLeft();
+                return;
+            }
+
+            Vector3 body = player.position + Vector3.up * BodyHeight;
+            if ((box.ClosestPoint(body) - body).sqrMagnitude > ExitMargin * ExitMargin)
+                PlayerLeft();
+        }
+
+        private void OnDisable()
+        {
+            if (PlayerInside == this)
+                PlayerLeft();
+        }
+
+        private void PlayerLeft()
+        {
             PlayerInside = null;
+            player = null;
             PlayerExited?.Invoke(this);
         }
 
