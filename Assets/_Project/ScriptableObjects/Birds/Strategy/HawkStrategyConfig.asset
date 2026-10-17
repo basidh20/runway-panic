@@ -21,7 +21,7 @@ MonoBehaviour:
   distanceWidth: 10
   maxHeightBonus: 15
   perchReevaluateInterval: 2
-  recentlyShotDecayPerSecond: 0.05
+  recentlyShotDecayPerSecond: 0.01
   perchSwitchMargin: 0.15
   perchCommitTime: 4
   meterMax: 100
@@ -54,6 +54,8 @@ MonoBehaviour:
   stoopDamageMultiplier: 1.5
   recoverClimbHeight: 15
   withdrawWait: 4
+  withdrawSpeedMultiplier: 1.3
+  withdrawShotMark: 0.6
   herdMinOtherBirds: 3
   herdOffset: 10
   herdOrbitRadius: 4

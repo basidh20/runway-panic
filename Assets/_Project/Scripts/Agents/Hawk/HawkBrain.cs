@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using RunwayPanic.AI;
+using RunwayPanic.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 #if UNITY_EDITOR
@@ -21,7 +22,11 @@ namespace RunwayPanic.Agents.Hawk
     /// refires, then dive for real). ApproachStoop flies to a start point on the sun's side of the player
     /// (<see cref="StoopPlanner"/>), Scream hovers at the top, Stoop dives through where the player will be, Recover
     /// climbs away.</para>
-    /// <para>Not built yet: Herd and Withdraw just wait <c>skeletonPhaseDuration</c> and return to Hunt (H5–H6).</para>
+    /// <para>Withdraw (H5): every hit that doesn't kill marks the vantage it last watched from in <see cref="PerchMemory"/>
+    /// ("the player has found where I hunt from") and sends it to the vantage the player can't see (withdraw scoring:
+    /// sight is a penalty, the sun is ignored). It circles there for <c>withdrawWait</c>, then hunts again. A hit during
+    /// the real Stoop lets the dive finish first; any other hit breaks off at once.</para>
+    /// <para>Not built yet: Herd just waits <c>skeletonPhaseDuration</c> and returns to Hunt (H6).</para>
     /// </summary>
     public sealed class HawkBrain : BirdBrain
     {
@@ -37,6 +42,8 @@ namespace RunwayPanic.Agents.Hawk
         // Cached label strings, indexed by the enums: CurrentStateName never allocates.
         private static readonly string[] HuntPhaseNames = BuildHuntPhaseNames();
         private static readonly string[] ModeNames = { "Hunt", "Herd", "Withdraw", "Dead" };
+        private const string WithdrawToCoverName = "Withdraw/ToCover";
+        private const string WithdrawHidingName = "Withdraw/Hiding";
 
         // Vantage points taken by a hawk, so two hawks never circle the same one.
         private static readonly List<BirdPoint> ClaimedPerches = new List<BirdPoint>(8);
@@ -65,7 +72,7 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField] private AudioClip screamClip;
         [Tooltip("Plays the scream. Taken from this object if empty; skipped if there is none.")]
         [SerializeField] private AudioSource screamSource;
-        [Tooltip("Skeleton modes only (Herd, Withdraw): seconds before returning to Hunt. Replaced by real behaviour in H5–H6.")]
+        [Tooltip("Skeleton mode only (Herd): seconds before returning to Hunt. Replaced by real behaviour in H6.")]
         [SerializeField, Min(0.1f)] private float skeletonPhaseDuration = 2f;
         [Tooltip("Write every mode/phase change, vantage choice and attack event to the Console / Editor.log (prefix [HawkFSM]).")]
         [SerializeField] private bool logTransitions = true;
@@ -104,6 +111,14 @@ namespace RunwayPanic.Agents.Hawk
         private float nextRepathTime;
         private Vector3 recoverTarget;
 
+        // Withdraw (H5).
+        private BirdPoint lastVantage;
+        private bool pendingWithdraw;
+        private bool withdrawArrived;
+        private float withdrawHideTime;
+        private Vector3 hideCenter;
+        private GameManager gameManager;
+
         private Light sun;
         private bool sunSearched;
 
@@ -112,6 +127,8 @@ namespace RunwayPanic.Agents.Hawk
         {
             get
             {
+                if (mode == HawkMode.Withdraw)
+                    return withdrawArrived ? WithdrawHidingName : WithdrawToCoverName;
                 if (mode != HawkMode.Hunt)
                     return ModeNames[(int)mode];
                 if (phase == HuntPhase.Soaring && weakness != null && config != null)
@@ -170,9 +187,18 @@ namespace RunwayPanic.Agents.Hawk
             EnableShadows();
         }
 
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            if (Health != null)
+                Health.Damaged += HandleDamaged;
+        }
+
         protected override void OnDisable()
         {
             base.OnDisable();
+            if (Health != null)
+                Health.Damaged -= HandleDamaged;
             ReleasePerch();
         }
 
@@ -181,6 +207,17 @@ namespace RunwayPanic.Agents.Hawk
             started = true;
             modeTime = 0f;
             EnterMode(mode, HuntPhase.SelectVantage);
+
+            // In Start, not OnEnable: the GameManager has finished its Awake by now.
+            gameManager = GameManager.Instance;
+            if (gameManager != null)
+                gameManager.WaveStarted += HandleWaveStarted;
+        }
+
+        private void OnDestroy()
+        {
+            if (gameManager != null)
+                gameManager.WaveStarted -= HandleWaveStarted;
         }
 
         private void Update()
@@ -199,11 +236,16 @@ namespace RunwayPanic.Agents.Hawk
             {
                 case HawkMode.Hunt:
                     UpdateHunt();
+                    // A hit during the real dive is acted on once the dive is over: the attack is never cancelled half-way.
+                    if (pendingWithdraw && mode == HawkMode.Hunt && phase != HuntPhase.Stoop)
+                        ChangeMode(HawkMode.Withdraw);
                     break;
                 case HawkMode.Herd:
-                case HawkMode.Withdraw:
                     if (modeTime >= skeletonPhaseDuration)
                         ChangeMode(HawkMode.Hunt);
+                    break;
+                case HawkMode.Withdraw:
+                    UpdateWithdraw();
                     break;
             }
         }
@@ -617,6 +659,108 @@ namespace RunwayPanic.Agents.Hawk
             return toPlayer.sqrMagnitude > 1e-4f ? toPlayer.normalized : Vector3.forward;
         }
 
+        // ---------------------------------------------------------------- Withdraw (H5)
+
+        // Every hit that doesn't kill. Dying is handled by OnBirdDied (BirdHealth raises Died after Damaged).
+        private void HandleDamaged(float taken, float hpAfter)
+        {
+            if (!started || hpAfter <= 0f || mode == HawkMode.Dead)
+                return;
+
+            // "The player has found where I hunt from": the vantage it last watched from scores lower for a while.
+            memory.Mark(lastVantage, config.WithdrawShotMark);
+            bool finishDive = mode == HawkMode.Hunt && phase == HuntPhase.Stoop;
+            Log($"{LogPrefix} {name} HIT in {CurrentStateName}: {taken:0.#} damage, {hpAfter:0.#} HP left; " +
+                $"vantage {(lastVantage != null ? lastVantage.name : "none")} shot value now {memory.Get(lastVantage):0.00}" +
+                (finishDive ? " — finishing the dive, then withdrawing" : " — withdrawing"));
+
+            if (finishDive)
+                pendingWithdraw = true;
+            else
+                ChangeMode(HawkMode.Withdraw); // also when already withdrawing: the hiding place was found, pick another
+        }
+
+        private void HandleWaveStarted(int wave)
+        {
+            memory.Clear(); // a new wave starts with no bad memories (the player model's learned weights stay)
+        }
+
+        // Withdraw scoring: seeing the player is a penalty and the sun is ignored, so the winner is the best vantage the
+        // player can't see. With no vantage at all it hides where it is.
+        private void SelectHidingVantage()
+        {
+            int best = ScorePerches(true);
+            if (best < 0)
+            {
+                Log($"{LogPrefix} {name} withdraw: no free vantage point, hiding where it is");
+                ReleasePerch();
+                ArriveAtCover();
+                return;
+            }
+
+            SetPerch(scores[best]);
+            needsPath = true;
+        }
+
+        private void UpdateWithdraw()
+        {
+            if (withdrawArrived)
+            {
+                // Keep circling while it waits: hidden, but never a sitting target.
+                withdrawHideTime += Time.deltaTime;
+                Motor.FlyTo(StoopPlanner.GetOrbitTarget(hideCenter, config.SoarRadius, config.SoarLeadAngle, Motor.Position));
+                if (withdrawHideTime >= config.WithdrawWait)
+                    ChangeMode(HawkMode.Hunt);
+                return;
+            }
+
+            if (currentPerch == null || !currentPerch.isActiveAndEnabled || modeTime >= config.TravelTimeout)
+            {
+                ArriveAtCover();
+                return;
+            }
+
+            Vector3 center = SoarCenter(currentPerch);
+            if (IsNearCircle(center) || (!needsPath && Motor.ReachedDestination))
+            {
+                ArriveAtCover();
+                return;
+            }
+
+            if (!needsPath)
+                return;
+            if (RequestPath(SoarEntryPoint(center)))
+            {
+                needsPath = false;
+            }
+            else if (!LastRequestWasThrottled)
+            {
+                // One retry with the next-best vantage; if that has no path either, hide where it is.
+                Log($"{LogPrefix} {name} no path to hiding vantage {currentPerch.name}");
+                if (unreachablePerch == null)
+                {
+                    unreachablePerch = currentPerch;
+                    SelectHidingVantage();
+                }
+                else
+                {
+                    ReleasePerch();
+                    ArriveAtCover();
+                }
+            }
+        }
+
+        // Arrived (or gave up travelling): circle here for withdrawWait, at normal speed.
+        private void ArriveAtCover()
+        {
+            withdrawArrived = true;
+            withdrawHideTime = 0f;
+            Motor.SpeedMultiplier = 1f;
+            hideCenter = currentPerch != null ? SoarCenter(currentPerch) : Motor.Position;
+            Log($"{LogPrefix} {name} hiding {(currentPerch != null ? $"over {currentPerch.name} (player in sight: {(currentScore.LineOfSight > 0f ? "yes" : "no")})" : "in place")} " +
+                $"for {config.WithdrawWait:0.#}s after {modeTime:0.0}s of flight");
+        }
+
         // Fills 'scores' with every free Perch marker; returns the index of the best one, or -1 if there is none.
         private int ScorePerches(bool withdrawMode)
         {
@@ -690,7 +834,16 @@ namespace RunwayPanic.Agents.Hawk
                     Anim.SetFlying(true);
                     break;
                 case HawkMode.Withdraw:
+                    pendingWithdraw = false;
+                    feintedThisEngagement = false; // the engagement is over, hit or not
+                    withdrawArrived = false;
+                    withdrawHideTime = 0f;
+                    unreachablePerch = null;
+                    Motor.SpeedMultiplier = config.WithdrawSpeedMultiplier;
+                    Anim.SetDiving(false);
                     Anim.SetFlying(true);
+                    Anim.SetWingsSpread(1f);
+                    SelectHidingVantage();
                     break;
                 case HawkMode.Dead:
                     ReleasePerch();
@@ -711,6 +864,9 @@ namespace RunwayPanic.Agents.Hawk
                 case HawkMode.Herd:
                     break;
                 case HawkMode.Withdraw:
+                    Motor.SpeedMultiplier = 1f;
+                    ReleasePerch();
+                    unreachablePerch = null;
                     break;
             }
         }
@@ -850,8 +1006,11 @@ namespace RunwayPanic.Agents.Hawk
             currentScore = score;
             commitUntil = Time.time + config.PerchCommitTime;
             if (currentPerch != null)
+            {
                 ClaimedPerches.Add(currentPerch);
-            Log($"{LogPrefix} {name} vantage -> {currentPerch.name} total {score.Total:0.00} " +
+                lastVantage = currentPerch; // kept after the vantage is released, for the "shot here" memory (H5)
+            }
+            Log($"{LogPrefix} {name} {(mode == HawkMode.Withdraw ? "hiding vantage" : "vantage")} -> {currentPerch.name} total {score.Total:0.00} " +
                 $"(height {score.Height:0.00}, sight {score.LineOfSight:0}, distance {score.Distance:0.00} @ {score.Metres:0.0} m, sun {score.Sun:0.00}, shot {score.RecentlyShot:0.00})");
         }
 
@@ -964,6 +1123,14 @@ namespace RunwayPanic.Agents.Hawk
         {
             if (Application.isPlaying)
                 ChangeMode(HawkMode.Withdraw);
+        }
+
+        // A hit without changing HP: tests the withdraw logic without a gun of the wrong rarity.
+        [ContextMenu("Hawk FSM/Simulate Non-Lethal Hit")]
+        private void SimulateHit()
+        {
+            if (Application.isPlaying && Health != null)
+                HandleDamaged(0f, Health.CurrentHP);
         }
 
         [ContextMenu("Hawk FSM/Force Hunt Stoop (herd strike)")]
