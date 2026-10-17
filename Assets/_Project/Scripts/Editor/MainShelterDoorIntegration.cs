@@ -66,9 +66,10 @@ namespace RunwayPanic.EditorTools
                     // Scene-instance overrides only: retain shelter footprint and shared prefab assets.
                     Resize(shelter.transform.Find("Front_Left"), new Vector3(-2.875f, 2, -3.8f), new Vector3(4.25f, 4, .4f));
                     Resize(shelter.transform.Find("Front_Right"), new Vector3(2.875f, 2, -3.8f), new Vector3(4.25f, 4, .4f));
-                    Resize(shelter.transform.Find("Door_Lintel"), new Vector3(0, 3.3f, -3.8f), new Vector3(1.5f, 1.4f, .4f));
+                    Resize(shelter.transform.Find("Door_Lintel"), new Vector3(0, 3.2425f, -3.8f), new Vector3(1.5f, 1.515f, .4f));
                     var stripe = shelter.transform.Find("EntryStripe");
                     Resize(stripe, stripe.localPosition, new Vector3(1.3f, .01f, .2f));
+                    FitFrame(shelter.transform);
                 }
                 Undo.FlushUndoRecordObjects();
                 EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
@@ -82,7 +83,7 @@ namespace RunwayPanic.EditorTools
         private static void ConfigureDoor(Transform root)
         {
             var panel = root.Find("DoorPanel");
-            Resize(panel.Find("Panel_Mesh"), new Vector3(0, 1.28f, 0), new Vector3(1.4f, 2.4f, .08f));
+            Resize(panel.Find("Panel_Mesh"), new Vector3(0, 1.22f, 0), new Vector3(1.4f, 2.4f, .08f));
             Resize(panel.Find("Kickplate_Stripe"), new Vector3(0, .28f, 0), new Vector3(1.38f, .12f, .09f));
             foreach (string handle in new[] { "Handle_Inside", "Handle_Outside" })
             {
@@ -92,7 +93,7 @@ namespace RunwayPanic.EditorTools
             var box = panel.GetComponent<BoxCollider>();
             Undo.RecordObject(box, "Match narrow door collision");
             box.size = new Vector3(1.4f, 2.4f, .08f);
-            box.center = new Vector3(0, 1.28f, 0);
+            box.center = new Vector3(0, 1.22f, 0);
             PrefabUtility.RecordPrefabInstancePropertyModifications(box);
             var hinge = panel.GetComponent<HingeJoint>();
             Undo.RecordObject(hinge, "Move hinge to resized panel edge");
@@ -109,6 +110,43 @@ namespace RunwayPanic.EditorTools
             settings.FindProperty("damper").floatValue = 240;
             settings.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(settings.targetObject);
+        }
+
+        private static void FitFrame(Transform shelter)
+        {
+            var metal = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/Materials/Greybox/M_Greybox_Metal.mat");
+            var seal = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/Materials/Greybox/M_Greybox_Runway.mat");
+            FramePart(shelter, "DoorFrame_Left", new Vector3(-.82f, 1.2775f, -3.8f), new Vector3(.14f, 2.415f, .44f), metal, true);
+            FramePart(shelter, "DoorFrame_Right", new Vector3(.82f, 1.2775f, -3.8f), new Vector3(.14f, 2.415f, .44f), metal, true);
+            FramePart(shelter, "DoorFrame_Header", new Vector3(0, 2.555f, -3.8f), new Vector3(1.78f, .14f, .44f), metal, true);
+            FramePart(shelter, "DoorThreshold", new Vector3(0, .06f, -3.8f), new Vector3(1.5f, .02f, .44f), metal, true);
+            // Flexible, opaque seals overlap the closed panel by 15 mm. No colliders: a double-action
+            // door must be able to brush through its seals from either side without hitting a rigid stop.
+            FramePart(shelter, "DoorSeal_Left", new Vector3(-.725f, 1.2775f, -3.8f), new Vector3(.08f, 2.415f, .02f), seal, false);
+            FramePart(shelter, "DoorSeal_Right", new Vector3(.725f, 1.2775f, -3.8f), new Vector3(.08f, 2.415f, .02f), seal, false);
+            FramePart(shelter, "DoorSeal_Top", new Vector3(0, 2.485f, -3.8f), new Vector3(1.53f, .05f, .02f), seal, false);
+            FramePart(shelter, "DoorSeal_Bottom", new Vector3(0, .077f, -3.8f), new Vector3(1.53f, .024f, .02f), seal, false);
+        }
+
+        private static void FramePart(Transform shelter, string name, Vector3 position, Vector3 size, Material material, bool solid)
+        {
+            if (material == null) throw new InvalidOperationException("Expected existing frame/seal material.");
+            var part = shelter.Find(name);
+            if (part == null)
+            {
+                var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                cube.name = name;
+                Undo.RegisterCreatedObjectUndo(cube, "Fit door frame and seals");
+                cube.transform.SetParent(shelter, false);
+                if (!solid) Undo.DestroyObjectImmediate(cube.GetComponent<Collider>());
+                part = cube.transform;
+            }
+            Undo.RecordObject(part, "Fit door frame");
+            part.localPosition = position;
+            part.localScale = size;
+            var renderer = part.GetComponent<MeshRenderer>();
+            Undo.RecordObject(renderer, "Set door frame material");
+            renderer.sharedMaterial = material;
         }
 
         private static void Resize(Transform part, Vector3 position, Vector3 size)
@@ -178,6 +216,10 @@ namespace RunwayPanic.EditorTools
                             Shelters[i] + " handoff placement and scale");
                         Check(doors[i].GetComponent<BoxCollider>().size == new Vector3(1.4f, 2.4f, .08f),
                             Shelters[i] + " panel/collider resized to 1.4 x 2.4 m");
+                        var panelBounds = doors[i].transform.Find("Panel_Mesh").GetComponent<Renderer>().bounds;
+                        var seals = root.parent.GetComponentsInChildren<Renderer>().Where(item => item.name.StartsWith("DoorSeal_")).ToArray();
+                        Check(seals.Length == 4 && seals.All(item => item.bounds.Intersects(panelBounds) && item.GetComponent<Collider>() == null),
+                            Shelters[i] + " opaque seals overlap all four closed edges without rigid collision stops");
                         Check(!doors[i].IsOpen && !doors[i].IsLocked && !PassageClear(i), Shelters[i] + " closed door blocks passage");
                         doors[i].Open(positions[i] + forwards[i] * 2);
                     }
