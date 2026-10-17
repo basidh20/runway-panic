@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using RunwayPanic.AI;
 using RunwayPanic.Core;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -26,7 +27,9 @@ namespace RunwayPanic.Agents.Hawk
     /// ("the player has found where I hunt from") and sends it to the vantage the player can't see (withdraw scoring:
     /// sight is a penalty, the sun is ignored). It circles there for <c>withdrawWait</c>, then hunts again. A hit during
     /// the real Stoop lets the dive finish first; any other hit breaks off at once.</para>
-    /// <para>Not built yet: Herd just waits <c>skeletonPhaseDuration</c> and returns to Hunt (H6).</para>
+    /// <para>Herd (H6): with enough other birds alive the hawk stops watching from vantage points and circles on the far
+    /// side of the flock, projecting a fear field (<see cref="HawkFearSource"/>) that pushes pigeons and crows towards the
+    /// player. While the player is busy with them it dives straight in from there (the flock is its cover).</para>
     /// </summary>
     public sealed class HawkBrain : BirdBrain
     {
@@ -48,9 +51,13 @@ namespace RunwayPanic.Agents.Hawk
         // Vantage points taken by a hawk, so two hawks never circle the same one.
         private static readonly List<BirdPoint> ClaimedPerches = new List<BirdPoint>(8);
 
+        // Every enabled hawk, for the debug overlay.
+        private static readonly List<HawkBrain> ActiveHawks = new List<HawkBrain>(4);
+
         // "Hunt/Soaring  meter 60 [Reloading]" labels, built once per (meter step, window) on first use: no per-frame allocation.
         private const int MeterLabelSteps = 10;
         private static readonly string[,] SoaringLabels = new string[MeterLabelSteps + 1, (int)WeaknessWindow.Busy + 2];
+        private static readonly string[,] HerdLabels = new string[MeterLabelSteps + 1, (int)WeaknessWindow.Busy + 2];
 
         [Tooltip("The hawk's strategy numbers (ScriptableObjects/Birds/Strategy/HawkStrategyConfig).")]
         [SerializeField] private HawkStrategyConfig config;
@@ -72,10 +79,11 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField] private AudioClip screamClip;
         [Tooltip("Plays the scream. Taken from this object if empty; skipped if there is none.")]
         [SerializeField] private AudioSource screamSource;
-        [Tooltip("Skeleton mode only (Herd): seconds before returning to Hunt. Replaced by real behaviour in H6.")]
-        [SerializeField, Min(0.1f)] private float skeletonPhaseDuration = 2f;
         [Tooltip("Write every mode/phase change, vantage choice and attack event to the Console / Editor.log (prefix [HawkFSM]).")]
         [SerializeField] private bool logTransitions = true;
+        [Tooltip("Editor and development builds only: this key gives the hawk a real 1-damage hit (never lethal), to test the " +
+                 "withdrawal without shooting. Same key as the Agent Controller's TestPathFeeder. None = off.")]
+        [SerializeField] private Key debugHitKey = Key.H;
 
         private readonly List<BirdPoint> perches = new List<BirdPoint>(16);
         private readonly List<PerchScore> scores = new List<PerchScore>(16);
@@ -119,6 +127,19 @@ namespace RunwayPanic.Agents.Hawk
         private Vector3 hideCenter;
         private GameManager gameManager;
 
+        // Herd (H6).
+        private HawkFearSource fear;
+        private float nextHerdCheckTime;
+        private int othersAlive;
+        private Vector3 herdCentroid;
+        private Vector3 herdPoint;
+        private Vector3 herdPathTarget;
+
+        // Counters (H7).
+        private readonly HawkStats stats = new HawkStats();
+        private bool stoopAfterFeint;
+        private bool stoopFromHerd;
+
         private Light sun;
         private bool sunSearched;
 
@@ -129,13 +150,27 @@ namespace RunwayPanic.Agents.Hawk
             {
                 if (mode == HawkMode.Withdraw)
                     return withdrawArrived ? WithdrawHidingName : WithdrawToCoverName;
+                if (mode == HawkMode.Herd && weakness != null && config != null)
+                    return MeterLabel(HerdLabels, "Herd", weakness.Meter / config.MeterMax, weakness.StrongestOpenWindow);
                 if (mode != HawkMode.Hunt)
                     return ModeNames[(int)mode];
                 if (phase == HuntPhase.Soaring && weakness != null && config != null)
-                    return SoaringLabel(weakness.Meter / config.MeterMax, weakness.StrongestOpenWindow);
+                    return MeterLabel(SoaringLabels, "Hunt/Soaring", weakness.Meter / config.MeterMax, weakness.StrongestOpenWindow);
                 return HuntPhaseNames[(int)phase];
             }
         }
+
+        /// <summary>Every enabled hawk (for the debug overlay).</summary>
+        public static IReadOnlyList<HawkBrain> Active => ActiveHawks;
+
+        /// <summary>This hawk's counters (stoops, hits, feints, withdrawals, …).</summary>
+        public HawkStats Stats => stats;
+
+        /// <summary>True while the fear field is registered (Herd mode).</summary>
+        public bool IsProjectingFear => fear != null && fear.IsProjecting;
+
+        /// <summary>Living non-hawk birds at the last Herd check.</summary>
+        public int OtherBirdsAlive => othersAlive;
 
         /// <summary>The strategy numbers in use.</summary>
         public HawkStrategyConfig Config => config;
@@ -184,6 +219,7 @@ namespace RunwayPanic.Agents.Hawk
             if (screamSource == null)
                 screamSource = GetComponent<AudioSource>();
 
+            fear = new HawkFearSource(transform, config);
             EnableShadows();
         }
 
@@ -192,6 +228,8 @@ namespace RunwayPanic.Agents.Hawk
             base.OnEnable();
             if (Health != null)
                 Health.Damaged += HandleDamaged;
+            if (!ActiveHawks.Contains(this))
+                ActiveHawks.Add(this);
         }
 
         protected override void OnDisable()
@@ -200,6 +238,14 @@ namespace RunwayPanic.Agents.Hawk
             if (Health != null)
                 Health.Damaged -= HandleDamaged;
             ReleasePerch();
+            fear?.SetProjecting(false);
+            if (weakness != null)
+                weakness.BusyEnabled = false;
+            ActiveHawks.Remove(this);
+
+            // One line of measured numbers per session (death, removal or leaving Play mode) for the notes.
+            if (started)
+                Debug.Log($"[HawkStats] {name}: {stats}", this);
         }
 
         private void Start()
@@ -226,6 +272,12 @@ namespace RunwayPanic.Agents.Hawk
             if (!IsGameplayActive)
                 return;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Keyboard keyboard = Keyboard.current;
+            if (debugHitKey != Key.None && keyboard != null && keyboard[debugHitKey].wasPressedThisFrame)
+                DebugHit();
+#endif
+
             float dt = Time.deltaTime;
             modeTime += dt;
             if (mode == HawkMode.Hunt)
@@ -241,8 +293,7 @@ namespace RunwayPanic.Agents.Hawk
                         ChangeMode(HawkMode.Withdraw);
                     break;
                 case HawkMode.Herd:
-                    if (modeTime >= skeletonPhaseDuration)
-                        ChangeMode(HawkMode.Hunt);
+                    UpdateHerd();
                     break;
                 case HawkMode.Withdraw:
                     UpdateWithdraw();
@@ -256,6 +307,19 @@ namespace RunwayPanic.Agents.Hawk
         {
             if (Hub == null || !Hub.HasPlayer)
                 return;
+
+            // Mixed wave? Only between attacks (choosing or watching from a vantage), never mid-dive.
+            if ((phase == HuntPhase.SelectVantage || phase == HuntPhase.Soaring) && Time.time >= nextHerdCheckTime)
+            {
+                nextHerdCheckTime = Time.time + config.HerdCheckInterval;
+                othersAlive = CountOtherBirds();
+                if (othersAlive >= config.HerdMinOtherBirds)
+                {
+                    Log($"{LogPrefix} {name} herd: {othersAlive} other birds alive (needs {config.HerdMinOtherBirds})");
+                    ChangeMode(HawkMode.Herd);
+                    return;
+                }
+            }
 
             switch (phase)
             {
@@ -373,6 +437,11 @@ namespace RunwayPanic.Agents.Hawk
                     Log($"{LogPrefix} {name} attack: meter full, window {weakness.StrongestOpenWindow} open, after {phaseTime:0.0}s soaring");
                 else
                     Log($"{LogPrefix} {name} attack: max watch time {config.MaxWatchTime:0}s (meter {weakness.Meter:0})");
+                if (ready)
+                    stats.MeterAttacks++;
+                else
+                    stats.TimeoutAttacks++;
+                stats.WatchSeconds += phaseTime;
                 weakness.ConsumeMeter();
                 PlanAttack();
                 ChangePhase(HuntPhase.ApproachStoop);
@@ -486,6 +555,7 @@ namespace RunwayPanic.Agents.Hawk
                     float refire = Hub.CurrentWeapon != null && Hub.CurrentWeapon.Data != null ? Hub.CurrentWeapon.Data.FireInterval : 0f;
                     feintPulledUp = true;
                     feintedThisEngagement = true;
+                    stats.Feints++;
                     feintWaitUntil = phaseTime + refire;
                     Motor.SpeedMultiplier = 1f;
                     Anim.SetDiving(false);
@@ -509,6 +579,9 @@ namespace RunwayPanic.Agents.Hawk
             {
                 bool baited = Hub.LastShotTime > shotTimeAtFeintStart;
                 Log($"{LogPrefix} {name} feint {(baited ? "BAITED a shot" : "drew no shot")} (closest {feintClosest:0.0} m), real stoop now");
+                if (baited)
+                    stats.FeintsBaited++;
+                stoopAfterFeint = true;
                 ChangePhase(HuntPhase.Stoop); // from here: the point is to hit during the refire
             }
         }
@@ -536,6 +609,9 @@ namespace RunwayPanic.Agents.Hawk
             {
                 float damage = (Species != null ? Species.AttackDamage : 0f) * config.StoopDamageMultiplier;
                 bool dealt = Attack != null && Attack.TryAttackWithDamage(damage);
+                stats.StoopHits++;
+                if (stoopAfterFeint)
+                    stats.HitsAfterFeint++;
                 Log($"{LogPrefix} {name} stoop HIT range after {phaseTime:0.0}s at {Motor.Velocity.magnitude:0} m/s: damage {damage:0} " +
                     $"{(dealt ? "dealt" : "not dealt (BirdContactAttack refused: cooldown or out of its range)")}");
                 ChangePhase(HuntPhase.Recover);
@@ -667,7 +743,17 @@ namespace RunwayPanic.Agents.Hawk
             if (!started || hpAfter <= 0f || mode == HawkMode.Dead)
                 return;
 
-            // "The player has found where I hunt from": the vantage it last watched from scores lower for a while.
+            stats.HitsTaken++;
+
+            // Already fleeing: keep going. Being hit on the way says nothing about the hiding spot (the hawk isn't
+            // there yet), and a fast gun (pistol: 3 shots/s) would otherwise mark every hidden spot within a second.
+            if (mode == HawkMode.Withdraw && !withdrawArrived)
+            {
+                Log($"{LogPrefix} {name} HIT in {CurrentStateName}: {taken:0.#} damage, {hpAfter:0.#} HP left — already fleeing, keeps going");
+                return;
+            }
+
+            // "The player has found where I hunt (or hide) from": that vantage scores lower for a while.
             memory.Mark(lastVantage, config.WithdrawShotMark);
             bool finishDive = mode == HawkMode.Hunt && phase == HuntPhase.Stoop;
             Log($"{LogPrefix} {name} HIT in {CurrentStateName}: {taken:0.#} damage, {hpAfter:0.#} HP left; " +
@@ -761,6 +847,103 @@ namespace RunwayPanic.Agents.Hawk
                 $"for {config.WithdrawWait:0.#}s after {modeTime:0.0}s of flight");
         }
 
+        // ---------------------------------------------------------------- Herd (H6)
+
+        private void UpdateHerd()
+        {
+            if (Hub == null || !Hub.HasPlayer)
+                return;
+
+            // Counted every frame (a few dozen birds at most): the centroid moves with the flock.
+            othersAlive = CountOtherBirds();
+            if (Time.time >= nextHerdCheckTime)
+            {
+                nextHerdCheckTime = Time.time + config.HerdCheckInterval;
+                if (othersAlive < config.HerdMinOtherBirds)
+                {
+                    Log($"{LogPrefix} {name} herd over: {othersAlive} other birds left");
+                    ChangeMode(HawkMode.Hunt);
+                    return;
+                }
+            }
+
+            // Strike while the player is busy with the flock: straight into the dive from here, no vantage or sun
+            // approach — the flock is the cover. Never passive: after maxWatchTime it strikes anyway.
+            bool ready = weakness.IsMeterFull && weakness.AnyWindowOpen;
+            if (ready || modeTime >= config.MaxWatchTime)
+            {
+                Log($"{LogPrefix} {name} herd strike: " + (ready
+                    ? $"meter full, window {weakness.StrongestOpenWindow} open, after {modeTime:0.0}s herding"
+                    : $"max watch time {config.MaxWatchTime:0}s (meter {weakness.Meter:0})"));
+                weakness.ConsumeMeter();
+                stoopFromHerd = true;
+                ChangeMode(HawkMode.Hunt, HuntPhase.Stoop);
+                return;
+            }
+
+            herdPoint = HerdPoint();
+            float radius = config.HerdOrbitRadius;
+            bool onCircle = IsNearCircle(herdPoint, radius);
+
+            // Far from the circle: A* path to it, re-planned only when the herd point has really moved.
+            float repath = config.HerdRepathDistance;
+            if (!onCircle && (needsPath || (herdPoint - herdPathTarget).sqrMagnitude > repath * repath))
+            {
+                Vector3 entry = CircleEntryPoint(herdPoint, radius);
+                if (RequestPath(entry))
+                {
+                    needsPath = false;
+                    herdPathTarget = herdPoint;
+                }
+                else if (!LastRequestWasThrottled)
+                {
+                    Motor.FlyTo(entry); // no grid path: the herd point is in open air above the flock
+                    needsPath = false;
+                    herdPathTarget = herdPoint;
+                }
+                return;
+            }
+
+            if (onCircle || Motor.ReachedDestination)
+                Motor.FlyTo(StoopPlanner.GetOrbitTarget(herdPoint, radius, config.SoarLeadAngle, Motor.Position));
+        }
+
+        // The far side of the flock from the player, herdHeight above it: from there the fear field pushes the flock
+        // towards the player. Moved so the whole circle stays inside the flight grid.
+        private Vector3 HerdPoint()
+        {
+            Vector3 away = herdCentroid - Hub.PlayerPosition;
+            away.y = 0f;
+            Vector3 direction = away.sqrMagnitude > 1e-4f ? away.normalized : -FlatDirectionToPlayer();
+            Vector3 point = herdCentroid + direction * config.HerdOffset;
+            point.y = herdCentroid.y + config.HerdHeight;
+
+            FlightGrid grid = FlightGrid.Instance;
+            return grid != null ? StoopPlanner.ClampCircleToVolume(point, config.HerdOrbitRadius, grid.VolumeBounds, grid.CellSize) : point;
+        }
+
+        // Living birds that are not hawks (and not this bird); also updates herdCentroid when there are any.
+        private int CountOtherBirds()
+        {
+            IReadOnlyList<BirdHealth> alive = BirdRegistry.Alive;
+            int count = 0;
+            Vector3 sum = Vector3.zero;
+            for (int i = 0; i < alive.Count; i++)
+            {
+                BirdHealth bird = alive[i];
+                if (bird == null || bird == Health || !bird.IsAlive)
+                    continue;
+                if (bird.Species != null && bird.Species.Species == BirdSpecies.Hawk)
+                    continue;
+                sum += bird.transform.position;
+                count++;
+            }
+
+            if (count > 0)
+                herdCentroid = sum / count;
+            return count;
+        }
+
         // Fills 'scores' with every free Perch marker; returns the index of the best one, or -1 if there is none.
         private int ScorePerches(bool withdrawMode)
         {
@@ -831,9 +1014,19 @@ namespace RunwayPanic.Agents.Hawk
                     EnterPhase(huntEntryPhase);
                     break;
                 case HawkMode.Herd:
+                    stats.HerdEntries++;
+                    feintedThisEngagement = false;
+                    needsPath = true;
+                    nextHerdCheckTime = Time.time + config.HerdCheckInterval;
+                    Motor.SpeedMultiplier = 1f;
+                    Anim.SetDiving(false);
                     Anim.SetFlying(true);
+                    Anim.SetWingsSpread(1f);
+                    fear.SetProjecting(true);
+                    weakness.BusyEnabled = true; // shooting at the flock now counts as a weakness window
                     break;
                 case HawkMode.Withdraw:
+                    stats.Withdrawals++;
                     pendingWithdraw = false;
                     feintedThisEngagement = false; // the engagement is over, hit or not
                     withdrawArrived = false;
@@ -847,6 +1040,7 @@ namespace RunwayPanic.Agents.Hawk
                     break;
                 case HawkMode.Dead:
                     ReleasePerch();
+                    fear.SetProjecting(false);
                     break;
             }
         }
@@ -862,6 +1056,8 @@ namespace RunwayPanic.Agents.Hawk
                     ReleasePerch();
                     break;
                 case HawkMode.Herd:
+                    fear.SetProjecting(false);
+                    weakness.BusyEnabled = false;
                     break;
                 case HawkMode.Withdraw:
                     Motor.SpeedMultiplier = 1f;
@@ -916,6 +1112,11 @@ namespace RunwayPanic.Agents.Hawk
                     Anim.SetDiving(true);
                     break;
                 case HuntPhase.Stoop:
+                    stats.Stoops++;
+                    if (stoopAfterFeint)
+                        stats.StoopsAfterFeint++;
+                    if (stoopFromHerd)
+                        stats.HerdStrikes++;
                     stoopClosest = float.PositiveInfinity;
                     Motor.SpeedMultiplier = config.StoopSpeedMultiplier;
                     Anim.SetWingsSpread(0f);
@@ -937,8 +1138,12 @@ namespace RunwayPanic.Agents.Hawk
             switch (exited)
             {
                 case HuntPhase.Feint:
+                    Anim.SetDiving(false);
+                    break;
                 case HuntPhase.Stoop:
                     Anim.SetDiving(false);
+                    stoopAfterFeint = false;
+                    stoopFromHerd = false;
                     break;
             }
         }
@@ -965,18 +1170,28 @@ namespace RunwayPanic.Agents.Hawk
         // The point of the circle nearest to the hawk: where the A* path ends before circling starts.
         private Vector3 SoarEntryPoint(Vector3 center)
         {
+            return CircleEntryPoint(center, config.SoarRadius);
+        }
+
+        private Vector3 CircleEntryPoint(Vector3 center, float radius)
+        {
             Vector3 offset = Motor.Position - center;
             offset.y = 0f;
             Vector3 direction = offset.sqrMagnitude > 1e-4f ? offset.normalized : Vector3.forward;
-            return center + direction * config.SoarRadius;
+            return center + direction * radius;
         }
 
         private bool IsNearCircle(Vector3 center)
         {
+            return IsNearCircle(center, config.SoarRadius);
+        }
+
+        private bool IsNearCircle(Vector3 center, float radius)
+        {
             Vector3 offset = Motor.Position - center;
             float flatDistance = new Vector2(offset.x, offset.z).magnitude;
-            float tolerance = config.SoarRadius * JoinCircleTolerance;
-            return Mathf.Abs(flatDistance - config.SoarRadius) <= tolerance && Mathf.Abs(offset.y) <= tolerance;
+            float tolerance = radius * JoinCircleTolerance;
+            return Mathf.Abs(flatDistance - radius) <= tolerance && Mathf.Abs(offset.y) <= tolerance;
         }
 
         // Climb away ahead of the hawk (forward and up at recoverClimbAngle; the motor can't climb straight up) to
@@ -1073,15 +1288,16 @@ namespace RunwayPanic.Agents.Hawk
                 Debug.Log(message, this);
         }
 
-        private static string SoaringLabel(float meterFraction, WeaknessWindow? window)
+        // "<prefix>  meter 60 [Reloading]", cached in 'cache' per (meter step, window).
+        private static string MeterLabel(string[,] cache, string prefix, float meterFraction, WeaknessWindow? window)
         {
             int step = Mathf.Clamp(Mathf.FloorToInt(meterFraction * MeterLabelSteps), 0, MeterLabelSteps);
             int column = window.HasValue ? (int)window.Value + 1 : 0;
-            string label = SoaringLabels[step, column];
+            string label = cache[step, column];
             if (label == null)
             {
-                label = $"Hunt/Soaring  meter {step * 100 / MeterLabelSteps}" + (window.HasValue ? $" [{window.Value}]" : "");
-                SoaringLabels[step, column] = label;
+                label = $"{prefix}  meter {step * 100 / MeterLabelSteps}" + (window.HasValue ? $" [{window.Value}]" : "");
+                cache[step, column] = label;
             }
             return label;
         }
@@ -1099,6 +1315,7 @@ namespace RunwayPanic.Agents.Hawk
         private static void ResetStatics()
         {
             ClaimedPerches.Clear();
+            ActiveHawks.Clear();
         }
 
         // ---------------------------------------------------------------- Debug
@@ -1125,12 +1342,15 @@ namespace RunwayPanic.Agents.Hawk
                 ChangeMode(HawkMode.Withdraw);
         }
 
-        // A hit without changing HP: tests the withdraw logic without a gun of the wrong rarity.
+        // A real hit through BirdHealth (Damaged event, flinch animation), so the whole chain is tested without shooting.
+        // 1 damage with the species' own gun rarity; skipped at 1 HP or less so it can never kill.
         [ContextMenu("Hawk FSM/Simulate Non-Lethal Hit")]
-        private void SimulateHit()
+        private void DebugHit()
         {
-            if (Application.isPlaying && Health != null)
-                HandleDamaged(0f, Health.CurrentHP);
+            if (!Application.isPlaying || Health == null || Health.CurrentHP <= 1f)
+                return;
+            Log($"{LogPrefix} {name} debug hit (key {debugHitKey} / context menu)");
+            Health.TakeDamage(1f, Species != null ? Species.RequiredWeaponRarity : WeaponRarity.Common);
         }
 
         [ContextMenu("Hawk FSM/Force Hunt Stoop (herd strike)")]
@@ -1189,6 +1409,26 @@ namespace RunwayPanic.Agents.Hawk
                 Gizmos.DrawLine(stoopStart, aim);
                 style.normal.textColor = new Color(1f, 0.5f, 0f);
                 Handles.Label(stoopStart + Vector3.up * 1f, $"stoop start ({stoopYaw:+0;-0;0}° from sun)", style);
+            }
+
+            // Herd (H6): flock centre, herd point with its circle, and the fear field while it is registered.
+            if (mode == HawkMode.Herd && othersAlive > 0)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawSphere(herdCentroid, 0.5f);
+                Gizmos.DrawLine(herdCentroid, herdPoint);
+                Handles.color = Color.cyan;
+                Handles.DrawWireDisc(herdPoint, Vector3.up, config.HerdOrbitRadius);
+                style.normal.textColor = Color.cyan;
+                Handles.Label(herdCentroid + Vector3.up * 1f, $"flock centre ({othersAlive} birds)", style);
+                Handles.Label(herdPoint + Vector3.up * 1f, "herd point", style);
+            }
+            if (IsProjectingFear)
+            {
+                Gizmos.color = new Color(1f, 0.2f, 0.6f, 0.15f);
+                Gizmos.DrawSphere(transform.position, config.FearRadius);
+                Gizmos.color = new Color(1f, 0.2f, 0.6f);
+                Gizmos.DrawWireSphere(transform.position, config.FearRadius);
             }
         }
 #endif

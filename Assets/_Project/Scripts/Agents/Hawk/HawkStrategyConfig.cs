@@ -170,14 +170,19 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(1)] private int herdMinOtherBirds = 3;
         [Tooltip("How far behind the flock (away from the player) the herd point is, in metres.")]
         [SerializeField, Min(0f)] private float herdOffset = 10f;
-        [Tooltip("Radius of the circle the hawk flies around the herd point, in metres.")]
-        [SerializeField, Min(0.5f)] private float herdOrbitRadius = 4f;
+        [Tooltip("Radius of the circle the hawk flies around the herd point, in metres. 7, not the plan's 4: like the soaring " +
+                 "circle it must be wider than the hawk's turn circle (8 m/s / 90°/s ≈ 5 m), or the hawk cannot follow it.")]
+        [SerializeField, Min(0.5f)] private float herdOrbitRadius = 7f;
         [Tooltip("Height of the herd point above the flock's centre, in metres.")]
         [SerializeField, Min(0f)] private float herdHeight = 6f;
         [Tooltip("Radius of the fear field the hawk projects while herding, in metres.")]
         [SerializeField, Min(0f)] private float fearRadius = 12f;
         [Tooltip("Strength of the fear field (how hard other birds are pushed away).")]
         [SerializeField, Min(0f)] private float fearStrength = 1.5f;
+        [Tooltip("Seconds between counting the other birds to decide between Hunt and Herd.")]
+        [SerializeField, Min(0.1f)] private float herdCheckInterval = 1f;
+        [Tooltip("While herding, a new path is planned only when the herd point has moved more than this, in metres.")]
+        [SerializeField, Min(0.5f)] private float herdRepathDistance = 5f;
 
         [Header("General")]
         [Tooltip("Seconds between path requests while following a moving target.")]
@@ -328,6 +333,10 @@ namespace RunwayPanic.Agents.Hawk
         public float FearRadius => fearRadius;
         /// <summary>Strength of the hawk's fear field.</summary>
         public float FearStrength => fearStrength;
+        /// <summary>Seconds between Hunt/Herd mode checks.</summary>
+        public float HerdCheckInterval => herdCheckInterval;
+        /// <summary>Herd point movement that triggers a new path, in metres.</summary>
+        public float HerdRepathDistance => herdRepathDistance;
 
         /// <summary>Seconds between path requests while following a moving target.</summary>
         public float RepathInterval => repathInterval;

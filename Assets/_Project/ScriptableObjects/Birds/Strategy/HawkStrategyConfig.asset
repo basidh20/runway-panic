@@ -58,8 +58,10 @@ MonoBehaviour:
   withdrawShotMark: 0.6
   herdMinOtherBirds: 3
   herdOffset: 10
-  herdOrbitRadius: 4
+  herdOrbitRadius: 7
   herdHeight: 6
   fearRadius: 12
   fearStrength: 1.5
+  herdCheckInterval: 1
+  herdRepathDistance: 5
   repathInterval: 0.75
