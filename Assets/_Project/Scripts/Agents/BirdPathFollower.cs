@@ -9,7 +9,8 @@ namespace RunwayPanic.Agents
     /// pivot (its centre of mass).
     /// <see cref="SetPath(IReadOnlyList{Vector3})"/> smooths the waypoints once (<see cref="CatmullRomPath"/>). Every
     /// physics step the bird then steers its velocity toward a point a little ahead of it on that curve (a look-ahead
-    /// target), turning no faster than its species allows, and faces the way it flies.
+    /// target), turning no faster than its species allows, and faces the way it flies: yaw and pitch from its
+    /// velocity, roll (bank) from how fast it turns.
     /// It moves a kinematic Rigidbody, so gun raycasts and triggers always find the bird where it is drawn.
     /// </summary>
     [DisallowMultipleComponent]
@@ -71,6 +72,11 @@ namespace RunwayPanic.Agents
         private int nextWaypoint;
         private int pathVersion;
         private Vector3 lookAheadPoint;
+        private float yaw;
+        private float pitch;
+        private float bank;
+        private float bankVelocity;
+        private float gravity;
 
         /// <summary>True while the bird has a path it has not finished.</summary>
         public bool IsFollowing { get; private set; }
@@ -89,6 +95,12 @@ namespace RunwayPanic.Agents
 
         /// <summary>Metres left along the smoothed path, or 0 when not following one.</summary>
         public float RemainingDistance => IsFollowing ? Mathf.Max(0f, path.Length - progress) : 0f;
+
+        /// <summary>Current roll into the turn in degrees (+ = banking right).</summary>
+        public float BankAngle => bank;
+
+        /// <summary>Current climb angle in degrees (+ = nose up).</summary>
+        public float PitchAngle => pitch;
 
         private BirdMotionProfile Motion => agent != null ? agent.Motion : FallbackMotion;
         private static BirdMotionProfile fallbackMotion;
@@ -118,7 +130,9 @@ namespace RunwayPanic.Agents
             body.useGravity = false;
             body.interpolation = RigidbodyInterpolation.Interpolate;
 
+            gravity = Mathf.Max(Physics.gravity.magnitude, 0.01f);
             heading = transform.forward;
+            yaw = transform.eulerAngles.y;
         }
 
         /// <summary>
@@ -190,6 +204,10 @@ namespace RunwayPanic.Agents
 
             Vector3 flat = new Vector3(forward.x, 0f, forward.z);
             heading = flat.sqrMagnitude > 1e-6f ? flat.normalized : transform.forward;
+            yaw = Mathf.Atan2(heading.x, heading.z) * Mathf.Rad2Deg;
+            pitch = 0f;
+            bank = 0f;
+            bankVelocity = 0f;
             Quaternion rotation = Quaternion.LookRotation(heading, Vector3.up);
             body.rotation = rotation;
             transform.rotation = rotation;
@@ -254,14 +272,30 @@ namespace RunwayPanic.Agents
             targetSpeed = Mathf.Min(MaxSpeed * turnFactor, brakingSpeed);
         }
 
-        /// <summary>Faces the bird the way it flies.</summary>
+        /// <summary>
+        /// Faces the bird the way it flies: yaw and pitch come from the velocity, roll (bank) from how fast it turns.
+        /// The rotation is built from three angles about world up, so the bird can never end up upside down.
+        /// </summary>
         private void UpdateRotation(float deltaTime)
         {
+            BirdMotionProfile motion = Motion;
             Vector3 flat = new Vector3(heading.x, 0f, heading.z);
-            if (flat.sqrMagnitude < 1e-6f)
-                return;
+            float newYaw = flat.sqrMagnitude > 1e-6f ? Mathf.Atan2(heading.x, heading.z) * Mathf.Rad2Deg : yaw;
+            float yawRate = deltaTime > 0f ? Mathf.DeltaAngle(yaw, newYaw) / deltaTime : 0f; // deg/s, + = turning right
+            yaw = newYaw;
+            pitch = Mathf.Asin(Mathf.Clamp(heading.y, -1f, 1f)) * Mathf.Rad2Deg; // + = climbing
 
-            body.MoveRotation(Quaternion.LookRotation(flat, Vector3.up));
+            // Coordinated turn: to turn at rate ω while flying at speed v, a bird (or a plane) tilts its lift into the
+            // turn by tan(bank) = v·ω / g. Clamped to the species' limit and smoothed so the roll eases in and out.
+            float targetBank = Mathf.Atan(speed * yawRate * Mathf.Deg2Rad / gravity) * Mathf.Rad2Deg;
+            targetBank = Mathf.Clamp(targetBank, -motion.MaxBank, motion.MaxBank);
+            bank = deltaTime > 0f
+                ? Mathf.SmoothDamp(bank, targetBank, ref bankVelocity, motion.BankSmoothTime, Mathf.Infinity, deltaTime)
+                : targetBank;
+
+            // Euler(x, y, z) applies roll, then pitch, then yaw about world up. Unity's +x tilts the nose down and +z
+            // lifts the right wing, so climbing and banking right are both negative here.
+            body.MoveRotation(Quaternion.Euler(-pitch, yaw, -bank));
         }
 
         /// <summary>
