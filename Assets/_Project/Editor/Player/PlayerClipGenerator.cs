@@ -15,6 +15,7 @@ namespace RunwayPanic.PlayerTools
     /// <item>Weapons (upper body): pistol and rifle aim, fire, equip and reload, holding the real gun the way
     /// <c>PlayerWeaponHolder</c> mounts it.</item>
     /// <item>Reactions: hit flinch (played additively), death (fall onto the back), and a still stand.</item>
+    /// <item>Actions (gun lowered, left hand busy): use medkit, use shield, interact, push — pistol and rifle.</item>
     /// </list>
     /// <para>
     /// How it works: a hidden copy of <c>SK_Player_Officer</c> is posed frame by frame from a <see cref="Pose"/>
@@ -73,10 +74,13 @@ namespace RunwayPanic.PlayerTools
             public float Support;  // 0 = left arm from the angles above, 1 = left hand on the gun
             public float Grip;     // finger curl around the gun, 0..1
             public bool Rifle;     // left hand on a rifle's handguard instead of under a pistol grip
+            public float LeftReach;   // 0 = left arm as above, 1 = left hand at 'LeftHand' (medkit, door, push…)
+            public Vector3 LeftHand;  // left hand relative to the left shoulder: x right, y up, z forward (m)
 
             public static Pose Lerp(Pose a, Pose b, float t) => new Pose
             {
                 Rifle = a.Rifle || b.Rifle,
+                LeftReach = Mathf.Lerp(a.LeftReach, b.LeftReach, t), LeftHand = Vector3.Lerp(a.LeftHand, b.LeftHand, t),
                 Armed = Mathf.Lerp(a.Armed, b.Armed, t), Hand = Vector3.Lerp(a.Hand, b.Hand, t),
                 GunPitch = Mathf.Lerp(a.GunPitch, b.GunPitch, t), Support = Mathf.Lerp(a.Support, b.Support, t),
                 GunYaw = Mathf.Lerp(a.GunYaw, b.GunYaw, t), MagBlend = Mathf.Lerp(a.MagBlend, b.MagBlend, t),
@@ -405,6 +409,86 @@ namespace RunwayPanic.PlayerTools
             },
         };
 
+        // ---- Actions (upper body, gun lowered in the right hand, left hand busy) ----
+
+        private static Pose Lowered(Pose aim, Vector3 hand, float pitch)
+        {
+            aim.Hand = hand;
+            aim.GunPitch = pitch;
+            aim.Support = 0f;
+            aim.MagBlend = 0f;
+            return aim;
+        }
+
+        private static Pose LeftTo(Pose pose, Vector3 leftHand, float reach = 1f)
+        {
+            pose.LeftHand = leftHand;
+            pose.LeftReach = reach;
+            pose.Support = 0f;
+            return pose;
+        }
+
+        private static readonly Pose PistolLowered = Lowered(PistolAim, new Vector3(0.02f, -0.36f, 0.20f), -55f);
+        private static readonly Pose RifleLowered = Lowered(RifleAim, new Vector3(0f, -0.30f, 0.14f), -40f);
+
+        // Left-hand targets (from the left shoulder): chest, a guard in front of the face, a push forward.
+        private static readonly Vector3 ChestSpot = new Vector3(0.18f, -0.22f, 0.16f);
+        private static readonly Vector3 GuardSpot = new Vector3(0.14f, 0.02f, 0.28f);
+        private static readonly Vector3 ReachSpot = new Vector3(0.10f, -0.06f, 0.46f);
+        private static readonly Vector3 PushSpot = new Vector3(0.12f, -0.10f, 0.44f);
+
+        // Medkit: gun down, left hand to the belt pouch, press the kit to the chest, back to aim.
+        private static KeyedClip MedkitClip(string name, Pose aim, Pose lowered) => new KeyedClip
+        {
+            Name = name,
+            Times = new[] { 0f, 0.18f, 0.42f, 0.62f, 0.78f, 0.95f },
+            Poses = new[]
+            {
+                aim, LeftAtPouch(lowered), LeftTo(lowered, ChestSpot),
+                LeftTo(lowered, ChestSpot + new Vector3(0f, -0.03f, -0.03f)), LeftTo(lowered, ChestSpot, 0f), aim,
+            },
+        };
+
+        // Shield: a quick guard — left forearm up in front of the face — then back to aim.
+        private static KeyedClip ShieldClip(string name, Pose aim, Pose lowered) => new KeyedClip
+        {
+            Name = name,
+            Times = new[] { 0f, 0.12f, 0.35f, 0.6f },
+            Poses = new[] { aim, LeftTo(lowered, GuardSpot), LeftTo(lowered, GuardSpot), aim },
+        };
+
+        // Interact (door, switch): reach forward with the left hand and push, then back to aim.
+        private static KeyedClip InteractClip(string name, Pose aim, Pose lowered) => new KeyedClip
+        {
+            Name = name,
+            Times = new[] { 0f, 0.15f, 0.3f, 0.6f },
+            Poses = new[] { aim, LeftTo(lowered, ReachSpot), LeftTo(lowered, ReachSpot + new Vector3(0f, 0f, 0.04f)), aim },
+        };
+
+        // Push (loops while pushing a barricade): left palm forward, straining in a slow rhythm.
+        private static KeyedClip PushClip(string name, Pose lowered) => new KeyedClip
+        {
+            Name = name, Loop = true,
+            Times = new[] { 0f, 0.4f, 0.8f },
+            Poses = new[]
+            {
+                LeftTo(lowered, PushSpot), LeftTo(lowered, PushSpot + new Vector3(0f, 0.01f, -0.03f)),
+                LeftTo(lowered, PushSpot),
+            },
+        };
+
+        private static readonly KeyedClip[] ActionClips =
+        {
+            MedkitClip("A_Player_PistolMedkit", PistolAim, PistolLowered),
+            MedkitClip("A_Player_RifleMedkit", RifleAim, RifleLowered),
+            ShieldClip("A_Player_PistolShield", PistolAim, PistolLowered),
+            ShieldClip("A_Player_RifleShield", RifleAim, RifleLowered),
+            InteractClip("A_Player_PistolInteract", PistolAim, PistolLowered),
+            InteractClip("A_Player_RifleInteract", RifleAim, RifleLowered),
+            PushClip("A_Player_PistolPush", PistolLowered),
+            PushClip("A_Player_RiflePush", RifleLowered),
+        };
+
         // ---- Reactions ----
 
         // Standing still: the additive Reactions layer's "no reaction" state (its delta from itself is zero).
@@ -490,10 +574,16 @@ namespace RunwayPanic.PlayerTools
                     KeyedClip k = keyed;
                     Save(rig.Bake(k.Duration, 1, k.Loop, k.Sample), k.Name);
                 }
+
+                foreach (KeyedClip action in ActionClips)
+                {
+                    KeyedClip k = action;
+                    Save(rig.Bake(k.Duration, 1, k.Loop, k.Sample), k.Name);
+                }
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Player Animator] Generated locomotion, jump, weapon (aim, fire, equip, reload), hit and death clips in {OutputFolder}.");
+            Debug.Log($"[Player Animator] Generated locomotion, jump, weapon (aim, fire, equip, reload), action, hit and death clips in {OutputFolder}.");
         }
 
         private static void Save(AnimationClip clip, string name)
@@ -780,6 +870,15 @@ namespace RunwayPanic.PlayerTools
                 Vector3 barrel = Quaternion.AngleAxis(p.GunYaw, up) * (Quaternion.AngleAxis(-p.GunPitch, right) * forward);
                 Quaternion gunRotation = Quaternion.LookRotation(barrel, up);
                 handR.rotation = Quaternion.Slerp(handR.rotation, gunRotation * Quaternion.Inverse(gripRotation), p.Armed);
+
+                if (p.LeftReach > 0f)
+                {
+                    // Free left hand (medkit, shield, door, push): an IK target relative to the left shoulder.
+                    Vector3 reach = upperL.position + right * p.LeftHand.x + up * p.LeftHand.y + forward * p.LeftHand.z;
+                    Vector3 pole = upperL.position - up * 0.5f - right * 0.5f;
+                    TwoBoneIK.Solve(upperL, lowerL, handL, Vector3.Lerp(handL.position, reach, p.LeftReach), pole);
+                    return;
+                }
 
                 if (p.Support <= 0f)
                     return;
