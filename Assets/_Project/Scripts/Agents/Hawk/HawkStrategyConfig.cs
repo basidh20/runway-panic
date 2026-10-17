@@ -13,8 +13,9 @@ namespace RunwayPanic.Agents.Hawk
         [Header("Perch scoring (utility AI)")]
         [Tooltip("Weight of the height term (how far the perch is above the player).")]
         [SerializeField, Min(0f)] private float wHeight = 0.35f;
-        [Tooltip("Weight of the line-of-sight term (1 when the perch can see the player's head). Subtracted in Withdraw mode.")]
-        [SerializeField, Min(0f)] private float wLineOfSight = 0.30f;
+        [Tooltip("Weight of the line-of-sight term (1 when the perch can see the player's head). Subtracted in Withdraw mode. " +
+                 "0.45, not the plan's 0.30: at 0.30 a perch that can't see the player could win on sun + distance alone (playtest 17 Oct).")]
+        [SerializeField, Min(0f)] private float wLineOfSight = 0.45f;
         [Tooltip("Weight of the distance term (1 at the ideal distance, falling off like a bell curve).")]
         [SerializeField, Min(0f)] private float wDistance = 0.20f;
         [Tooltip("Weight of the sun term (1 when the perch is between the player and the sun). Dropped in Withdraw mode.")]
@@ -31,6 +32,11 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0.1f)] private float perchReevaluateInterval = 2f;
         [Tooltip("How fast a perch's 'recently shot' value fades, per second (1 = gone after 1 s).")]
         [SerializeField, Min(0f)] private float recentlyShotDecayPerSecond = 0.05f;
+        [Tooltip("Hysteresis: a new perch must beat the current one's total by more than this before the hawk switches (stops flip-flopping).")]
+        [SerializeField, Min(0f)] private float perchSwitchMargin = 0.15f;
+        [Tooltip("Decision inertia: after choosing a perch or landing on one, the hawk doesn't consider switching for this many seconds " +
+                 "(the sight term flips each time the player steps in or out of view, which outweighs the margin alone).")]
+        [SerializeField, Min(0f)] private float perchCommitTime = 4f;
 
         [Header("Aggression meter")]
         [Tooltip("Meter value at which the hawk is ready to attack.")]
@@ -140,6 +146,10 @@ namespace RunwayPanic.Agents.Hawk
         public float PerchReevaluateInterval => perchReevaluateInterval;
         /// <summary>Decay of a perch's recently-shot value, per second.</summary>
         public float RecentlyShotDecayPerSecond => recentlyShotDecayPerSecond;
+        /// <summary>Score margin a new perch needs over the current one before the hawk switches.</summary>
+        public float PerchSwitchMargin => perchSwitchMargin;
+        /// <summary>Seconds after choosing or landing on a perch before a switch is considered.</summary>
+        public float PerchCommitTime => perchCommitTime;
 
         /// <summary>Meter value at which the hawk is ready to attack.</summary>
         public float MeterMax => meterMax;

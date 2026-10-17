@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: HawkStrategyConfig
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Hawk.HawkStrategyConfig
   wHeight: 0.35
-  wLineOfSight: 0.3
+  wLineOfSight: 0.45
   wDistance: 0.2
   wSun: 0.15
   wRecentlyShot: 0.4
@@ -22,6 +22,8 @@ MonoBehaviour:
   maxHeightBonus: 15
   perchReevaluateInterval: 2
   recentlyShotDecayPerSecond: 0.05
+  perchSwitchMargin: 0.15
+  perchCommitTime: 4
   meterMax: 100
   reloadBonus: 40
   switchBonus: 30
