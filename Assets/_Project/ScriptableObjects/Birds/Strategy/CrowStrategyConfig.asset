@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e1cc517ff2b41242a650fe394cc3fd3, type: 3}
+  m_Name: CrowStrategyConfig
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Crow.CrowStrategyConfig
+  dangerCellSize: 2
+  dangerMarkRadius: 6
+  dangerLineRadius: 2
+  dangerMarkStrength: 1
+  maxDanger: 5
+  dangerCostScale: 20
+  dangerDecayInterval: 5
+  dangerDecayFactor: 0.9
+  dangerKeptOnNewWave: 0.5
+  detectRange: 30
+  approachRingRadius: 6
+  approachSamples: 8
+  approachHeight: 2
+  retreatDistance: 10
+  patrolMinDistance: 10
+  patrolMaxDistance: 20
+  patrolMinHeight: 4
+  patrolMaxHeight: 8
+  stealScanInterval: 1
+  stealMaxDistance: 40
+  minPlayerDistanceToSteal: 4
+  maxConcurrentThieves: 2
+  funeralRadius: 15
+  funeralDuration: 3
+  funeralOrbitRadius: 2.5
+  funeralOrbitHeight: 3
+  enragedSpeedMultiplier: 1.4
+  enragedDuration: 10
+  vigilEnterDelay: 1
+  maxVigilCrows: 3
+  repathInterval: 0.75
