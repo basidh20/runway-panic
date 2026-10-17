@@ -79,6 +79,18 @@ namespace RunwayPanic.Agents.Crow
                  "Works around BirdMotor.LandAt circling its point when the bird arrives from the side.")]
         [Min(0.5f)] public float vigilLandTimeout = 3f;
 
+        [Header("Evasion")]
+        [Tooltip("A shot passing within this distance of an approaching or attacking crow makes it dodge.")]
+        [Min(0.1f)] public float evadeRadius = 3f;
+        [Tooltip("How far sideways (away from the shot) the crow jinks, in metres.")]
+        [Min(0.5f)] public float evadeDistance = 4f;
+        [Tooltip("Speed multiplier while dodging.")]
+        [Min(1f)] public float evadeSpeedMultiplier = 1.5f;
+        [Tooltip("Longest a dodge lasts before the crow approaches again.")]
+        [Min(0.1f)] public float evadeDuration = 0.7f;
+        [Tooltip("Seconds before the same crow can dodge again.")]
+        [Min(0f)] public float evadeCooldown = 2.5f;
+
         [Header("Pathing")]
         [Tooltip("Seconds between path recalculations, so many crows don't search every frame.")]
         [Min(0.1f)] public float repathInterval = 0.75f;
