@@ -1,0 +1,20 @@
+Main gameplay-player integration — saved-scene checks
+Unity: 6000.6.4f1
+PASS: Exactly one gameplay player, including inactive objects
+PASS: Exactly one GameManager, including inactive objects
+PASS: Temporary preview retained and disabled as a whole
+PASS: Exactly one enabled gameplay camera
+PASS: Exactly one enabled audio listener
+PASS: Gameplay camera tagged MainCamera
+PASS: Gameplay controller active
+PASS: Player remains connected to S2's prefab
+PASS: Saved player starts at PlayerStart
+PASS: Original controller, health, lives and shooting components present
+PASS: Player Input actions assigned
+PASS: Camera belongs to the gameplay prefab
+PASS: GameManager active
+PASS: GameManager remains connected to S2's prefab
+PASS: GameManager explicitly references this player's lives
+PASS: No missing scripts in Main, including disabled preview
+PASS: Main remains enabled in build settings
+Failures: 0
