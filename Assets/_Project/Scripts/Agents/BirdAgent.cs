@@ -11,7 +11,7 @@ namespace RunwayPanic.Agents
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody), typeof(BirdPathFollower), typeof(BirdAnimatorDriver))]
-    [RequireComponent(typeof(BirdHealth), typeof(BirdAttack))]
+    [RequireComponent(typeof(BirdHealth), typeof(BirdContactAttack))]
     public sealed class BirdAgent : MonoBehaviour
     {
         [Tooltip("Gameplay stats (HP, speed, attack, coins). Empty only on P_Bird_Base, which is never spawned itself.")]
@@ -50,8 +50,8 @@ namespace RunwayPanic.Agents
         /// <summary>HP and death: IsAlive, Died.</summary>
         public BirdHealth Health { get; private set; }
 
-        /// <summary>Range and cooldown checked attack: TryAttack, IsInRange.</summary>
-        public BirdAttack Attack { get; private set; }
+        /// <summary>Range and cooldown checked melee attack on the player: TryAttack, IsPlayerInRange.</summary>
+        public BirdContactAttack Attack { get; private set; }
 
         /// <summary>Animator parameters and one-shot animations.</summary>
         public BirdAnimatorDriver AnimatorDriver { get; private set; }
@@ -60,7 +60,7 @@ namespace RunwayPanic.Agents
         {
             Follower = GetComponent<BirdPathFollower>();
             Health = GetComponent<BirdHealth>();
-            Attack = GetComponent<BirdAttack>();
+            Attack = GetComponent<BirdContactAttack>();
             AnimatorDriver = GetComponent<BirdAnimatorDriver>();
 
             if (species == null)
