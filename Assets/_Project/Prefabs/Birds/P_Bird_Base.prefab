@@ -10,6 +10,11 @@ GameObject:
   m_Component:
   - component: {fileID: 2713844080849973986}
   - component: {fileID: 4804666714081088428}
+  - component: {fileID: 2586497654877685017}
+  - component: {fileID: 3165138639951823021}
+  - component: {fileID: 4679255953200266805}
+  - component: {fileID: 3036899872005584342}
+  - component: {fileID: 2959178820104805876}
   m_Layer: 0
   m_Name: P_Bird_Base
   m_TagString: Untagged
@@ -56,6 +61,91 @@ CapsuleCollider:
   m_Height: 0.7016973
   m_Direction: 2
   m_Center: {x: 0, y: 0, z: -0.01954427}
+--- !u!54 &2586497654877685017
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 1
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &3165138639951823021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d3a2ccc68d92dc419fd453766a9e36b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.SimpleBirdMotor
+  fallbackSpeed: 5
+  acceleration: 12
+  turnSpeed: 6
+  waypointReachDistance: 1
+  arriveDistance: 0.6
+  slowDownRadius: 2
+  landSnapDistance: 0.3
+--- !u!114 &4679255953200266805
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f69ba4e4b9f23734384803f46ac3fea6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdHealth
+  species: {fileID: 0}
+--- !u!114 &3036899872005584342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ea8066d181058c4a9db0123a749c8d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdContactAttack
+--- !u!114 &2959178820104805876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56489e9d648377542acee78e51ba74ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdStateLabel
+  heightOffset: 0.6
+  colour: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1001 &5099973612651814637
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -111,10 +201,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6660988507843376988}
   m_SourcePrefab: {fileID: 100100000, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
 --- !u!4 &4705143989903784198 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
   m_PrefabInstance: {fileID: 5099973612651814637}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &5334468864366814140 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+  m_PrefabInstance: {fileID: 5099973612651814637}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6660988507843376988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5334468864366814140}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854e2e454720a3543bc92cb2aaaff78c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BlendShapeBirdAnimator
+  wingSpeed: 4
