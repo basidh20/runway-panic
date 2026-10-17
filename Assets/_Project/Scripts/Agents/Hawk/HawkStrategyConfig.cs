@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace RunwayPanic.Agents.Hawk
 {
@@ -10,7 +11,7 @@ namespace RunwayPanic.Agents.Hawk
     [CreateAssetMenu(fileName = "HawkStrategyConfig", menuName = "Runway Panic/AI/Hawk Strategy")]
     public sealed class HawkStrategyConfig : ScriptableObject
     {
-        [Header("Perch scoring (utility AI)")]
+        [Header("Vantage scoring (utility AI) — Perch markers are vantage points the hawk soars over")]
         [Tooltip("Weight of the height term (how far the perch is above the player).")]
         [SerializeField, Min(0f)] private float wHeight = 0.35f;
         [Tooltip("Weight of the line-of-sight term (1 when the perch can see the player's head). Subtracted in Withdraw mode. " +
@@ -37,6 +38,17 @@ namespace RunwayPanic.Agents.Hawk
         [Tooltip("Decision inertia: after choosing a perch or landing on one, the hawk doesn't consider switching for this many seconds " +
                  "(the sight term flips each time the player steps in or out of view, which outweighs the margin alone).")]
         [SerializeField, Min(0f)] private float perchCommitTime = 4f;
+
+        [Header("Watching (soaring) — the hawk never sits still")]
+        [Tooltip("Height of the soaring circle above the vantage point (Perch marker), in metres.")]
+        [SerializeField, Min(0f)] private float soarHeight = 4f;
+        [Tooltip("Radius of the soaring circle, in metres. Keep it wider than the hawk's turn circle " +
+                 "(speed / turn rate = 8 m/s / 90°/s ≈ 5 m), or it cannot follow the circle.")]
+        [SerializeField, Min(1f)] private float soarRadius = 7f;
+        [Tooltip("How far ahead around the circle the hawk aims, in degrees. Larger = smoother, slightly wider circle.")]
+        [SerializeField, Range(10f, 120f)] private float soarLeadAngle = 60f;
+        [Tooltip("Longest flight to a vantage point before the hawk starts soaring wherever it is, in seconds (safety net).")]
+        [SerializeField, Min(1f)] private float travelTimeout = 30f;
 
         [Header("Aggression meter")]
         [Tooltip("Meter value at which the hawk is ready to attack.")]
@@ -71,8 +83,9 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0f)] private float interactWindowDuration = 1.2f;
         [Tooltip("Seconds the shield-expired window stays open.")]
         [SerializeField, Min(0f)] private float shieldWindowDuration = 2f;
-        [Tooltip("Longest the hawk stays perched before it attacks anyway, in seconds (so it is never passive).")]
-        [SerializeField, Min(1f)] private float maxPerchTime = 15f;
+        [Tooltip("Longest the hawk soars over a vantage point before it attacks anyway, in seconds (so it is never passive).")]
+        [FormerlySerializedAs("maxPerchTime")]
+        [SerializeField, Min(1f)] private float maxWatchTime = 15f;
         [Tooltip("The player counts as busy while their last shot is younger than this, in seconds (Herd mode only).")]
         [SerializeField, Min(0f)] private float busyShotWindow = 2f;
         [Tooltip("Seconds between checks of whether any barricade is being pushed.")]
@@ -89,12 +102,15 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0f)] private float slowGunFireInterval = 0.75f;
         [Tooltip("Chance of a feint before the real stoop when the player holds a slow gun (0..1).")]
         [SerializeField, Range(0f, 1f)] private float feintChance = 0.6f;
-        [Tooltip("Distance from the player at which the feint pulls up, in metres.")]
+        [Tooltip("The feint dives at a point this far above the player's chest and turns away once this close horizontally, " +
+                 "in metres — so it looks like a stoop but never comes within reach.")]
         [SerializeField, Min(0f)] private float pullUpDistance = 6f;
-        [Tooltip("How far the feint climbs when it pulls up, in metres.")]
+        [Tooltip("After pulling up, the hawk circles the player this high above their chest while waiting out the refire time, in metres. " +
+                 "Keep atan(height / radius) below the motor's max pitch (30°), or the real dive from the circle overshoots.")]
         [SerializeField, Min(0f)] private float feintPullUpHeight = 8f;
-        [Tooltip("How far the feint swings back away from the player when it pulls up, in metres.")]
-        [SerializeField, Min(0f)] private float feintPullUpBack = 6f;
+        [Tooltip("Radius of that waiting circle around the player, in metres. Wider than the hawk's turn circle AT DIVE SPEED " +
+                 "(20 m/s / 90°/s ≈ 13 m), or the real stoop from the circle can't turn in to the player (playtest 17 Oct: 10 m missed twice).")]
+        [SerializeField, Min(1f)] private float feintOrbitRadius = 16f;
 
         [Header("Stoop")]
         [Tooltip("Distance from the player of the stoop start point, towards the sun, in metres.")]
@@ -111,6 +127,17 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0f)] private float stoopDamageMultiplier = 1.5f;
         [Tooltip("Height above the player the hawk climbs to after an attack, in metres.")]
         [SerializeField, Min(0f)] private float recoverClimbHeight = 15f;
+        [Tooltip("Climb angle after an attack, in degrees. Keep it below the motor's max pitch (BirdMotion_Hawk: 30°).")]
+        [SerializeField, Range(5f, 80f)] private float recoverClimbAngle = 25f;
+        [Tooltip("Steepest dive angle the stoop is planned with, in degrees. Keep it at or below the motor's max pitch " +
+                 "(BirdMotion_Hawk: 30°); the sun's elevation is used when it is lower.")]
+        [SerializeField, Range(5f, 80f)] private float maxStoopAngle = 28f;
+        [Tooltip("The dive aims this far beyond the player, in metres, so it strikes through at speed instead of braking to a stop in front of them.")]
+        [SerializeField, Min(0f)] private float stoopOvershoot = 8f;
+        [Tooltip("Turn first, then dive: while the hawk's flight direction is more than this many degrees off the player, it stays at " +
+                 "normal speed (tight turns); dive speed only once lined up. At dive speed its turn circle (~13 m) is too wide to " +
+                 "turn in from the feint's circle (playtest 17 Oct: missed by ~5 m twice).")]
+        [SerializeField, Range(5f, 90f)] private float stoopTurnInAngle = 30f;
         [Tooltip("The dive aims at where the player will be this many seconds ahead (player velocity × lead time).")]
         [SerializeField, Min(0f)] private float stoopLeadTime = 0.3f;
         [Tooltip("If the stoop start is inside geometry, search this far upward for a flyable point, in metres.")]
@@ -123,8 +150,9 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0)] private int stoopYawTries = 3;
         [Tooltip("Longest the flight to the stoop start may take before the hawk dives from wherever it is, in seconds.")]
         [SerializeField, Min(0.5f)] private float approachTimeout = 10f;
-        [Tooltip("Longest a dive, feint or recovery climb may take before the hawk moves on, in seconds.")]
-        [SerializeField, Min(0.5f)] private float maxManoeuvreTime = 4f;
+        [Tooltip("Longest a dive, feint or recovery climb may take before the hawk moves on, in seconds. " +
+                 "The real motor turns at 90°/s, so a dive that starts facing away needs ~2 s just to turn.")]
+        [SerializeField, Min(0.5f)] private float maxManoeuvreTime = 6f;
 
         [Header("Withdraw")]
         [Tooltip("Seconds the wounded hawk waits on its hidden perch before hunting again.")]
@@ -173,6 +201,15 @@ namespace RunwayPanic.Agents.Hawk
         /// <summary>Seconds after choosing or landing on a perch before a switch is considered.</summary>
         public float PerchCommitTime => perchCommitTime;
 
+        /// <summary>Height of the soaring circle above the vantage point, in metres.</summary>
+        public float SoarHeight => soarHeight;
+        /// <summary>Radius of the soaring circle, in metres.</summary>
+        public float SoarRadius => soarRadius;
+        /// <summary>How far ahead around the circle the hawk aims, in degrees.</summary>
+        public float SoarLeadAngle => soarLeadAngle;
+        /// <summary>Longest flight to a vantage point, in seconds.</summary>
+        public float TravelTimeout => travelTimeout;
+
         /// <summary>Meter value at which the hawk is ready to attack.</summary>
         public float MeterMax => meterMax;
         /// <summary>Meter added when the player starts reloading.</summary>
@@ -205,8 +242,8 @@ namespace RunwayPanic.Agents.Hawk
         public float InteractWindowDuration => interactWindowDuration;
         /// <summary>Seconds the shield-expired window stays open.</summary>
         public float ShieldWindowDuration => shieldWindowDuration;
-        /// <summary>Longest time on a perch before attacking anyway, in seconds.</summary>
-        public float MaxPerchTime => maxPerchTime;
+        /// <summary>Longest time soaring over a vantage point before attacking anyway, in seconds.</summary>
+        public float MaxWatchTime => maxWatchTime;
         /// <summary>Age of the last shot under which the player counts as busy, in seconds.</summary>
         public float BusyShotWindow => busyShotWindow;
         /// <summary>Seconds between barricade push checks.</summary>
@@ -223,10 +260,10 @@ namespace RunwayPanic.Agents.Hawk
         public float FeintChance => feintChance;
         /// <summary>Distance from the player at which a feint pulls up, in metres.</summary>
         public float PullUpDistance => pullUpDistance;
-        /// <summary>Climb of the feint's pull-up, in metres.</summary>
+        /// <summary>Height of the feint's waiting circle above the player's chest, in metres.</summary>
         public float FeintPullUpHeight => feintPullUpHeight;
-        /// <summary>Swing back away from the player during the pull-up, in metres.</summary>
-        public float FeintPullUpBack => feintPullUpBack;
+        /// <summary>Radius of the feint's waiting circle around the player, in metres.</summary>
+        public float FeintOrbitRadius => feintOrbitRadius;
 
         /// <summary>Distance of the stoop start point from the player, in metres.</summary>
         public float StoopStartDistance => stoopStartDistance;
@@ -242,6 +279,14 @@ namespace RunwayPanic.Agents.Hawk
         public float StoopDamageMultiplier => stoopDamageMultiplier;
         /// <summary>Climb height above the player after an attack, in metres.</summary>
         public float RecoverClimbHeight => recoverClimbHeight;
+        /// <summary>Climb angle after an attack, in degrees.</summary>
+        public float RecoverClimbAngle => recoverClimbAngle;
+        /// <summary>Steepest planned dive angle, in degrees.</summary>
+        public float MaxStoopAngle => maxStoopAngle;
+        /// <summary>How far beyond the player the dive aims, in metres.</summary>
+        public float StoopOvershoot => stoopOvershoot;
+        /// <summary>Heading error above which the stoop stays at normal speed to turn in first, in degrees.</summary>
+        public float StoopTurnInAngle => stoopTurnInAngle;
         /// <summary>Lead time of the dive's aim point, in seconds.</summary>
         public float StoopLeadTime => stoopLeadTime;
         /// <summary>Upward search range for a flyable stoop start, in metres.</summary>

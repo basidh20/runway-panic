@@ -13,14 +13,20 @@ Template:
 
 ---
 
+## 2026-10-17 (evening) — to: Agent Controller — the hawk now works with your BirdMotor; the 40 m/s² request below is withdrawn
+- **What:** `Prefabs/Birds/P_Bird_Hawk` (merged with your F4 prefab: `BirdMotor` + `BirdAnimatorDriver` + `HawkBrain` + `PlayerWeaknessModel`); `Scripts/Agents/Hawk/HawkBrain.cs`.
+- **Details:**
+  - The hawk was re-tuned to `BirdMotion_Hawk` as it is (turn 90°/s, max pitch 30°, acceleration 5 × `SpeedMultiplier`): stoops are planned at ≤ 28°, aim 8 m past the player (your seek braking would otherwise stop it in front of them), and climb away at 25°.
+  - The hawk **no longer lands** (game-design change 17 Oct: a perched hawk is too easy to shoot). It circles 4 m above its vantage point at a 7 m radius with `FlyTo` on a moving point, which your motor follows smoothly.
+  - `HawkBrain.motorTurnRate` (90) must match `BirdMotion_Hawk.maxTurnRate` — tell me if you change it.
+- **Action needed:** none required. Optional: a steeper `maxPitch` (~55°) in `BirdMotion_Hawk` would allow real near-vertical stoops — tell me and I raise `maxStoopAngle` to match. Landing bug: see `Docs/IS/HANDOFF.md` (17 Oct evening).
+- **Status:** open (optional)
+
 ## 2026-10-17 — to: Agent Controller — the hawk needs a motor that can brake 40 m/s² (stoop dives)
 - **What:** `Prefabs/Birds/P_Bird_Hawk` — `HawkBrain`, `PlayerWeaknessModel` on the root (IS hawk, H1–H4); `SimpleBirdMotor.acceleration` raised **12 → 40 m/s²** on this prefab only.
-- **Details:**
-  - The hawk's stoop flies at `MoveSpeed × 2.5` = 20 m/s (downward ≈ 15 m/s at the 48° sun angle). At 12 m/s² it needs ≈ 9.4 m to brake and went under the runway; at 40 m/s² ≈ 2.8 m.
-  - `HawkBrain` starts the feint's pull-up and the stoop's flare early from `speed² / (2 × diveBrakeAcceleration)`. Its field `diveBrakeAcceleration` (40) must match the motor's real braking.
-  - The hawk calls `SpeedMultiplier` 1.5 (approach) / 2.5 (dive) / 1 and `FlyTo` every frame during the dive (`IBirdMotor` only — no changes to the interface).
-- **Action needed:** Agent Controller — when the real `BirdMotor` (F4) replaces `SimpleBirdMotor` on `P_Bird_Hawk`, give it at least 40 m/s² of braking (or tell me its value so I set `diveBrakeAcceleration` to match). A visual flare/brake animation at the bottom of the dive would sell it.
-- **Status:** open
+- **Details:** written for the stand-in `SimpleBirdMotor`, which your F4 `BirdMotor` replaced on this prefab in the same merge (PR #23 + #24). The 40 m/s² value went away with it.
+- **Action needed:** none — superseded by the entry above.
+- **Status:** done (superseded)
 
 ## 2026-10-17 — to: Agent Controller + all — bird prefabs now carry the shared AI components
 - **What:** `Prefabs/Birds/P_Bird_Base` (+ the Gull/Pigeon/Crow variants) and `P_Bird_Hawk`; tool `Tools > S3 > Add Bird AI Components` (`Editor/Art/ArtBirdAIComponents.cs`)

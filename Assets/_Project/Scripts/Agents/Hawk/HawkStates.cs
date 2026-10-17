@@ -6,30 +6,33 @@ namespace RunwayPanic.Agents.Hawk
     /// </summary>
     public enum HawkMode
     {
-        /// <summary>Perch, watch the player, then stoop. Sub-states in <see cref="HuntPhase"/>.</summary>
+        /// <summary>Soar over a vantage point, watch the player, then stoop. Sub-states in <see cref="HuntPhase"/>.</summary>
         Hunt,
 
         /// <summary>Circle behind other birds and push them at the player with a fear field (mixed waves).</summary>
         Herd,
 
-        /// <summary>Wounded: hide on a perch the player can't see, then hunt again.</summary>
+        /// <summary>Wounded: hide where the player can't see, then hunt again.</summary>
         Withdraw,
 
         /// <summary>Killed. Final state.</summary>
         Dead
     }
 
-    /// <summary>Sub-states of <see cref="HawkMode.Hunt"/>, in the order of one attack cycle.</summary>
+    /// <summary>
+    /// Sub-states of <see cref="HawkMode.Hunt"/>, in the order of one attack cycle. The hawk never sits still: it watches
+    /// the player while circling above a vantage point (a <see cref="BirdPoint"/> of type Perch).
+    /// </summary>
     public enum HuntPhase
     {
-        /// <summary>Score every perch and pick the best one.</summary>
-        SelectPerch,
+        /// <summary>Score every vantage point and pick the best one.</summary>
+        SelectVantage,
 
-        /// <summary>Fly to the chosen perch.</summary>
-        FlyToPerch,
+        /// <summary>Fly to the soaring circle above the chosen vantage point.</summary>
+        FlyToVantage,
 
-        /// <summary>Sit still and read the player until the aggression meter fills.</summary>
-        Perched,
+        /// <summary>Circle above the vantage point and read the player until the aggression meter fills.</summary>
+        Soaring,
 
         /// <summary>Fly to the stoop start point on the sun's side of the player.</summary>
         ApproachStoop,
@@ -43,7 +46,7 @@ namespace RunwayPanic.Agents.Hawk
         /// <summary>The real dive at the player.</summary>
         Stoop,
 
-        /// <summary>Climb away after the attack, then select a perch again.</summary>
+        /// <summary>Climb away after the attack, then select a vantage point again.</summary>
         Recover
     }
 }
