@@ -59,6 +59,31 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
 - **Action needed:** Agent Controller — e.g. in `Land`/`Hold` mode, within a few metres, let the bird slow to a hover and move straight to the point regardless of turn rate (a flutter-in), or cap speed so `v / maxTurnRate < distance`. Species owners: until then, give your `LandAt` calls a timeout. The hawk no longer lands at all (it soars over its vantage point instead), so it is not blocked.
 - **Status:** open
 
+## 2026-10-17 — to: World Builder — crow markers and shelter zones for `Main`
+- **What:** `BirdPoint` markers and `Scripts/Agents/Crow/ShelterZone.cs`; working example in `Scenes/Sandbox/Sandbox_IS_Crow.unity`
+- **Details:**
+  - 2 × `BirdPoint` type **Stash**, at ground level in places the player can **walk to** (e.g. behind the hangar, beside the terminal) — never on a roof. Crows drop stolen pickups there.
+  - 1 × `BirdPoint` type **ShelterExit** just outside each shelter entrance, `group` = `ShelterA` / `ShelterB`.
+  - 1 × `ShelterZone` per shelter: a trigger `BoxCollider` filling the interior, `group` matching its exits. Crows guard the exits while the player hides inside.
+- **Action needed:** World Builder — add them to `Main` (copy the positions from the crow sandbox if they fit).
+- **Status:** open
+
+## 2026-10-17 — to: Systems Engineer — crows steal pickups (no change needed)
+- **What:** `Pickup`, `PickupSpawner` (read-only use from `Scripts/Agents/Crow/`)
+- **Details:**
+  - Crows carry medkits and shields to a stash: they disable the pickup's colliders, re-parent it, and later put it back on the ground with its colliders on. No `Pickup` method is called and no Systems Engineer file is edited.
+  - Side effect: `PickupSpawner` still counts a stolen pickup as occupying its marker until the player collects it, so theft also delays respawns. This is intended (it makes theft hurt).
+- **Action needed:** none — tell the crow owner if a future `Pickup` change (e.g. pooling instead of `Destroy`) would break this.
+- **Status:** done
+
+## 2026-10-17 — to: Basidh (F1 owner) — cost-aware path smoothing
+- **What:** `Scripts/AI/PathSmoother.cs`, `Scripts/AI/GridPathProvider.cs` (own commit `fix(ai): keep cost-driven detours when smoothing paths` on `feature/is-crow-core`)
+- **Details:**
+  - String-pulling only checked walls, so in open air it straightened every detour A\* made around cost modifiers (crow danger, hawk fear) back through the costly area.
+  - New overload `PathSmoother.Smooth(path, radius, mask, costModifiers, sampleSpacing)`: a shortcut is taken only if it is clear **and** its extra cost is ≤ the part of the path it replaces. With no modifiers it behaves exactly like before. `GridPathProvider` now calls it.
+- **Action needed:** Basidh — please review that commit in the crow PR into `develop` (it touches your files).
+- **Status:** open
+
 ## 2026-10-17 — to: species owners + Agent Controller — the bird prefabs now carry the shared AI components (F5)
 - **What:** `Prefabs/Birds/P_Bird_Base` (inherited by `P_Bird_Gull`, `_Pigeon`, `_Crow`) and `P_Bird_Hawk` (own prefab, set up separately). Re-runnable tool: `Tools > S3 > Add Bird AI Components`.
 - **Details:**
