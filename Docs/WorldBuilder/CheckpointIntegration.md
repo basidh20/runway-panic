@@ -36,7 +36,7 @@ The recorded run passed all **18 saved-scene checks** and **31 Play-mode checks*
 1. **Checkpoints** — this branch: activation, placement/facing, visible zones and real delayed-respawn verification.
 2. **Shelter doors** — see `ShelterDoorIntegration.md`: both supplied prefabs fitted; focused physical opening/closing and passage checks, with manual E-input check documented.
 3. **Pickup spawning** — see `PickupIntegration.md`: shared spawner connected to all four original markers; focused trigger collection, delayed replacement and wave-refill check.
-4. **Shop** — next commit: install the supplied shop UI and test purchases, refusals and next-wave handoff.
+4. **Shop** — see `ShopIntegration.md`: supplied shop installed; focused purchase/refusal, UI state and next-wave handoff check. Production waves remain separate.
 
 Each milestone gets its own tested human-created commit, recording an actual functional change. Keep these four commits on this batch branch and open one PR into develop when ready. Navigation/AI markers, movable cover, production waves, safe-room mechanics and environment polish follow in later milestones.
 

@@ -18,7 +18,7 @@ The first gameplay integration is documented in `PlayerIntegration.md`: Main now
 - Six barricade prefab instances placed beside the runway, with routes left open.
 - A simple control-tower and terminal placeholder to establish airport scale and landmarks.
 - Basic reusable URP colour materials and realtime preview lighting.
-- Player-start, eight bird-spawn, four pickup, two checkpoint, and reserved-shop markers. Checkpoints are functional; the four pickup markers now feed the shared spawner (see `PickupIntegration.md`). Bird-spawn and reserved-shop markers remain placement references until their respective integration tasks.
+- Player-start, eight bird-spawn, four pickup, two checkpoint, and reserved-shop markers. Checkpoints are functional; the four pickup markers feed the shared spawner (see `PickupIntegration.md`). The shared between-wave shop screen is installed (`ShopIntegration.md`), but is not a physical vendor at the reserved marker. Bird-spawn and reserved-shop markers remain placement references.
 - A temporary first-person walkthrough rig and overview camera.
 
 The greybox is made of ordinary saved Unity objects and reusable prefabs. It is not generated on every Play. You can edit positions and sizes directly in the Inspector.
