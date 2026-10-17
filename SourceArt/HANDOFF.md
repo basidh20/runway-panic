@@ -13,6 +13,15 @@ Template:
 
 ---
 
+## 2026-10-17 — to: Agent Controller — the hawk needs a motor that can brake 40 m/s² (stoop dives)
+- **What:** `Prefabs/Birds/P_Bird_Hawk` — `HawkBrain`, `PlayerWeaknessModel` on the root (IS hawk, H1–H4); `SimpleBirdMotor.acceleration` raised **12 → 40 m/s²** on this prefab only.
+- **Details:**
+  - The hawk's stoop flies at `MoveSpeed × 2.5` = 20 m/s (downward ≈ 15 m/s at the 48° sun angle). At 12 m/s² it needs ≈ 9.4 m to brake and went under the runway; at 40 m/s² ≈ 2.8 m.
+  - `HawkBrain` starts the feint's pull-up and the stoop's flare early from `speed² / (2 × diveBrakeAcceleration)`. Its field `diveBrakeAcceleration` (40) must match the motor's real braking.
+  - The hawk calls `SpeedMultiplier` 1.5 (approach) / 2.5 (dive) / 1 and `FlyTo` every frame during the dive (`IBirdMotor` only — no changes to the interface).
+- **Action needed:** Agent Controller — when the real `BirdMotor` (F4) replaces `SimpleBirdMotor` on `P_Bird_Hawk`, give it at least 40 m/s² of braking (or tell me its value so I set `diveBrakeAcceleration` to match). A visual flare/brake animation at the bottom of the dive would sell it.
+- **Status:** open
+
 ## 2026-10-17 — to: Agent Controller + all — bird prefabs now carry the shared AI components
 - **What:** `Prefabs/Birds/P_Bird_Base` (+ the Gull/Pigeon/Crow variants) and `P_Bird_Hawk`; tool `Tools > S3 > Add Bird AI Components` (`Editor/Art/ArtBirdAIComponents.cs`)
 - **Details:**

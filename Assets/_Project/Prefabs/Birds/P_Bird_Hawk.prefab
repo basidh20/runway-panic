@@ -103,7 +103,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.SimpleBirdMotor
   fallbackSpeed: 5
-  acceleration: 12
+  acceleration: 40
   turnSpeed: 6
   waypointReachDistance: 1
   arriveDistance: 0.6
