@@ -13,6 +13,34 @@ Template:
 
 ---
 
+## 2026-10-17 — to: all IS owners + Agent Controller — `ShotFired` now fires before damage
+- **What:** `Scripts/Weapons/PlayerShooting.cs`
+- **Details:**
+  - `PlayerShooting.ShotFired` used to be raised **after** the hit applied its damage. `BirdHealth` reads `PlayerEventHub.LastShotOrigin` / `LastShotTime` inside `TakeDamage`, so it saw the *previous* shot. With the 0.1 s match window in `BirdHealth`, every gun (≤ 8 shots/s) failed the check, and **every kill recorded the bird's own position as the shooter position** — breaking the crow grudge and the hawk's "shot from this perch" memory.
+  - Now the order is: raycast → `ShotFired(origin, end, target)` → `target.TakeDamage(...)`. The `target` argument is unchanged.
+- **Action needed:** none. If you listen to `ShotFired`, the target's HP is the value *before* this shot's damage.
+- **Status:** done
+
+## 2026-10-17 — to: all IS owners (reply to the IS hand-off request) — Eagle renamed to Gull, species re-mapped to the wave order
+- **What:** `Scripts/Core/BirdSpecies.cs`, `ScriptableObjects/Birds/BirdSpecies_*.asset`, `ScriptableObjects/Weapons/Weapon_Tier*.asset`, shop item descriptions
+- **Details:**
+  - Enum: `Pigeon = 0, Crow = 1, Hawk = 2, Gull = 3` — **values unchanged**, `Eagle` renamed to `Gull`. Use `BirdSpecies.Gull`.
+  - `BirdSpecies_Eagle.asset` renamed to `BirdSpecies_Gull.asset` with the **same GUID**, so `P_Bird_Gull` (and anything else pointing at it) needs no change.
+  - New balance (wave order Gull → Pigeon → Crow → Hawk):
+
+    | Wave | Species | Needs gun | HP | Speed | Damage | Range / cooldown | Coins |
+    |---|---|---|---:|---:|---:|---|---:|
+    | 1 | Gull | Pistol (Common) | 30 | 4.5 | 5 | 1.5 m / 1.5 s | 8 |
+    | 2 | Pigeon | Assault Rifle (Uncommon) | 24 | 5 | 6 | 1.5 m / 1.2 s | 6 |
+    | 3 | Crow | Sniper (Rare) | 60 | 5.5 | 10 | 1.5 m / 1.2 s | 15 |
+    | 4 | Hawk | RPG (Legendary) | 300 | 8 | 20 | 2.5 m / 2 s | 25 |
+
+  - With the right gun: gull 3 pistol shots, pigeon 2 rifle shots, crow 1 sniper shot, hawk 2 rockets. Wrong gun still does 10 %.
+  - Coins per wave line up with the next shop price (rifle 40 → sniper 75 → RPG 100).
+  - Weapon `targetSpecies` and the shop descriptions follow the same order.
+- **Action needed:** none. Tell me if a species strategy needs different stats (e.g. more HP for a boss phase); the numbers are in the species assets.
+- **Status:** done
+
 ## 2026-10-17 — to: World Builder — the between-wave shop (logic + screen)
 - **What:** `Assets/_Project/Prefabs/Core/P_Shop.prefab` (ShopManager + shop screen), items in `ScriptableObjects/Shop/`
 - **Details:**
@@ -94,7 +122,7 @@ Template:
 - **What:** `IDamageable`, `BirdSpeciesData` assets in `ScriptableObjects/Birds/`, `CoinManager`
 - **Details:**
   - The player's guns hit anything implementing `IDamageable` (`TakeDamage(amount, weaponRarity)`), found on the hit collider or any parent.
-  - Each species asset (`BirdSpecies_Pigeon` … `_Eagle`) has HP, speed, attack stats, coin reward and the required gun. `GetDamageTaken(amount, rarity)` applies the rule "wrong gun = 10 % damage".
+  - Each species asset (`BirdSpecies_Gull`, `_Pigeon`, `_Crow`, `_Hawk`) has HP, speed, attack stats, coin reward and the required gun. `GetDamageTaken(amount, rarity)` applies the rule "wrong gun = 10 % damage".
   - `Prefabs/Testing/P_DamageDummy` shows the expected behaviour; it is used in `Sandbox_S2_PlayerController`.
 - **Action needed:** make `BirdHealth` implement `IDamageable`, take its HP from the species asset and reduce damage with `GetDamageTaken(...)`. When a bird dies, call `CoinManager.Instance?.AddCoins(species.CoinReward)`. Birds damage the player with `playerHealth.TakeDamage(species.AttackDamage, WeaponRarity.Common)`.
 - **Status:** open

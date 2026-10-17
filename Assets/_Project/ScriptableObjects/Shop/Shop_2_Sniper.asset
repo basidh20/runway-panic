@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Shop_2_Sniper
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.ShopItem
   displayName: Sniper
-  description: Rare. One-shot hawks from long range.
+  description: Rare. One-shot crows from long range.
   icon: {fileID: 0}
   kind: 0
   weapon: {fileID: 11400000, guid: d25ca8ef078f4b846aab4e014a851cc9, type: 2}

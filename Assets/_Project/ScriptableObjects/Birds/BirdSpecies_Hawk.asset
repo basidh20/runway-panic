@@ -15,11 +15,11 @@ MonoBehaviour:
   speciesName: Hawk
   species: 2
   prefab: {fileID: 5803779697159008263, guid: e0999392fc088ea468cf6b3f3086eea7, type: 3}
-  maxHP: 60
+  maxHP: 300
   moveSpeed: 8
-  attackDamage: 12
-  attackRange: 2
+  attackDamage: 20
+  attackRange: 2.5
   attackCooldown: 2
-  coinReward: 15
-  requiredWeaponRarity: 2
+  coinReward: 25
+  requiredWeaponRarity: 3
   wrongWeaponDamageMultiplier: 0.1

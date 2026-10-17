@@ -15,11 +15,11 @@ MonoBehaviour:
   speciesName: Pigeon
   species: 0
   prefab: {fileID: 5046003549994969534, guid: a4a411bfcc8afd74cae661699042457a, type: 3}
-  maxHP: 20
-  moveSpeed: 4
-  attackDamage: 5
+  maxHP: 24
+  moveSpeed: 5
+  attackDamage: 6
   attackRange: 1.5
-  attackCooldown: 1.5
+  attackCooldown: 1.2
   coinReward: 6
-  requiredWeaponRarity: 0
+  requiredWeaponRarity: 1
   wrongWeaponDamageMultiplier: 0.1

@@ -345,7 +345,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5128314992084364907, guid: f36514ed20858954f98336bb12dfe218, type: 3}
       propertyPath: m_Name
-      value: Dummy_Eagle
+      value: Dummy_Gull
       objectReference: {fileID: 0}
     - target: {fileID: 5985610706459295267, guid: f36514ed20858954f98336bb12dfe218, type: 3}
       propertyPath: species
