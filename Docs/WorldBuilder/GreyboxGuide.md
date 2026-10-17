@@ -2,7 +2,11 @@
 
 Scene: `Assets/_Project/Scenes/Main.unity`  
 Unity: `6000.6.4f1`  
-Current working branch: `worldBuilfer`
+Current integration workflow: task-specific feature branches → `develop` → `main` for release.
+
+## Current Main scene status
+
+The first gameplay integration is documented in `PlayerIntegration.md`: Main now uses S2's connected gameplay player and GameManager prefabs, and `GreyboxPreview_TEMPORARY` is retained but disabled. The greybox geometry below remains the scale/layout reference. Historical cube-stage reports and first-person checks are not final gameplay acceptance.
 
 ## What is built
 
@@ -19,7 +23,9 @@ Current working branch: `worldBuilfer`
 
 The greybox is made of ordinary saved Unity objects and reusable prefabs. It is not generated on every Play. You can edit positions and sizes directly in the Inspector.
 
-## Explore it
+## Explore the original preview (historical controls)
+
+Main now starts with the third-person gameplay player. For its controls and checks see `PlayerIntegration.md`. The instructions below describe the old preview only; never enable it alongside the gameplay player.
 
 1. Open Main from the Project panel and press Play.
 2. Click the Game view to give it keyboard focus.
@@ -29,7 +35,7 @@ The greybox is made of ordinary saved Unity objects and reusable prefabs. It is 
 6. Press Escape to release the cursor; click below the on-screen panel to capture it again.
 7. Stop Play before making permanent scene changes.
 
-The temporary controller starts in overview mode. It is for scale and collision checks, not the finished player system. Once S2 delivers their actual player/camera prefab, disable the GreyboxPreview_TEMPORARY root and place their prefab at PlayerStart. Keep only the intended gameplay camera/audio listener active.
+The temporary controller starts in overview mode and remains available only as a historical scale/collision reference. It is now disabled in favour of S2's gameplay player/camera. Keep only the intended gameplay camera/audio listener active.
 
 ## Validate after layout edits
 
@@ -58,14 +64,10 @@ Use Tools > Runway Panic > Validate Aircraft Greyboxes after plane edits. `Aircr
 
 ## Next milestones
 
-NavMesh/grid generation, bird AI, interaction scripts, final models/textures, and baked lighting have not been implemented in this greybox step. Initial NavMesh baking is the next environment milestone.
+The merged shared foundation now includes a 3D FlightGrid/A*, bird movement/animation and Hawk/Crow AI. These still need deliberate Main-scene integration; do not rebuild them from the older NavMesh-sampling proposal. After player integration, the environment milestones are doors/checkpoints, shop/pickups, flight navigation and species markers, movable cover, waves/safe-room integration, then final art and lighting. See `PlayerIntegration.md` and the latest teammate handoffs.
 
 The builder menu creates Main only when it does not already exist; it deliberately refuses to overwrite a saved scene. Use normal scene editing for future work. The teammate's Sandbox_Basidh scene and existing render/input configuration are preserved. Main is added as the first build scene, with the existing sandbox entry retained.
 
 ## Git handoff
 
-Changes remain on `worldBuilfer`. Review the files before committing with a message such as:
-
-`fix(level): ground plane placeholders and align extended runway markings`
-
-Include the assets and their .meta files. Do not add Library, Logs, or generated builds. No commit or push is performed automatically for this milestone.
+The initial greybox is already merged into `develop`. The first gameplay integration uses `feature/world-player-integration`; subsequent tasks should have their own focused commits/branches. PRs target `develop`, not directly `main`. Include asset `.meta` partners; exclude Library, Logs and builds. No commit or push is performed automatically.
