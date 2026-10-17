@@ -25,6 +25,8 @@ namespace RunwayPanic.Agents.Crow
         /// <summary>Perches at a shelter exit while the player hides inside.</summary>
         Vigil = 8,
         /// <summary>Dead; the brain stops.</summary>
-        Dead = 9
+        Dead = 9,
+        /// <summary>Jinks sideways away from a near-miss, then approaches again from a new angle.</summary>
+        Evade = 10
     }
 }
