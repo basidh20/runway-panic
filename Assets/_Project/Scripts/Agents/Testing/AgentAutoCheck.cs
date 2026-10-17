@@ -86,10 +86,21 @@ namespace RunwayPanic.Agents.Testing
             var birds = new List<BirdMotor>();
             foreach (Transform bird in rig.Birds)
             {
-                var agent = bird != null ? bird.GetComponent<BirdMotor>() : null;
-                birds.Add(agent);
-                if (agent != null)
-                    flight.Add(new FlightStats { Bird = agent, LastPosition = agent.transform.position, LastYaw = agent.transform.eulerAngles.y });
+                var motor = bird != null ? bird.GetComponent<BirdMotor>() : null;
+                if (motor == null)
+                    continue;
+                birds.Add(motor);
+                flight.Add(new FlightStats { Bird = motor, LastPosition = motor.transform.position, LastYaw = motor.transform.eulerAngles.y });
+            }
+
+            if (birds.Count < rig.Birds.Count)
+            {
+                Debug.LogWarning("[Agents] Automated check: the sandbox birds have no BirdMotor. Run Tools > Agents > " +
+                                 "Setup Bird Prefabs, then Create Agent Sandbox > Rebuild, then run the check again.");
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#endif
+                yield break;
             }
 
             // 1. Flight: overview, then each bird from behind, while the stats are sampled every frame.

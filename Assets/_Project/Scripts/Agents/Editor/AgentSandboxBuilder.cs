@@ -11,7 +11,7 @@ namespace RunwayPanic.Agents.EditorTools
     /// Tools > Agents > Create Agent Sandbox: builds Scenes/Sandbox/Sandbox_Chamika.unity, the Agent Controller's test
     /// scene: an 80 m ground, a light, a 1.8 m player-sized capsule for scale, one bird of each species flying a
     /// TestPathFeeder route, a camera that can chase any bird (keys 1-4, 0 = overview) and a disabled StressTest object.
-    /// If the scene already exists it is only opened, never overwritten (delete it to rebuild).
+    /// If the scene already exists it asks whether to rebuild it (saved over the same file, so its GUID stays) or open it.
     /// Run Build Bird Animations and Setup Bird Prefabs first.
     /// </summary>
     public static class AgentSandboxBuilder
@@ -26,10 +26,11 @@ namespace RunwayPanic.Agents.EditorTools
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 return;
 
-            if (File.Exists(ScenePath))
+            if (File.Exists(ScenePath) && !EditorUtility.DisplayDialog("Agent Sandbox",
+                    "Sandbox_Chamika already exists. Rebuild it from scratch (anything added to it by hand is lost)?",
+                    "Rebuild", "Just open it"))
             {
                 EditorSceneManager.OpenScene(ScenePath);
-                Debug.Log($"[Agents] {ScenePath} already exists - opened it. Delete it first to rebuild.");
                 return;
             }
 
@@ -90,6 +91,8 @@ namespace RunwayPanic.Agents.EditorTools
                 Debug.LogWarning("[Agents] Sandbox_Chamika not found - run Tools > Agents > Create Agent Sandbox first.");
                 return;
             }
+            if (LoadPrefabs() == null)
+                return; // the warning says to run Setup Bird Prefabs (then Create Agent Sandbox > Rebuild)
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 return;
 
