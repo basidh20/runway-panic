@@ -23,7 +23,7 @@ Template:
 | F3 `BirdHealth`, `BirdContactAttack` | `Scripts/Agents/Shared/` | Agent Controller | ✅ merged (PR #23) |
 | F4 Real `BirdMotor` + Animator-based bird animator | `Scripts/Agents/Movement/` | Agent Controller (GV graded) | ✅ merged (PR #23) — landing bug open (below) |
 | F5 Shared components on the bird prefabs | `Prefabs/Birds/` | Core Developer (Basidh) | ✅ merged (PR #19) |
-| Species brains | `Scripts/Agents/<Species>/` | one owner per species | Hawk H1–H4 merged (PR #25); soaring retune + H5 withdrawal on `feature/is-hawk`; others open |
+| Species brains | `Scripts/Agents/<Species>/` | one owner per species | Hawk merged (PR #25–#27); Crow C1–C7 merged (PR #28); Gull, Pigeon open |
 
 Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → Crow → Hawk (wave 4, toughest)**.
 
@@ -57,6 +57,7 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
   - Cause (reading the code): near the point the target speed is `min(cornering speed, √(2·a·d))`, but the heading may only turn `maxTurnRate`. When the point is beside the bird, the turn radius `v / ω` stays larger than the distance, so it orbits at ~3–4 m and never gets within `landSnapDistance` (0.3 m). The orbit is stable: braking lowers `v`, but `√(2·a·d)` keeps it just high enough.
   - It will hit every brain that lands: pigeon roosts, crow stashes, gull debris — and any bird whose approach isn't head-on.
 - **Action needed:** Agent Controller — e.g. in `Land`/`Hold` mode, within a few metres, let the bird slow to a hover and move straight to the point regardless of turn rate (a flutter-in), or cap speed so `v / maxTurnRate < distance`. Species owners: until then, give your `LandAt` calls a timeout. The hawk no longer lands at all (it soars over its vantage point instead), so it is not blocked.
+  - Crow (17 Oct, `fix/is-crow-vigil-landing`): vigil crows that haven't landed after `CrowStrategyConfig.vigilLandTimeout` (3 s) call `Motor.Stop()` the next time their circle passes within 1.5 m of the exit, and hover there. `HoldPosition` is not a workaround — it steers the same way. Remove the timeout once `LandAt` is fixed.
 - **Status:** open
 
 ## 2026-10-17 — to: World Builder — crow markers and shelter zones for `Main`
@@ -81,8 +82,8 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
 - **Details:**
   - String-pulling only checked walls, so in open air it straightened every detour A\* made around cost modifiers (crow danger, hawk fear) back through the costly area.
   - New overload `PathSmoother.Smooth(path, radius, mask, costModifiers, sampleSpacing)`: a shortcut is taken only if it is clear **and** its extra cost is ≤ the part of the path it replaces. With no modifiers it behaves exactly like before. `GridPathProvider` now calls it.
-- **Action needed:** Basidh — please review that commit in the crow PR into `develop` (it touches your files).
-- **Status:** open
+- **Action needed:** none — merged into `develop` with the crow (PR #28).
+- **Status:** done
 
 ## 2026-10-17 — to: species owners + Agent Controller — the bird prefabs now carry the shared AI components (F5)
 - **What:** `Prefabs/Birds/P_Bird_Base` (inherited by `P_Bird_Gull`, `_Pigeon`, `_Crow`) and `P_Bird_Hawk` (own prefab, set up separately). Re-runnable tool: `Tools > S3 > Add Bird AI Components`.

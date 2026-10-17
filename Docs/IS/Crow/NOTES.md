@@ -110,6 +110,8 @@ and the path is re-planned every `repathInterval` = 0.75 s.
   can't follow the player inside. Instead, once the player has been inside ≥ 1 s, each crow ranks itself by distance
   to the shelter among living crows; the nearest 3 take the shelter's `ShelterExit` markers round-robin, land and face
   the door. When the player walks out: 3 s burst of rage. No central coordinator — each crow decides independently.
+  A crow that hasn't landed within `vigilLandTimeout` (3 s) stops and hovers within 1.5 m of its exit instead —
+  a workaround for the shared motor's landing bug (`BirdMotor.LandAt` can circle its point; see IS handoff).
 
 ## 7. Evidence (fill in from playtests)
 
