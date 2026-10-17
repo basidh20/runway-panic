@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 5939047669128168132}
   - component: {fileID: 5525474487698592687}
   - component: {fileID: 4114557338294029405}
+  - component: {fileID: 3977696598478603792}
   m_Layer: 0
   m_Name: P_Bird_Hawk
   m_TagString: Untagged
@@ -160,8 +161,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Hawk.HawkBrain
   config: {fileID: 11400000, guid: 74f7e165f6cbae645a4701fb45b71737, type: 2}
+  perchPivotHeight: 0.24
+  eyeHeight: 0.3
+  perchTurnSpeed: 120
   skeletonPhaseDuration: 2
   logTransitions: 1
+--- !u!114 &3977696598478603792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5803779697159008263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 757e13abb67863641a574e842ba42cf4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Hawk.PlayerWeaknessModel
+  logWindows: 1
 --- !u!1001 &9188167793776847282
 PrefabInstance:
   m_ObjectHideFlags: 0

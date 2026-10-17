@@ -15,9 +15,10 @@ namespace RunwayPanic.Agents.Hawk
     /// <para>The FSM decides <i>what</i> the hawk does; utility AI (<see cref="PerchSelector"/>) decides <i>which perch</i>.
     /// SelectPerch picks the best-scoring perch, FlyToPerch flies there along an A* path (re-scoring every
     /// <c>perchReevaluateInterval</c>, switching only for a clearly better perch) and lands facing the player, Perched
-    /// re-scores too and relocates when the player hides.</para>
-    /// <para>Not built yet: Perched leaves after <c>maxPerchTime</c> (the aggression meter comes in H3); ApproachStoop
-    /// to Recover, Herd and Withdraw still just wait <c>skeletonPhaseDuration</c> and move on (H4–H6).</para>
+    /// re-scores too and relocates when the player hides, turns to keep facing the player, and attacks when the
+    /// <see cref="PlayerWeaknessModel"/>'s meter is full while a weakness window is open (or after <c>maxPerchTime</c>).</para>
+    /// <para>Not built yet: ApproachStoop to Recover, Herd and Withdraw still just wait <c>skeletonPhaseDuration</c> and
+    /// move on (H4–H6).</para>
     /// </summary>
     public sealed class HawkBrain : BirdBrain
     {
@@ -30,12 +31,18 @@ namespace RunwayPanic.Agents.Hawk
         // Perches taken by a hawk (chosen or sat on), so two hawks never pick the same one.
         private static readonly List<BirdPoint> ClaimedPerches = new List<BirdPoint>(8);
 
+        // "Hunt/Perched  meter 60 [Reloading]" labels, built once per (meter step, window) on first use: no per-frame allocation.
+        private const int MeterLabelSteps = 10;
+        private static readonly string[,] PerchedLabels = new string[MeterLabelSteps + 1, (int)WeaknessWindow.Busy + 2];
+
         [Tooltip("The hawk's strategy numbers (ScriptableObjects/Birds/Strategy/HawkStrategyConfig).")]
         [SerializeField] private HawkStrategyConfig config;
         [Tooltip("Height of the hawk's pivot above the perch surface when it sits there, in metres (feet to centre of mass).")]
         [SerializeField, Min(0f)] private float perchPivotHeight = 0.24f;
         [Tooltip("Height above the perch surface the line-of-sight check starts from (the hawk's eyes), in metres.")]
         [SerializeField, Min(0f)] private float eyeHeight = 0.3f;
+        [Tooltip("How fast the perched hawk turns (yaw only) to keep facing the player, in degrees per second.")]
+        [SerializeField, Min(0f)] private float perchTurnSpeed = 120f;
         [Tooltip("Skeleton phases only (ApproachStoop to Recover, Herd, Withdraw): seconds before moving on. Replaced by real behaviour in H4–H6.")]
         [SerializeField, Min(0.1f)] private float skeletonPhaseDuration = 2f;
         [Tooltip("Write every mode/phase change and perch choice to the Console / Editor.log (prefix [HawkFSM]).")]
@@ -44,6 +51,7 @@ namespace RunwayPanic.Agents.Hawk
         private readonly List<BirdPoint> perches = new List<BirdPoint>(16);
         private readonly List<PerchScore> scores = new List<PerchScore>(16);
         private readonly PerchMemory memory = new PerchMemory();
+        private PlayerWeaknessModel weakness;
 
         private HawkMode mode = HawkMode.Hunt;
         private HuntPhase phase = HuntPhase.SelectPerch;
@@ -59,12 +67,23 @@ namespace RunwayPanic.Agents.Hawk
         private bool needsPath;
         private bool landing;
         private bool warnedNoPerches;
+        private Vector3 perchFacing;
 
         private Light sun;
         private bool sunSearched;
 
         /// <inheritdoc />
-        public override string CurrentStateName => mode == HawkMode.Hunt ? HuntPhaseNames[(int)phase] : ModeNames[(int)mode];
+        public override string CurrentStateName
+        {
+            get
+            {
+                if (mode != HawkMode.Hunt)
+                    return ModeNames[(int)mode];
+                if (phase == HuntPhase.Perched && weakness != null && config != null)
+                    return PerchedLabel(weakness.Meter / config.MeterMax, weakness.StrongestOpenWindow);
+                return HuntPhaseNames[(int)phase];
+            }
+        }
 
         /// <summary>The strategy numbers in use.</summary>
         public HawkStrategyConfig Config => config;
@@ -90,6 +109,9 @@ namespace RunwayPanic.Agents.Hawk
         /// <summary>This hawk's memory of perches where it was shot.</summary>
         public PerchMemory Memory => memory;
 
+        /// <summary>This hawk's model of the player (weakness windows, aggression meter, learned weights).</summary>
+        public PlayerWeaknessModel Weakness => weakness;
+
         protected override void Awake()
         {
             base.Awake();
@@ -97,6 +119,13 @@ namespace RunwayPanic.Agents.Hawk
             if (config == null)
             {
                 Debug.LogError($"{nameof(HawkBrain)} on '{name}' has no {nameof(HawkStrategyConfig)} assigned.", this);
+                enabled = false;
+            }
+
+            weakness = GetComponent<PlayerWeaknessModel>();
+            if (weakness == null)
+            {
+                Debug.LogError($"{nameof(HawkBrain)} on '{name}' needs a {nameof(PlayerWeaknessModel)} on the same object.", this);
                 enabled = false;
             }
 
@@ -241,12 +270,20 @@ namespace RunwayPanic.Agents.Hawk
 
         private void UpdatePerched()
         {
-            // H3 replaces this with the aggression meter; maxPerchTime stays as the "never passive" fallback.
-            if (phaseTime >= config.MaxPerchTime)
+            // Attack when the meter is full AND the player is weak right now; or after maxPerchTime anyway (never passive).
+            bool ready = weakness.IsMeterFull && weakness.AnyWindowOpen;
+            if (ready || phaseTime >= config.MaxPerchTime)
             {
+                if (ready)
+                    Log($"{LogPrefix} {name} attack: meter full, window {weakness.StrongestOpenWindow} open, after {phaseTime:0.0}s perched");
+                else
+                    Log($"{LogPrefix} {name} attack: max perch time {config.MaxPerchTime:0}s (meter {weakness.Meter:0})");
+                weakness.ConsumeMeter();
                 ChangePhase(HuntPhase.ApproachStoop);
                 return;
             }
+
+            FacePlayer();
 
             if (Time.time < nextReevaluateTime)
                 return;
@@ -401,6 +438,7 @@ namespace RunwayPanic.Agents.Hawk
                     break;
                 case HuntPhase.Perched:
                     unreachablePerch = null;
+                    perchFacing = currentPerch != null ? FacingPlayer(LandPoint(currentPerch)) : transform.forward;
                     commitUntil = Time.time + config.PerchCommitTime;
                     nextReevaluateTime = Time.time + config.PerchReevaluateInterval;
                     Anim.SetFlying(false);
@@ -440,6 +478,8 @@ namespace RunwayPanic.Agents.Hawk
         protected override void OnBirdDied()
         {
             ChangeMode(HawkMode.Dead);
+            if (weakness != null)
+                weakness.enabled = false;
             base.OnBirdDied();
         }
 
@@ -455,6 +495,23 @@ namespace RunwayPanic.Agents.Hawk
             Vector3 toPlayer = Hub.PlayerPosition - from;
             toPlayer.y = 0f;
             return toPlayer.sqrMagnitude > 0.0001f ? toPlayer : transform.forward;
+        }
+
+        // While perched: turn (yaw only) toward the player at perchTurnSpeed. Goes through the motor (LandAt on the same
+        // spot with a new facing), only on frames where the facing actually changes.
+        private void FacePlayer()
+        {
+            if (currentPerch == null)
+                return;
+
+            Vector3 landPoint = LandPoint(currentPerch);
+            Vector3 target = FacingPlayer(landPoint);
+            Vector3 turned = Vector3.RotateTowards(perchFacing, target, perchTurnSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f);
+            if (turned == perchFacing)
+                return;
+
+            perchFacing = turned;
+            Motor.LandAt(landPoint, perchFacing);
         }
 
         private void SetPerch(PerchScore score)
@@ -526,6 +583,19 @@ namespace RunwayPanic.Agents.Hawk
         {
             if (logTransitions)
                 Debug.Log(message, this);
+        }
+
+        private static string PerchedLabel(float meterFraction, WeaknessWindow? window)
+        {
+            int step = Mathf.Clamp(Mathf.FloorToInt(meterFraction * MeterLabelSteps), 0, MeterLabelSteps);
+            int column = window.HasValue ? (int)window.Value + 1 : 0;
+            string label = PerchedLabels[step, column];
+            if (label == null)
+            {
+                label = $"Hunt/Perched  meter {step * 100 / MeterLabelSteps}" + (window.HasValue ? $" [{window.Value}]" : "");
+                PerchedLabels[step, column] = label;
+            }
+            return label;
         }
 
         private static string[] BuildHuntPhaseNames()

@@ -73,6 +73,10 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0f)] private float shieldWindowDuration = 2f;
         [Tooltip("Longest the hawk stays perched before it attacks anyway, in seconds (so it is never passive).")]
         [SerializeField, Min(1f)] private float maxPerchTime = 15f;
+        [Tooltip("The player counts as busy while their last shot is younger than this, in seconds (Herd mode only).")]
+        [SerializeField, Min(0f)] private float busyShotWindow = 2f;
+        [Tooltip("Seconds between checks of whether any barricade is being pushed.")]
+        [SerializeField, Min(0.02f)] private float barricadePollInterval = 0.2f;
 
         [Header("Learning (opponent model)")]
         [Tooltip("How strongly a window type that opens often gets a higher weight.")]
@@ -185,6 +189,10 @@ namespace RunwayPanic.Agents.Hawk
         public float ShieldWindowDuration => shieldWindowDuration;
         /// <summary>Longest time on a perch before attacking anyway, in seconds.</summary>
         public float MaxPerchTime => maxPerchTime;
+        /// <summary>Age of the last shot under which the player counts as busy, in seconds.</summary>
+        public float BusyShotWindow => busyShotWindow;
+        /// <summary>Seconds between barricade push checks.</summary>
+        public float BarricadePollInterval => barricadePollInterval;
 
         /// <summary>Learning rate of the window weights.</summary>
         public float LearnRate => learnRate;
