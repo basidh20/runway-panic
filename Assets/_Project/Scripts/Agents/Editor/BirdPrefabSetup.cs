@@ -8,8 +8,8 @@ namespace RunwayPanic.Agents.EditorTools
     /// bird AI plan: swap the F2 stand-ins for the real components).
     /// 1. Creates the motion profiles in ScriptableObjects/Agents/ if they are missing (existing ones are kept, so
     ///    values tuned in the Inspector survive).
-    /// 2. P_Bird_Base and P_Bird_Hawk (the two prefabs with a model): replaces the stand-in SimpleBirdMotor with
-    ///    BirdMotor, adds BirdAnimatorDriver, makes sure the kinematic interpolated Rigidbody, BirdHealth and
+    /// 2. P_Bird_Base and P_Bird_Hawk (the two prefabs with a model): replaces the stand-ins SimpleBirdMotor and
+    ///    BlendShapeBirdAnimator with BirdMotor and BirdAnimatorDriver, makes sure the kinematic interpolated Rigidbody, BirdHealth and
     ///    BirdContactAttack are there, and puts AC_Bird / AOC_Bird_Hawk on the model child's Animator with root motion
     ///    off and transform culling.
     /// 3. Gives each species its motion profile (Pigeon and Crow on their variants, Hawk on its prefab).
@@ -101,6 +101,8 @@ namespace RunwayPanic.Agents.EditorTools
                 Ensure<BirdHealth>(root);
                 Ensure<BirdContactAttack>(root);
 
+                // F4: the Animator-based IBirdAnimator replaces the blend-shape stand-in on the model child.
+                RemoveIfPresent<BlendShapeBirdAnimator>(root);
                 BirdAnimatorDriver driver = Ensure<BirdAnimatorDriver>(root);
                 Animator animator = root.GetComponentInChildren<Animator>(true);
                 if (animator == null)

@@ -77,6 +77,11 @@ namespace RunwayPanic.Agents.EditorTools
         const float DiveHeadDown = 15f;
         const float DiveLegTuck = 80f;
 
+        // A_Bird_Perch (loops; IBirdAnimator.SetFlying(false) and landed birds): wings folded, legs down, slow head bob
+        const float PerchSeconds = 2f;
+        const float PerchHeadBob = 4f;
+        const float PerchTailBob = 2f;
+
         // A_Bird_Hit (Reactions layer, plays once)
         const float HitSeconds = 0.3f;
         const float HitBodyJolt = -20f;        // nose snaps up
@@ -192,7 +197,7 @@ namespace RunwayPanic.Agents.EditorTools
 
         // ---------- Clip definitions ----------
 
-        static List<ClipSpec> DefineClips() => new List<ClipSpec> { Fly(), Glide(), Dive(), Hit(), Death() };
+        static List<ClipSpec> DefineClips() => new List<ClipSpec> { Fly(), Glide(), Dive(), Perch(), Hit(), Death() };
 
         static ClipSpec Fly() => Cycle("Fly", Channels.Locomotion, phase =>
         {
@@ -238,6 +243,16 @@ namespace RunwayPanic.Agents.EditorTools
             return Keys("Dive", false, Channels.Locomotion | Channels.TailSpread, (0f, pose), (CycleSeconds, pose));
         }
 
+        // The model's rest pose is a standing bird with closed wings, so perching is mostly "no offset": legs down,
+        // wings and tail closed, and a slow head bob so a perched bird still looks alive.
+        static ClipSpec Perch() => Cycle("Perch", Channels.Locomotion | Channels.TailSpread, phase => new Pose
+        {
+            WingsSpread = 0f,
+            TailSpread = 0f,
+            HeadPitch = PerchHeadBob * Mathf.Sin(phase * 2f * Mathf.PI),
+            TailPitch = PerchTailBob * Mathf.Sin(phase * 2f * Mathf.PI + 1f)
+        }, PerchSeconds);
+
         // Only Body, Head and Wings: on the override Reactions layer every other bone keeps flying underneath.
         static ClipSpec Hit() => Keys("Hit", false, Channels.Body | Channels.Head | Channels.Wings,
             (0f, new Pose { WingRaise = GlideDihedral }),
@@ -256,14 +271,14 @@ namespace RunwayPanic.Agents.EditorTools
             }));
 
         /// <summary>A looping clip sampled CycleKeys times from a pose function of the phase (0-1).</summary>
-        static ClipSpec Cycle(string name, Channels channels, Func<float, Pose> poseAtPhase)
+        static ClipSpec Cycle(string name, Channels channels, Func<float, Pose> poseAtPhase, float seconds = CycleSeconds)
         {
             var times = new float[CycleKeys + 1];
             var poses = new Pose[CycleKeys + 1];
             for (int i = 0; i <= CycleKeys; i++)
             {
                 float phase = (float)i / CycleKeys;
-                times[i] = phase * CycleSeconds;
+                times[i] = phase * seconds;
                 poses[i] = poseAtPhase(i == CycleKeys ? 0f : phase); // the last key repeats the first: seamless loop
             }
             return new ClipSpec { Name = name, Loop = true, Channels = channels, Times = times, Poses = poses };
@@ -507,16 +522,20 @@ namespace RunwayPanic.Agents.EditorTools
             controller.AddParameter(BirdAnimatorDriver.VerticalSpeedParameter, AnimatorControllerParameterType.Float);
             controller.AddParameter(BirdAnimatorDriver.FlapSpeedParameter, AnimatorControllerParameterType.Float);
             controller.AddParameter(BirdAnimatorDriver.CycleOffsetParameter, AnimatorControllerParameterType.Float);
+            controller.AddParameter(BirdAnimatorDriver.FlyingParameter, AnimatorControllerParameterType.Bool);
+            controller.AddParameter(BirdAnimatorDriver.DivingParameter, AnimatorControllerParameterType.Bool);
             controller.AddParameter(BirdAnimatorDriver.AttackTrigger, AnimatorControllerParameterType.Trigger);
             controller.AddParameter(BirdAnimatorDriver.HitTrigger, AnimatorControllerParameterType.Trigger);
             controller.AddParameter(BirdAnimatorDriver.DeathTrigger, AnimatorControllerParameterType.Trigger);
 
-            // FlapSpeed defaults to 1 so the controller also plays correctly without the driver (e.g. in a preview).
+            // FlapSpeed 1 and Flying true by default, so the controller also plays correctly without the driver.
             AnimatorControllerParameter[] parameters = controller.parameters;
             foreach (AnimatorControllerParameter parameter in parameters)
             {
                 if (parameter.name == BirdAnimatorDriver.FlapSpeedParameter)
                     parameter.defaultFloat = 1f;
+                if (parameter.name == BirdAnimatorDriver.FlyingParameter)
+                    parameter.defaultBool = true;
             }
             controller.parameters = parameters;
 
@@ -551,8 +570,9 @@ namespace RunwayPanic.Agents.EditorTools
         }
 
         /// <summary>
-        /// Base layer: Locomotion (2D blend tree) is the default state; Attack plays the dive and returns; Death is
-        /// reachable from any state and never exits.
+        /// Base layer: Locomotion (2D blend tree) is the default state. Perched while Flying is false, Diving (the dive
+        /// pose, held) while Diving is true, Attack plays the dive once and returns. Death is reachable from any state
+        /// and never exits.
         /// </summary>
         static void BuildBaseLayer(AnimatorController controller, Dictionary<string, AnimationClip> clips)
         {
@@ -585,6 +605,32 @@ namespace RunwayPanic.Agents.EditorTools
 
             AnimatorState death = machine.AddState("Death", new Vector3(520f, -20f, 0f));
             death.motion = clips["Death"];
+
+            AnimatorState perched = machine.AddState("Perched", new Vector3(520f, 260f, 0f));
+            perched.motion = clips["Perch"];
+
+            AnimatorState diving = machine.AddState("Diving", new Vector3(520f, 400f, 0f));
+            diving.motion = clips["Dive"];
+
+            AnimatorStateTransition toPerched = locomotion.AddTransition(perched);
+            toPerched.hasExitTime = false;
+            toPerched.duration = 0.25f;
+            toPerched.AddCondition(AnimatorConditionMode.IfNot, 0f, BirdAnimatorDriver.FlyingParameter);
+
+            AnimatorStateTransition fromPerched = perched.AddTransition(locomotion);
+            fromPerched.hasExitTime = false;
+            fromPerched.duration = 0.2f;
+            fromPerched.AddCondition(AnimatorConditionMode.If, 0f, BirdAnimatorDriver.FlyingParameter);
+
+            AnimatorStateTransition toDiving = locomotion.AddTransition(diving);
+            toDiving.hasExitTime = false;
+            toDiving.duration = 0.15f;
+            toDiving.AddCondition(AnimatorConditionMode.If, 0f, BirdAnimatorDriver.DivingParameter);
+
+            AnimatorStateTransition fromDiving = diving.AddTransition(locomotion);
+            fromDiving.hasExitTime = false;
+            fromDiving.duration = 0.25f;
+            fromDiving.AddCondition(AnimatorConditionMode.IfNot, 0f, BirdAnimatorDriver.DivingParameter);
 
             AnimatorStateTransition toAttack = locomotion.AddTransition(attack);
             toAttack.hasExitTime = false;
