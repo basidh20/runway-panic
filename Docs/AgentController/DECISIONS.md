@@ -14,6 +14,8 @@ Template:
 
 All measurements: Editor Play mode, Game view 1101×471, Intel Core i5-1135G7 with **Intel Iris Xe integrated graphics** (Direct3D 11). They are not comparable with the Core Developer's numbers in `SourceArt/perf_report.md`, which come from an RTX 3050.
 
+Names: on 17 Oct afternoon the work was plugged into the IS team's shared bird AI (last entries). `BirdPathFollower` became `BirdMotor` (`IBirdMotor`), `BirdAgent` was removed and `BirdAttack` became `BirdContactAttack`; earlier entries keep the old names.
+
 ---
 
 ## 2026-10-17 — Path smoothing: centripetal Catmull-Rom with an arc-length table
@@ -126,3 +128,55 @@ All measurements: Editor Play mode, Game view 1101×471, Intel Core i5-1135G7 wi
 - **Choice:** `TestPathFeeder` sends a bird a grid path exactly like A* would: one point per 2 m cell, right-angle corners, a closed route re-planned every 5 s onto a slightly different one. `AgentAutoCheck` (`Tools > Agents > Run Automated Check`) then plays the sandbox unattended: screenshots of every bird, the flinch and the death fall, the flight measurements and the stress runs. Play stops by itself.
 - **Why:** The same test runs identically every time. Its numbers caught a real bug: on a closed route the last waypoint is the start, and arrival only checked the distance to the last waypoint, so every bird "arrived" on its first physics step. They hovered in place, and their feeders re-sent the path on every step (25.7 ms of main-thread work for 40 birds). The screenshots looked plausible, because a hovering bird flaps. Fixed: arrival now also requires the bird to be at the end of the path *along the curve* (commit `fix(agents): complete a path only at its end along the curve`).
 - **Numbers:** before the fix, the flight check showed 0° bank and 0 °/s turn for every bird. After it, banks of 29.9–35.0° and turn rates at their limits (entries above).
+
+## 2026-10-17 — Plugging into the IS team's shared bird AI (F3 / F4)
+- **Context:** While this work was on its feature branch, the IS owner merged a shared framework into `develop`. Species brains (`BirdBrain`) move a bird only through `IBirdMotor` and animate it only through `IBirdAnimator`. Throwaway stand-ins were on the prefabs: `SimpleBirdMotor` (no banking, no easing) and `BlendShapeBirdAnimator`, plus stub `BirdHealth` / `BirdContactAttack`. The hand-off assigned the real versions to the Agent Controller (F3, F4). Both branches had a `RunwayPanic.Agents.BirdHealth`, so a plain merge would not even compile.
+- **Options considered:**
+  - A) Keep my own API (`BirdAgent`, `SetPath`) and ask four species owners to switch.
+  - B) Write adapters from their interfaces to my classes.
+  - C) Make my classes *be* their implementations.
+- **Choice:** C.
+  - **F3:** `BirdHealth` fills in their stub file (every public member and the serialized `species` field kept; `BirdRegistry` registration and `NotifyDied` added). `BirdContactAttack` replaces my `BirdAttack`.
+  - **F4:** `BirdPathFollower` became `Movement/BirdMotor : IBirdMotor`, moved with its `.meta` so the script GUID stays. `BirdAnimatorDriver` became the Animator-based `IBirdAnimator`. `BirdAgent` was removed: `BirdBrain` is now the one entry point, and species stats live on `BirdHealth`.
+- **Why:**
+  - **Brains change nothing:** the interfaces exist so that F4 replaces the stand-ins without any brain code changing. Option A would make four people rewrite their brains two days before the deadline, and B adds a layer that does nothing.
+  - **The graded work is untouched:** smoothing, steering, banking and the clips stay as they were; only the entry points were renamed. The merge keeps `develop`'s prefabs, and my Setup tool re-applies the swap, so no prefab YAML was merged by hand.
+- **Numbers:** after the integration, `flight_check.md` is unchanged: banks 30.0 / 35.0 / 35.0 / 34.9°, turn rates at their limits, largest frame move 1.00. The whole project (74 runtime, 20 editor scripts) was compile-checked against Unity's assemblies before every commit.
+
+## 2026-10-17 — What the IBirdMotor orders mean in BirdMotor
+- **Context:** The interface names orders like `FlyTo`, `HoldPosition`, `LandAt` and `AddSteering`. `SimpleBirdMotor` did them by snapping velocity toward the target. They have to keep the same flight quality as path following.
+- **Choice:** One steering core for every order. Turn the velocity toward an aim point at `MaxTurnRate`, pick a speed with v² = 2·a·d braking and the sharp-turn slowdown, and bank from the turn rate.
+  - **Path:** the aim point is the look-ahead point on the spline.
+  - **`FlyTo`, `HoldPosition`, `LandAt`:** the aim point is the target itself.
+  - **`HoldPosition` close to its point:** the bird stops turning and hovers instead of circling.
+  - **`LandAt` within 0.3 m:** the bird settles on the point, facing the given direction, with `IsLanded` true.
+  - **`AddSteering`:** added to the movement for one step only, while the rotation keeps following the flight direction, so boids or fear nudges never make the bird twitch.
+  - **`SpeedMultiplier` > 1:** also multiplies acceleration and braking, so a 2.5× stoop reaches its speed.
+  - **Repeated orders:** the same order with the same point every frame keeps its state (`ReachedDestination` is not reset).
+- **Why:** A brain can switch freely between paths and direct flight, and the bird still never snaps, flips or slides.
+
+## 2026-10-17 — What the IBirdAnimator calls mean in BirdAnimatorDriver
+- **Context:** The interface has `SetFlying`, `SetDiving`, `SetWingsSpread`, `PlayHit` and `PlayDeath`; AC_Bird only knew flying.
+- **Choice:**
+  - **`SetFlying(false)`** → a new `Perched` state with a generated `A_Bird_Perch` clip: the rest pose with wings and tail closed, legs down, and a slow head bob.
+  - **`SetDiving`** → a held `Diving` state (the dive pose).
+  - **`SetWingsSpread`** → scales the animated `Wings_Spread` in `LateUpdate`, after the Animator has written it.
+  - **Robustness:** a bird that lands with `LandAt` perches by itself, and one that flies off again flies even if its brain forgot `SetFlying(true)`.
+  - **Cheap writes:** the `Flying` and `Diving` bools are written only when they change.
+- **Why:** The brain gets every pose it asks for without knowing about Animator parameters. `SetWingsSpread` multiplies instead of overriding, so wings keep flapping when a brain half-closes them, and the default amount of 1 costs nothing.
+- **Numbers:** `animation_report.md`: 12 clips, **2,064 keys → 1,015 (51% removed)**, 342 KB editor memory.
+
+## 2026-10-17 — Measured again after the integration
+- **Numbers** (`stress_report.md`, run of 13:48–13:49, same machine and settings as before):
+
+  | 40 birds | Avg FPS | Frame (ms) | Main thread (ms) | GPU (ms) |
+  |---|---:|---:|---:|---:|
+  | Static | 42.7 | 23.4 | 2.8 | 22.9 |
+  | Moving, no animation | 39.0 | 25.7 | 9.9 | 24.4 |
+  | Moving + animated, 4-bone skinning | 41.5 / 44.4 | 24.1 / 22.5 | 9.8 / 8.5 | 23.6 / 22.0 |
+  | Moving + animated, 2-bone skinning | 42.1 / 45.1 | 23.8 / 22.2 | 6.8 / 6.6 | 22.3 / 21.7 |
+
+- **Result:** the same conclusion as the earlier run. The GPU takes 22–24 ms in every mode, so drawing the birds limits the frame, and 2-bone skinning still shows no reliable gain.
+  - The main thread is higher than in the earlier run (6.6–9.9 ms against 2.9–7.1 ms), but still under the GPU time, so it does not lower the frame rate. A likely contributor, not measured separately: every bird now also carries the IS team's `BirdStateLabel` (a camera-facing debug text, on by default in the Editor and off in builds).
+  - Two runs had a one-off low (14.0 and 15.6 FPS), which raises their average frame and main-thread times. Taken together, the runs vary by ±2 FPS from run to run on this laptop.
+

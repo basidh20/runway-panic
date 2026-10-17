@@ -15,3 +15,9 @@ CPU main = main-thread work without its wait for the GPU. GPU = GPU frame time (
 | 2026-10-17 13:19 | 40 | MovingAndAnimated | Bone2 | CullUpdateTransforms | 44.4 | 22.51 | 42.4 | 4.82 | 3.64 | 22.00 | 1101x471 |
 | 2026-10-17 13:19 | 40 | MovingAndAnimated | Auto | CullUpdateTransforms | 44.1 | 22.67 | 41.9 | 5.08 | 3.77 | 22.14 | 1101x471 |
 | 2026-10-17 13:19 | 40 | MovingAndAnimated | Bone2 | CullUpdateTransforms | 44.6 | 22.41 | 33.3 | 6.21 | 3.71 | 21.57 | 1101x471 |
+| 2026-10-17 13:48 | 40 | Static | Auto | CullUpdateTransforms | 42.7 | 23.40 | 41.7 | 2.82 | 3.95 | 22.86 | 1101x471 |
+| 2026-10-17 13:49 | 40 | MovingNoAnimation | Auto | CullUpdateTransforms | 39.0 | 25.66 | 14.0 | 9.86 | 5.29 | 24.37 | 1101x471 |
+| 2026-10-17 13:49 | 40 | MovingAndAnimated | Auto | CullUpdateTransforms | 41.5 | 24.12 | 38.7 | 9.80 | 4.73 | 23.63 | 1101x471 |
+| 2026-10-17 13:49 | 40 | MovingAndAnimated | Bone2 | CullUpdateTransforms | 42.1 | 23.77 | 15.6 | 6.79 | 3.81 | 22.25 | 1101x471 |
+| 2026-10-17 13:49 | 40 | MovingAndAnimated | Auto | CullUpdateTransforms | 44.4 | 22.50 | 42.4 | 8.47 | 4.21 | 22.00 | 1101x471 |
+| 2026-10-17 13:49 | 40 | MovingAndAnimated | Bone2 | CullUpdateTransforms | 45.1 | 22.16 | 43.6 | 6.61 | 3.59 | 21.65 | 1101x471 |
