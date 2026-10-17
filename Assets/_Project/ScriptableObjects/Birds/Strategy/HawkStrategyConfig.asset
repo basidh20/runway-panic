@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 814bec03d60221a43aba1fc18dc504cf, type: 3}
+  m_Name: HawkStrategyConfig
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Hawk.HawkStrategyConfig
+  wHeight: 0.35
+  wLineOfSight: 0.45
+  wDistance: 0.2
+  wSun: 0.15
+  wRecentlyShot: 0.4
+  idealDistance: 25
+  distanceWidth: 10
+  maxHeightBonus: 15
+  perchReevaluateInterval: 2
+  recentlyShotDecayPerSecond: 0.01
+  perchSwitchMargin: 0.15
+  perchCommitTime: 4
+  meterMax: 100
+  reloadBonus: 40
+  switchBonus: 30
+  interactBonus: 35
+  barricadeBonusPerSecond: 20
+  shieldExpiredBonus: 30
+  lookAwayPerSecond: 25
+  lowHpPerSecond: 20
+  playerBusyPerSecond: 15
+  meterDecayPerSecond: 10
+  lookAwayAngle: 100
+  lookAwayMinTime: 1.5
+  lowHpFraction: 0.35
+  switchWindowDuration: 0.8
+  interactWindowDuration: 1.2
+  shieldWindowDuration: 2
+  maxPerchTime: 15
+  learnRate: 0.15
+  maxWindowWeight: 2
+  slowGunFireInterval: 0.75
+  feintChance: 0.6
+  pullUpDistance: 6
+  stoopStartDistance: 25
+  minStoopHeight: 12
+  stoopSpeedMultiplier: 2.5
+  approachSpeedMultiplier: 1.5
+  screamHoverTime: 0.5
+  stoopDamageMultiplier: 1.5
+  recoverClimbHeight: 15
+  withdrawWait: 4
+  withdrawSpeedMultiplier: 1.3
+  withdrawShotMark: 0.6
+  herdMinOtherBirds: 3
+  herdOffset: 10
+  herdOrbitRadius: 7
+  herdHeight: 6
+  fearRadius: 12
+  fearStrength: 1.5
+  herdCheckInterval: 1
+  herdRepathDistance: 5
+  repathInterval: 0.75

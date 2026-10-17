@@ -13,6 +13,21 @@ Template:
 
 ---
 
+## 2026-10-17 (evening) — to: Agent Controller — the hawk now works with your BirdMotor; the 40 m/s² request below is withdrawn
+- **What:** `Prefabs/Birds/P_Bird_Hawk` (merged with your F4 prefab: `BirdMotor` + `BirdAnimatorDriver` + `HawkBrain` + `PlayerWeaknessModel`); `Scripts/Agents/Hawk/HawkBrain.cs`.
+- **Details:**
+  - The hawk was re-tuned to `BirdMotion_Hawk` as it is (turn 90°/s, max pitch 30°, acceleration 5 × `SpeedMultiplier`): stoops are planned at ≤ 28°, aim 8 m past the player (your seek braking would otherwise stop it in front of them), and climb away at 25°.
+  - The hawk **no longer lands** (game-design change 17 Oct: a perched hawk is too easy to shoot). It circles 4 m above its vantage point at a 7 m radius with `FlyTo` on a moving point, which your motor follows smoothly.
+  - `HawkBrain.motorTurnRate` (90) must match `BirdMotion_Hawk.maxTurnRate` — tell me if you change it.
+- **Action needed:** none required. Optional: a steeper `maxPitch` (~55°) in `BirdMotion_Hawk` would allow real near-vertical stoops — tell me and I raise `maxStoopAngle` to match. Landing bug: see `Docs/IS/HANDOFF.md` (17 Oct evening).
+- **Status:** open (optional)
+
+## 2026-10-17 — to: Agent Controller — the hawk needs a motor that can brake 40 m/s² (stoop dives)
+- **What:** `Prefabs/Birds/P_Bird_Hawk` — `HawkBrain`, `PlayerWeaknessModel` on the root (IS hawk, H1–H4); `SimpleBirdMotor.acceleration` raised **12 → 40 m/s²** on this prefab only.
+- **Details:** written for the stand-in `SimpleBirdMotor`, which your F4 `BirdMotor` replaced on this prefab in the same merge (PR #23 + #24). The 40 m/s² value went away with it.
+- **Action needed:** none — superseded by the entry above.
+- **Status:** done (superseded)
+
 ## 2026-10-17 — to: Agent Controller + all — bird prefabs now carry the shared AI components
 - **What:** `Prefabs/Birds/P_Bird_Base` (+ the Gull/Pigeon/Crow variants) and `P_Bird_Hawk`; tool `Tools > S3 > Add Bird AI Components` (`Editor/Art/ArtBirdAIComponents.cs`)
 - **Details:**

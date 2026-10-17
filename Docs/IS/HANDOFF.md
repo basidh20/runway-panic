@@ -20,14 +20,44 @@ Template:
 |---|---|---|---|
 | F1 Pathfinding (3D flight grid + A*) | `Scripts/AI/` | Basidh (Hawk owner) | ✅ merged (PR #18/#19) |
 | F2 Player event hub, registries, `BirdPoint` markers, base brain | `Scripts/Agents/Shared/` | Basidh (Hawk owner) | ✅ merged (PR #18/#19) |
-| F3 `BirdHealth`, `BirdContactAttack` | `Scripts/Agents/Shared/` | Agent Controller | open — stubs in place |
-| F4 Real `BirdMotor` + Animator-based bird animator | `Scripts/Agents/Movement/` | Agent Controller (GV graded) | open — stand-ins in place |
+| F3 `BirdHealth`, `BirdContactAttack` | `Scripts/Agents/Shared/` | Agent Controller | ✅ merged (PR #23) |
+| F4 Real `BirdMotor` + Animator-based bird animator | `Scripts/Agents/Movement/` | Agent Controller (GV graded) | ✅ merged (PR #23) — landing bug open (below) |
 | F5 Shared components on the bird prefabs | `Prefabs/Birds/` | Core Developer (Basidh) | ✅ merged (PR #19) |
-| Species brains | `Scripts/Agents/<Species>/` | one owner per species | open — can start now |
+| Species brains | `Scripts/Agents/<Species>/` | one owner per species | Hawk H1–H4 merged (PR #25); soaring retune + H5 withdrawal on `feature/is-hawk`; others open |
 
 Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → Crow → Hawk (wave 4, toughest)**.
 
 ---
+
+## 2026-10-17 (night) — to: World Builder — hawk vantage markers in `Main`, and remove `GreyboxPreview_TEMPORARY`
+- **What:** `Scenes/Main.unity` (yours — I don't edit it).
+- **Details:**
+  - **Vantage markers:** the hawk circles 4 m above `BirdPoint` markers of type **Perch** and picks one by score (height, view of the player, distance, sun side). Without any in `Main` it never leaves its spawn point. Please add an empty parent `HawkPerches` with 8 children, each an empty GameObject + `BirdPoint` component (defaults: type Perch, radius 1.5), at these world positions (the top surfaces of your greybox, read 17 Oct):
+
+    | Name | Position (x, y, z) | Where |
+    |---|---|---|
+    | `Perch_ControlTower` | (-29.4, 14.6, 24.4) | tower roof, corner facing the runway |
+    | `Perch_TerminalRoof` | (20.0, 6.4, 25.9) | terminal roof, runway-side edge |
+    | `Perch_Hangar_NE` | (-31.9, 6.0, -0.6) | hangar roof, north-east corner |
+    | `Perch_Hangar_SE` | (-31.9, 6.0, -24.8) | hangar roof, south-east corner |
+    | `Perch_PlaneA_Tail` | (-17.6, 3.5, -28.45) | utility aircraft tail fin |
+    | `Perch_PlaneB_Tail` | (36.45, 3.3, -1.0) | light aircraft B tail fin |
+    | `Perch_PlaneD_Tail` | (41.15, 3.3, 23.0) | light aircraft D tail fin |
+    | `Perch_ShelterB_Roof` | (21.0, 4.3, -12.0) | shelter B roof centre |
+
+    If you move a building, move its marker with it (or parent the marker to the building). The same list is in `Scripts/Agents/Hawk/Editor/HawkPerchSetup.cs`; its menu (`Tools > IS > Hawk > Place Sandbox Perches`) refuses to run on `Main` on purpose.
+  - **`GreyboxPreview_TEMPORARY`:** its `CharacterController` blocks the birds' line-of-sight checks (in the hawk sandbox the hawk was blind at spawn until it was disabled), and its camera is a second one tagged `MainCamera`, so anything using `Camera.main` may get the wrong camera. The real player is `P_Player_Gameplay`.
+- **Action needed:** World Builder — add the 8 markers and delete (or at least disable) `GreyboxPreview_TEMPORARY` in `Main`, then tell me so I can test the hawk there.
+- **Status:** open
+
+## 2026-10-17 (evening) — to: Agent Controller + species owners — `BirdMotor.LandAt` can circle its landing point forever
+- **What:** `Scripts/Agents/Movement/BirdMotor.cs` — `LandAt` (and `HoldPosition`) via `SteerToTarget` / `SteerToPoint`.
+- **Details:**
+  - Seen with the hawk (`P_Bird_Hawk`, `BirdMotion_Hawk`: turn 90°/s, acceleration 5): after an attack it was sent `LandAt` the control-tower roof and **circled it from t = 42 s to t = 98 s+** (`Logs/Editor.log`: height swinging 13.8 ↔ 15.9 m every ~2 s, never `IsLanded`). The first landing worked only because the hawk arrived head-on.
+  - Cause (reading the code): near the point the target speed is `min(cornering speed, √(2·a·d))`, but the heading may only turn `maxTurnRate`. When the point is beside the bird, the turn radius `v / ω` stays larger than the distance, so it orbits at ~3–4 m and never gets within `landSnapDistance` (0.3 m). The orbit is stable: braking lowers `v`, but `√(2·a·d)` keeps it just high enough.
+  - It will hit every brain that lands: pigeon roosts, crow stashes, gull debris — and any bird whose approach isn't head-on.
+- **Action needed:** Agent Controller — e.g. in `Land`/`Hold` mode, within a few metres, let the bird slow to a hover and move straight to the point regardless of turn rate (a flutter-in), or cap speed so `v / maxTurnRate < distance`. Species owners: until then, give your `LandAt` calls a timeout. The hawk no longer lands at all (it soars over its vantage point instead), so it is not blocked.
+- **Status:** open
 
 ## 2026-10-17 — to: World Builder — crow markers and shelter zones for `Main`
 - **What:** `BirdPoint` markers and `Scripts/Agents/Crow/ShelterZone.cs`; working example in `Scenes/Sandbox/Sandbox_IS_Crow.unity`
