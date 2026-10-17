@@ -80,6 +80,10 @@ PrefabInstance:
       propertyPath: 'm_BlendShapeWeights.Array.data[1]'
       value: 100
       objectReference: {fileID: 0}
+    - target: {fileID: 8159559861075530720, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+      propertyPath: motionProfile
+      value: 
+      objectReference: {fileID: 11400000, guid: 7f02d7b738396954dab53d2c26035d7d, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
