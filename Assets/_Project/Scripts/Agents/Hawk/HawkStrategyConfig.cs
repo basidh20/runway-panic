@@ -91,6 +91,10 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Range(0f, 1f)] private float feintChance = 0.6f;
         [Tooltip("Distance from the player at which the feint pulls up, in metres.")]
         [SerializeField, Min(0f)] private float pullUpDistance = 6f;
+        [Tooltip("How far the feint climbs when it pulls up, in metres.")]
+        [SerializeField, Min(0f)] private float feintPullUpHeight = 8f;
+        [Tooltip("How far the feint swings back away from the player when it pulls up, in metres.")]
+        [SerializeField, Min(0f)] private float feintPullUpBack = 6f;
 
         [Header("Stoop")]
         [Tooltip("Distance from the player of the stoop start point, towards the sun, in metres.")]
@@ -107,6 +111,20 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0f)] private float stoopDamageMultiplier = 1.5f;
         [Tooltip("Height above the player the hawk climbs to after an attack, in metres.")]
         [SerializeField, Min(0f)] private float recoverClimbHeight = 15f;
+        [Tooltip("The dive aims at where the player will be this many seconds ahead (player velocity × lead time).")]
+        [SerializeField, Min(0f)] private float stoopLeadTime = 0.3f;
+        [Tooltip("If the stoop start is inside geometry, search this far upward for a flyable point, in metres.")]
+        [SerializeField, Min(0f)] private float stoopSnapSearchHeight = 5f;
+        [Tooltip("Step of that upward search, in metres.")]
+        [SerializeField, Min(0.05f)] private float stoopSnapStep = 0.5f;
+        [Tooltip("When a building blocks the dive line from the sun side, try start points turned by this many degrees around the player.")]
+        [SerializeField, Range(0f, 90f)] private float stoopYawStep = 20f;
+        [Tooltip("How many turned start points to try on each side (0 = sun side only).")]
+        [SerializeField, Min(0)] private int stoopYawTries = 3;
+        [Tooltip("Longest the flight to the stoop start may take before the hawk dives from wherever it is, in seconds.")]
+        [SerializeField, Min(0.5f)] private float approachTimeout = 10f;
+        [Tooltip("Longest a dive, feint or recovery climb may take before the hawk moves on, in seconds.")]
+        [SerializeField, Min(0.5f)] private float maxManoeuvreTime = 4f;
 
         [Header("Withdraw")]
         [Tooltip("Seconds the wounded hawk waits on its hidden perch before hunting again.")]
@@ -205,6 +223,10 @@ namespace RunwayPanic.Agents.Hawk
         public float FeintChance => feintChance;
         /// <summary>Distance from the player at which a feint pulls up, in metres.</summary>
         public float PullUpDistance => pullUpDistance;
+        /// <summary>Climb of the feint's pull-up, in metres.</summary>
+        public float FeintPullUpHeight => feintPullUpHeight;
+        /// <summary>Swing back away from the player during the pull-up, in metres.</summary>
+        public float FeintPullUpBack => feintPullUpBack;
 
         /// <summary>Distance of the stoop start point from the player, in metres.</summary>
         public float StoopStartDistance => stoopStartDistance;
@@ -220,6 +242,20 @@ namespace RunwayPanic.Agents.Hawk
         public float StoopDamageMultiplier => stoopDamageMultiplier;
         /// <summary>Climb height above the player after an attack, in metres.</summary>
         public float RecoverClimbHeight => recoverClimbHeight;
+        /// <summary>Lead time of the dive's aim point, in seconds.</summary>
+        public float StoopLeadTime => stoopLeadTime;
+        /// <summary>Upward search range for a flyable stoop start, in metres.</summary>
+        public float StoopSnapSearchHeight => stoopSnapSearchHeight;
+        /// <summary>Step of the upward search, in metres.</summary>
+        public float StoopSnapStep => stoopSnapStep;
+        /// <summary>Yaw step between alternative stoop starts, in degrees.</summary>
+        public float StoopYawStep => stoopYawStep;
+        /// <summary>Alternative stoop starts tried on each side.</summary>
+        public int StoopYawTries => stoopYawTries;
+        /// <summary>Longest flight to the stoop start, in seconds.</summary>
+        public float ApproachTimeout => approachTimeout;
+        /// <summary>Longest dive, feint or recovery climb, in seconds.</summary>
+        public float MaxManoeuvreTime => maxManoeuvreTime;
 
         /// <summary>Seconds waited on the hidden perch after withdrawing.</summary>
         public float WithdrawWait => withdrawWait;

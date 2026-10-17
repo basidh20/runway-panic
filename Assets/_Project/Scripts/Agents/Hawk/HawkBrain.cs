@@ -17,8 +17,10 @@ namespace RunwayPanic.Agents.Hawk
     /// <c>perchReevaluateInterval</c>, switching only for a clearly better perch) and lands facing the player, Perched
     /// re-scores too and relocates when the player hides, turns to keep facing the player, and attacks when the
     /// <see cref="PlayerWeaknessModel"/>'s meter is full while a weakness window is open (or after <c>maxPerchTime</c>).</para>
-    /// <para>Not built yet: ApproachStoop to Recover, Herd and Withdraw still just wait <c>skeletonPhaseDuration</c> and
-    /// move on (H4–H6).</para>
+    /// <para>Attack (H4): against a slow gun it may first <b>feint</b> (dive, pull up short, wait out the player's refire
+    /// time, then dive for real). ApproachStoop flies to a start point on the sun's side of the player
+    /// (<see cref="StoopPlanner"/>), Scream hovers at the top, Stoop dives at where the player will be, Recover climbs away.</para>
+    /// <para>Not built yet: Herd and Withdraw just wait <c>skeletonPhaseDuration</c> and return to Hunt (H5–H6).</para>
     /// </summary>
     public sealed class HawkBrain : BirdBrain
     {
@@ -43,7 +45,23 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0f)] private float eyeHeight = 0.3f;
         [Tooltip("How fast the perched hawk turns (yaw only) to keep facing the player, in degrees per second.")]
         [SerializeField, Min(0f)] private float perchTurnSpeed = 120f;
-        [Tooltip("Skeleton phases only (ApproachStoop to Recover, Herd, Withdraw): seconds before moving on. Replaced by real behaviour in H4–H6.")]
+        [Tooltip("Height above the player's feet the dive aims at, in metres (chest height).")]
+        [SerializeField, Min(0f)] private float stoopAimHeight = 1.2f;
+        [Tooltip("How hard the motor can brake, in m/s² — must match the motor (SimpleBirdMotor.acceleration on P_Bird_Hawk = 40). " +
+                 "Used to start the feint's pull-up and the stoop's flare early enough: braking distance = speed² / (2 × this).")]
+        [SerializeField, Min(1f)] private float diveBrakeAcceleration = 40f;
+        [Tooltip("The dive levels out this far above the aim point (chest), in metres, so it never runs into the ground.")]
+        [SerializeField, Min(0f)] private float stoopFlareHeight = 1f;
+        [Tooltip("Share of the motor's braking assumed free for pulling out of the dive. Below 1 because the motor also turns " +
+                 "to chase a moving player with the same acceleration (playtest 17 Oct: at 1.0 the hawk skimmed the runway at 0.2 m).")]
+        [SerializeField, Range(0.1f, 1f)] private float flareBrakeShare = 0.5f;
+        [Tooltip("Distance that counts as arrived at the stoop start point, in metres.")]
+        [SerializeField, Min(0.1f)] private float stoopStartArriveDistance = 2f;
+        [Tooltip("Optional scream played at the top of every dive (the audio tell). Skipped if empty.")]
+        [SerializeField] private AudioClip screamClip;
+        [Tooltip("Plays the scream. Taken from this object if empty; skipped if there is none.")]
+        [SerializeField] private AudioSource screamSource;
+        [Tooltip("Skeleton modes only (Herd, Withdraw): seconds before returning to Hunt. Replaced by real behaviour in H5–H6.")]
         [SerializeField, Min(0.1f)] private float skeletonPhaseDuration = 2f;
         [Tooltip("Write every mode/phase change and perch choice to the Console / Editor.log (prefix [HawkFSM]).")]
         [SerializeField] private bool logTransitions = true;
@@ -68,6 +86,19 @@ namespace RunwayPanic.Agents.Hawk
         private bool landing;
         private bool warnedNoPerches;
         private Vector3 perchFacing;
+
+        // Attack state (H4).
+        private const float MinPassSpeed = 1f; // m/s: below this the dive direction is noise, so "passed the player" is not judged
+        private bool planFeint;
+        private bool feintedThisEngagement;
+        private bool feintPulledUp;
+        private bool stoopWasClosing;
+        private float feintWaitUntil;
+        private float shotTimeAtFeintStart;
+        private bool hasStoopStart;
+        private Vector3 stoopStart;
+        private float stoopYaw;
+        private float nextRepathTime;
 
         private Light sun;
         private bool sunSearched;
@@ -129,6 +160,9 @@ namespace RunwayPanic.Agents.Hawk
                 enabled = false;
             }
 
+            if (screamSource == null)
+                screamSource = GetComponent<AudioSource>();
+
             EnableShadows();
         }
 
@@ -188,10 +222,22 @@ namespace RunwayPanic.Agents.Hawk
                 case HuntPhase.Perched:
                     UpdatePerched();
                     break;
-                default:
-                    // Skeleton until H4: walk through the attack phases in order, then pick a perch again.
-                    if (phaseTime >= skeletonPhaseDuration)
-                        ChangePhase(phase == HuntPhase.Recover ? HuntPhase.SelectPerch : phase + 1);
+                case HuntPhase.ApproachStoop:
+                    UpdateApproachStoop();
+                    break;
+                case HuntPhase.Scream:
+                    if (phaseTime >= config.ScreamHoverTime)
+                        ChangePhase(planFeint ? HuntPhase.Feint : HuntPhase.Stoop);
+                    break;
+                case HuntPhase.Feint:
+                    UpdateFeint();
+                    break;
+                case HuntPhase.Stoop:
+                    UpdateStoop();
+                    break;
+                case HuntPhase.Recover:
+                    if (Motor.ReachedDestination || phaseTime >= config.MaxManoeuvreTime)
+                        ChangePhase(HuntPhase.SelectPerch);
                     break;
             }
         }
@@ -279,6 +325,7 @@ namespace RunwayPanic.Agents.Hawk
                 else
                     Log($"{LogPrefix} {name} attack: max perch time {config.MaxPerchTime:0}s (meter {weakness.Meter:0})");
                 weakness.ConsumeMeter();
+                PlanAttack();
                 ChangePhase(HuntPhase.ApproachStoop);
                 return;
             }
@@ -320,6 +367,205 @@ namespace RunwayPanic.Agents.Hawk
             Log($"{LogPrefix} {name} switching {(currentPerch != null ? currentPerch.name : "none")} ({currentTotal:0.00}) -> {candidate.Perch.name} ({candidate.Total:0.00})");
             SetPerch(candidate);
             return true;
+        }
+
+        // ---------------------------------------------------------------- Attack phases (H4)
+
+        // Decided once when leaving the perch: feint only against a slow gun (it exploits the refire time), once per engagement.
+        private void PlanAttack()
+        {
+            float fireInterval = Hub.CurrentWeapon != null && Hub.CurrentWeapon.Data != null ? Hub.CurrentWeapon.Data.FireInterval : 0f;
+            bool slowGun = Hub.CurrentWeapon != null && fireInterval >= config.SlowGunFireInterval;
+            planFeint = slowGun && !feintedThisEngagement && Random.value < config.FeintChance;
+            Log($"{LogPrefix} {name} attack plan: {(planFeint ? "FEINT, then stoop" : "stoop")} " +
+                $"(gun fire interval {fireInterval:0.00}s, slow from {config.SlowGunFireInterval:0.00}s, feint chance {(slowGun ? config.FeintChance : 0f):0.0})");
+        }
+
+        private void UpdateApproachStoop()
+        {
+            if (phaseTime >= config.ApproachTimeout)
+            {
+                Log($"{LogPrefix} {name} stoop start not reached after {config.ApproachTimeout:0}s, diving from here");
+                ChangePhase(HuntPhase.Scream);
+                return;
+            }
+
+            // The player moves: re-plan the start point and the path now and then.
+            if (Time.time >= nextRepathTime)
+            {
+                nextRepathTime = Time.time + config.RepathInterval;
+                stoopStart = FindStoopStart();
+                needsPath = true;
+            }
+
+            if (needsPath)
+            {
+                if (RequestPath(stoopStart))
+                {
+                    needsPath = false;
+                }
+                else if (!LastRequestWasThrottled)
+                {
+                    // No grid path (e.g. start snapped into a corner): fly straight, the start point is in open air.
+                    Motor.FlyTo(stoopStart);
+                    needsPath = false;
+                }
+                return;
+            }
+
+            float arrive = stoopStartArriveDistance;
+            if (Motor.ReachedDestination || (stoopStart - Motor.Position).sqrMagnitude < arrive * arrive)
+                ChangePhase(HuntPhase.Scream);
+        }
+
+        private void UpdateFeint()
+        {
+            Vector3 aim = AimPoint();
+            if (!feintPulledUp)
+            {
+                Motor.FlyTo(StoopPlanner.GetLeadPoint(aim, Hub.PlayerVelocity, config.StoopLeadTime));
+
+                // Pull up early enough that, after braking, the closest approach is still pullUpDistance.
+                Vector3 toAim = aim - Motor.Position;
+                float distance = toAim.magnitude;
+                float closingSpeed = distance > 0.001f ? Vector3.Dot(Motor.Velocity, toAim / distance) : 0f;
+                if (distance - BrakingDistance(closingSpeed) <= config.PullUpDistance)
+                {
+                    // Pull up and swing back, then wait out the player's refire time before the real dive.
+                    Vector3 away = Motor.Position - aim;
+                    away.y = 0f;
+                    away = away.sqrMagnitude > 0.0001f ? away.normalized : -transform.forward;
+                    Vector3 pullUp = Motor.Position + Vector3.up * config.FeintPullUpHeight + away * config.FeintPullUpBack;
+                    if (FlightGrid.Instance != null)
+                        pullUp = StoopPlanner.ClampToVolume(pullUp, FlightGrid.Instance.VolumeBounds, FlightGrid.Instance.CellSize);
+                    Motor.FlyTo(pullUp);
+
+                    float refire = Hub.CurrentWeapon != null && Hub.CurrentWeapon.Data != null ? Hub.CurrentWeapon.Data.FireInterval : 0f;
+                    feintPulledUp = true;
+                    feintedThisEngagement = true;
+                    feintWaitUntil = phaseTime + refire;
+                    Anim.SetDiving(false);
+                    Anim.SetWingsSpread(1f);
+                    Log($"{LogPrefix} {name} feint: pulled up {distance:0.0} m from the player at {closingSpeed:0} m/s " +
+                        $"(braking {BrakingDistance(closingSpeed):0.0} m), waiting {refire:0.00}s (refire time)");
+                }
+                else if (phaseTime >= config.MaxManoeuvreTime)
+                {
+                    ChangePhase(HuntPhase.Stoop);
+                }
+                return;
+            }
+
+            if (phaseTime >= feintWaitUntil)
+            {
+                bool baited = Hub.LastShotTime > shotTimeAtFeintStart;
+                Log($"{LogPrefix} {name} feint {(baited ? "BAITED a shot" : "drew no shot")}, real stoop now");
+                ChangePhase(HuntPhase.Stoop); // straight from here: the point is to hit during the refire
+            }
+        }
+
+        private void UpdateStoop()
+        {
+            Vector3 aim = AimPoint();
+            Vector3 target = StoopPlanner.GetLeadPoint(aim, Hub.PlayerVelocity, config.StoopLeadTime);
+
+            // Flare: once the hawk could no longer stop above the flare height, aim level at it instead of at the chest.
+            // It then sweeps in just above the player (still inside the attack range) rather than into the ground.
+            float flareY = aim.y + stoopFlareHeight;
+            float lowestPoint = Motor.Position.y - BrakingDistance(Mathf.Max(0f, -Motor.Velocity.y)) / flareBrakeShare;
+            if (lowestPoint <= flareY)
+                target.y = Mathf.Max(target.y, flareY);
+            Motor.FlyTo(target);
+
+            Vector3 toAim = aim - Motor.Position;
+            float range = Species != null ? Species.AttackRange : 0f;
+            if (toAim.sqrMagnitude <= range * range)
+            {
+                float damage = (Species != null ? Species.AttackDamage : 0f) * config.StoopDamageMultiplier;
+                bool dealt = Attack != null && Attack.TryAttackWithDamage(damage);
+                Log($"{LogPrefix} {name} stoop HIT range after {phaseTime:0.0}s: damage {damage:0} " +
+                    $"{(dealt ? "dealt" : "not dealt (BirdContactAttack refused: F2 stub until F3, or cooldown)")}");
+                ChangePhase(HuntPhase.Recover);
+                return;
+            }
+
+            // "Passed the player" only counts after the dive has been closing in: at the start the hawk may still carry
+            // velocity away from the player (from the approach or the feint's climb).
+            Vector3 velocity = Motor.Velocity;
+            bool moving = velocity.sqrMagnitude > MinPassSpeed * MinPassSpeed;
+            float closing = Vector3.Dot(velocity, toAim);
+            if (moving && closing > 0f)
+                stoopWasClosing = true;
+            bool passed = stoopWasClosing && moving && closing < 0f;
+            if (passed || phaseTime >= config.MaxManoeuvreTime)
+            {
+                Log($"{LogPrefix} {name} stoop MISSED ({(passed ? "passed the player" : "timed out")}, {toAim.magnitude:0.0} m away)");
+                ChangePhase(HuntPhase.Recover);
+            }
+        }
+
+        // Sun-side start point with a clear dive line to the player; steps around the player when a building is in the way.
+        private Vector3 FindStoopStart()
+        {
+            Vector3 player = Hub.PlayerPosition;
+            Vector3 aim = AimPoint();
+            Vector3 sunForward = GetSunForward();
+            IPathProvider paths = PathService.Current;
+            FlightGrid grid = FlightGrid.Instance;
+            LayerMask mask = grid != null ? grid.ObstacleMask : (LayerMask)Physics.DefaultRaycastLayers;
+
+            Vector3 fallback = StoopPlanner.GetStoopStart(player, sunForward, config.StoopStartDistance, config.MinStoopHeight, 0f);
+            bool haveFallback = false;
+            int attempts = 1 + 2 * config.StoopYawTries;
+            for (int i = 0; i < attempts; i++)
+            {
+                // 0, +step, -step, +2·step, -2·step, ...
+                float yaw = (i + 1) / 2 * config.StoopYawStep * (i % 2 == 1 ? 1f : -1f);
+                Vector3 start = StoopPlanner.GetStoopStart(player, sunForward, config.StoopStartDistance, config.MinStoopHeight, yaw);
+                if (grid != null)
+                    start = StoopPlanner.ClampToVolume(start, grid.VolumeBounds, grid.CellSize);
+                if (!StoopPlanner.TrySnapUpToFlyable(start, paths, config.StoopSnapSearchHeight, config.StoopSnapStep, out start))
+                    continue;
+
+                if (!haveFallback)
+                {
+                    fallback = start;
+                    haveFallback = true;
+                }
+
+                if (PerchSelector.HasLineOfSight(start, aim, mask))
+                {
+                    LogStoopStart(start, yaw, true);
+                    stoopYaw = yaw;
+                    hasStoopStart = true;
+                    return start;
+                }
+            }
+
+            LogStoopStart(fallback, 0f, false);
+            stoopYaw = 0f;
+            hasStoopStart = true;
+            return fallback;
+        }
+
+        private void LogStoopStart(Vector3 start, float yaw, bool clearLine)
+        {
+            // Once per approach (the start is re-planned every repath while the player moves).
+            if (hasStoopStart && Mathf.Approximately(yaw, stoopYaw))
+                return;
+            Log($"{LogPrefix} {name} stoop start {start} ({yaw:+0;-0;0}° from the sun side, {start.y - Hub.PlayerPosition.y:0.0} m above the player, " +
+                $"{(clearLine ? "clear dive line" : "NO clear dive line found")})");
+        }
+
+        // Distance the motor needs to shed 'speed' (m/s) at diveBrakeAcceleration: v² / 2a.
+        private float BrakingDistance(float speed)
+        {
+            return speed > 0f ? speed * speed / (2f * diveBrakeAcceleration) : 0f;
+        }
+
+        private Vector3 AimPoint()
+        {
+            return Hub.PlayerPosition + Vector3.up * stoopAimHeight;
         }
 
         // Fills 'scores' with every free Perch marker; returns the index of the best one, or -1 if there is none.
@@ -425,6 +671,7 @@ namespace RunwayPanic.Agents.Hawk
             {
                 case HuntPhase.SelectPerch:
                     nextReevaluateTime = 0f;
+                    hasStoopStart = false;
                     Anim.SetFlying(true);
                     break;
                 case HuntPhase.FlyToPerch:
@@ -434,6 +681,10 @@ namespace RunwayPanic.Agents.Hawk
                     Anim.SetFlying(true);
                     break;
                 case HuntPhase.ApproachStoop:
+                    ReleasePerch(); // leaving it: another hawk may take it
+                    hasStoopStart = false;
+                    nextRepathTime = 0f;
+                    Motor.SpeedMultiplier = config.ApproachSpeedMultiplier;
                     Anim.SetFlying(true);
                     break;
                 case HuntPhase.Perched:
@@ -444,15 +695,30 @@ namespace RunwayPanic.Agents.Hawk
                     Anim.SetFlying(false);
                     break;
                 case HuntPhase.Scream:
+                    // Hover at the top of the dive with wings tucked: the visual + audio tell before every stoop.
+                    Motor.HoldPosition(Motor.Position);
                     Anim.SetWingsSpread(0f);
+                    if (screamClip != null && screamSource != null)
+                        screamSource.PlayOneShot(screamClip);
                     break;
                 case HuntPhase.Feint:
+                    feintPulledUp = false;
+                    shotTimeAtFeintStart = Hub != null ? Hub.LastShotTime : 0f;
+                    Motor.SpeedMultiplier = config.StoopSpeedMultiplier;
+                    Anim.SetDiving(true);
+                    break;
                 case HuntPhase.Stoop:
+                    stoopWasClosing = false;
+                    Motor.SpeedMultiplier = config.StoopSpeedMultiplier;
+                    Anim.SetWingsSpread(0f);
                     Anim.SetDiving(true);
                     break;
                 case HuntPhase.Recover:
                     Motor.SpeedMultiplier = 1f;
+                    Anim.SetDiving(false);
                     Anim.SetWingsSpread(1f);
+                    feintedThisEngagement = false;
+                    Motor.FlyTo(RecoverPoint());
                     break;
             }
         }
@@ -484,6 +750,16 @@ namespace RunwayPanic.Agents.Hawk
         }
 
         // ---------------------------------------------------------------- Helpers
+
+        // Straight up to recoverClimbHeight above the player (never down), kept inside the flight volume.
+        private Vector3 RecoverPoint()
+        {
+            Vector3 point = Motor.Position;
+            float playerY = Hub != null && Hub.HasPlayer ? Hub.PlayerPosition.y : 0f;
+            point.y = Mathf.Max(point.y, playerY + config.RecoverClimbHeight);
+            FlightGrid grid = FlightGrid.Instance;
+            return grid != null ? StoopPlanner.ClampToVolume(point, grid.VolumeBounds, grid.CellSize) : point;
+        }
 
         private Vector3 LandPoint(BirdPoint perch)
         {
@@ -676,6 +952,20 @@ namespace RunwayPanic.Agents.Hawk
             {
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawLine(transform.position, LandPoint(currentPerch));
+            }
+
+            // Stoop (H4): sun ray from the player towards the sun, the planned start point, and the dive line.
+            if (hasStoopStart && Hub != null && Hub.HasPlayer)
+            {
+                Vector3 aim = AimPoint();
+                Gizmos.color = new Color(1f, 0.9f, 0.2f);
+                Gizmos.DrawLine(aim, aim - GetSunForward().normalized * config.StoopStartDistance * 1.2f);
+                Gizmos.color = new Color(1f, 0.5f, 0f);
+                Gizmos.DrawSphere(stoopStart, 0.6f);
+                Gizmos.color = Color.red;
+                Gizmos.DrawLine(stoopStart, aim);
+                style.normal.textColor = new Color(1f, 0.5f, 0f);
+                Handles.Label(stoopStart + Vector3.up * 1f, $"stoop start ({stoopYaw:+0;-0;0}° from sun)", style);
             }
         }
 #endif
