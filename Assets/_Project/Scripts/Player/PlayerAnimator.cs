@@ -1,3 +1,5 @@
+using RunwayPanic.Data;
+using RunwayPanic.Weapons;
 using UnityEngine;
 
 namespace RunwayPanic.Player
@@ -10,6 +12,8 @@ namespace RunwayPanic.Player
     /// wall reads as standing still, not as running).</item>
     /// <item><c>Jump</c> — trigger on take-off; <c>IsGrounded</c> and <c>VerticalSpeed</c> — for falling and landing,
     /// including walking off a ledge.</item>
+    /// <item>Weapons: <c>WeaponType</c> (0 none, 1 pistol, 2 rifle), <c>Equip</c> and <c>Fire</c> triggers. The
+    /// upper-body layer fades in while a gun is held, so the arms hold it while the legs keep moving.</item>
     /// </list>
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
@@ -19,14 +23,26 @@ namespace RunwayPanic.Player
         private static readonly int JumpId = Animator.StringToHash("Jump");
         private static readonly int IsGroundedId = Animator.StringToHash("IsGrounded");
         private static readonly int VerticalSpeedId = Animator.StringToHash("VerticalSpeed");
+        private static readonly int WeaponTypeId = Animator.StringToHash("WeaponType");
+        private static readonly int EquipId = Animator.StringToHash("Equip");
+        private static readonly int FireId = Animator.StringToHash("Fire");
+
+        private const int UpperBodyLayer = 1;
+        private const int NoWeapon = 0;
+        private const int PistolWeapon = 1;
+        private const int RifleWeapon = 2;
 
         [Tooltip("Animator on the officer model. Found in children when left empty.")]
         [SerializeField] private Animator animator;
         [Tooltip("Seconds the Speed parameter takes to follow the real speed. Higher = softer blends.")]
         [SerializeField, Min(0f)] private float speedDampTime = 0.1f;
+        [Tooltip("How fast the arms blend into or out of holding a gun (per second).")]
+        [SerializeField, Min(0.1f)] private float armsBlendSpeed = 6f;
 
         private CharacterController characterController;
         private PlayerController playerController;
+        private PlayerWeaponHolder weaponHolder;
+        private WeaponBase currentWeapon;
 
         /// <summary>The Animator being driven (null if the model has none).</summary>
         public Animator Animator => animator;
@@ -35,6 +51,7 @@ namespace RunwayPanic.Player
         {
             characterController = GetComponent<CharacterController>();
             playerController = GetComponent<PlayerController>();
+            weaponHolder = GetComponent<PlayerWeaponHolder>();
             if (animator == null)
                 animator = GetComponentInChildren<Animator>();
 
@@ -53,12 +70,28 @@ namespace RunwayPanic.Player
         {
             if (playerController != null)
                 playerController.Jumped += HandleJumped;
+            if (weaponHolder != null)
+            {
+                weaponHolder.WeaponEquipped += HandleWeaponEquipped;
+                if (weaponHolder.CurrentWeaponObject != null)
+                    WatchWeapon(weaponHolder.CurrentWeapon); // re-enabled while holding a gun
+            }
         }
 
         private void OnDisable()
         {
             if (playerController != null)
                 playerController.Jumped -= HandleJumped;
+            if (weaponHolder != null)
+                weaponHolder.WeaponEquipped -= HandleWeaponEquipped;
+            WatchWeapon(null);
+        }
+
+        private void Start()
+        {
+            // A gun equipped before this component was enabled.
+            if (weaponHolder != null && weaponHolder.CurrentWeaponObject != null)
+                HandleWeaponEquipped(weaponHolder.CurrentWeapon);
         }
 
         private void Update()
@@ -72,11 +105,47 @@ namespace RunwayPanic.Player
                 animator.SetBool(IsGroundedId, playerController.IsGrounded);
                 animator.SetFloat(VerticalSpeedId, playerController.VerticalSpeed);
             }
+
+            if (animator.layerCount > UpperBodyLayer)
+            {
+                bool holdingGun = weaponHolder != null && weaponHolder.CurrentWeaponObject != null &&
+                                  weaponHolder.CurrentWeaponObject.activeInHierarchy;
+                float armsWeight = Mathf.MoveTowards(animator.GetLayerWeight(UpperBodyLayer), holdingGun ? 1f : 0f,
+                    armsBlendSpeed * Time.deltaTime);
+                animator.SetLayerWeight(UpperBodyLayer, armsWeight);
+            }
         }
 
         private void HandleJumped()
         {
             animator.SetTrigger(JumpId);
+        }
+
+        private void HandleWeaponEquipped(WeaponBase weapon)
+        {
+            WatchWeapon(weapon);
+
+            WeaponData data = weapon != null ? weapon.Data : null;
+            int type = data == null ? (weapon != null ? PistolWeapon : NoWeapon)
+                : data.HoldType == WeaponHoldType.Rifle ? RifleWeapon : PistolWeapon;
+            animator.SetInteger(WeaponTypeId, type);
+            animator.ResetTrigger(FireId);
+            animator.SetTrigger(EquipId);
+        }
+
+        // Listen to the held gun's shots (and stop listening to the previous gun).
+        private void WatchWeapon(WeaponBase weapon)
+        {
+            if (currentWeapon != null)
+                currentWeapon.Fired -= HandleFired;
+            currentWeapon = weapon;
+            if (currentWeapon != null)
+                currentWeapon.Fired += HandleFired;
+        }
+
+        private void HandleFired()
+        {
+            animator.SetTrigger(FireId);
         }
     }
 }
