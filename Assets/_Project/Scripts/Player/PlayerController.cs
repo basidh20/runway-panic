@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -35,6 +36,12 @@ namespace RunwayPanic.Player
         public bool IsSprinting { get; private set; }
         public bool IsGrounded { get; private set; }
         public float CurrentSpeed { get; private set; }
+
+        /// <summary>Vertical velocity in m/s: positive while rising, negative while falling.</summary>
+        public float VerticalSpeed => verticalVelocity;
+
+        /// <summary>Raised on the frame the player leaves the ground by jumping.</summary>
+        public event Action Jumped;
 
         private void Awake()
         {
@@ -113,6 +120,7 @@ namespace RunwayPanic.Player
             {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
                 IsGrounded = false;
+                Jumped?.Invoke();
             }
 
             verticalVelocity += gravity * Time.deltaTime;
