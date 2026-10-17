@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: beea383a975bfff42af65fbaff984a0c, type: 3}
-  m_Name: BirdSpecies_Eagle
+  m_Name: BirdSpecies_Gull
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.BirdSpeciesData
-  speciesName: Eagle
+  speciesName: Gull
   species: 3
-  prefab: {fileID: 0}
-  maxHP: 300
+  prefab: {fileID: 7907624009396832584, guid: a5c78e2f612008c48b936350c1d55523, type: 3}
+  maxHP: 30
   moveSpeed: 6
-  attackDamage: 20
-  attackRange: 2.5
+  attackDamage: 6
+  attackRange: 1.5
   attackCooldown: 2
-  coinReward: 25
-  requiredWeaponRarity: 3
+  coinReward: 8
+  requiredWeaponRarity: 0
   wrongWeaponDamageMultiplier: 0.1

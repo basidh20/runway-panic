@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Shop_1_AssaultRifle
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.ShopItem
   displayName: Assault Rifle
-  description: Uncommon. Rapid fire. Needed for crows.
+  description: Uncommon. Rapid fire. Full damage against pigeons.
   icon: {fileID: 0}
   kind: 0
   weapon: {fileID: 11400000, guid: 88f8ab99b85c76f419b52f12b952aa7d, type: 2}
