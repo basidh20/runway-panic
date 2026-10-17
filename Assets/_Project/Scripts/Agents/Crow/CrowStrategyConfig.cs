@@ -75,6 +75,9 @@ namespace RunwayPanic.Agents.Crow
         [Tooltip("Seconds the player must stay inside a shelter before crows start guarding its exits.")]
         [Min(0f)] public float vigilEnterDelay = 1f;
         [Min(0)] public int maxVigilCrows = 3;
+        [Tooltip("Seconds a crow tries to land at its shelter exit before it stops and hovers next to it instead. " +
+                 "Works around BirdMotor.LandAt circling its point when the bird arrives from the side.")]
+        [Min(0.5f)] public float vigilLandTimeout = 3f;
 
         [Header("Pathing")]
         [Tooltip("Seconds between path recalculations, so many crows don't search every frame.")]

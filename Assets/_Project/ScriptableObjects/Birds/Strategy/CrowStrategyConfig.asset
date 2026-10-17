@@ -42,4 +42,5 @@ MonoBehaviour:
   enragedDuration: 10
   vigilEnterDelay: 1
   maxVigilCrows: 3
+  vigilLandTimeout: 3
   repathInterval: 0.75
