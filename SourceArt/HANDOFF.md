@@ -13,6 +13,16 @@ Template:
 
 ---
 
+## 2026-10-17 — to: Agent Controller + all — bird prefabs now carry the shared AI components
+- **What:** `Prefabs/Birds/P_Bird_Base` (+ the Gull/Pigeon/Crow variants) and `P_Bird_Hawk`; tool `Tools > S3 > Add Bird AI Components` (`Editor/Art/ArtBirdAIComponents.cs`)
+- **Details:**
+  - Root: kinematic `Rigidbody` (no gravity, interpolated), `SimpleBirdMotor`, `BirdHealth` (species asset set per variant and on the hawk), `BirdContactAttack`, `BirdStateLabel`. Model child (`SK_Bird` / `SK_Bird_Hawk`): `BlendShapeBirdAnimator`.
+  - Model, pivot, scale, collider, materials and blend shapes are unchanged. The root scale must still never be changed in code (it scales the collider).
+  - The tool only adds what is missing and never removes components, so it is safe to run again and keeps teammates' brains.
+  - Full description, ownership and the F3/F4 swap plan: `Docs/IS/HANDOFF.md`.
+- **Action needed:** Agent Controller — for F4, replace `SimpleBirdMotor` / `BlendShapeBirdAnimator` on `P_Bird_Base` **and** `P_Bird_Hawk`, and assign the bird Animator Controller on both model children (11 Oct entry below).
+- **Status:** done
+
 ## 2026-10-13 — to: all — models now use one atlas material each (old `M_*` colour materials are going away)
 - **What:** every custom model (`P_Player_Officer`, `P_Bird_Gull` / `_Pigeon` / `_Crow` / `_Hawk`, `P_Gun_Tier1`–`4`) now renders with one material `M_<Asset>_Atlas` and two small textures, instead of one material per colour.
 - **Details:**
