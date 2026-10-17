@@ -89,6 +89,12 @@ namespace RunwayPanic.PlayerTools
         // controller holds -2 m/s, so stairs and small steps never trigger a fall.
         private const float LedgeFallSpeed = -4f;
 
+        // Foot-slide matching: walk/run clips play faster so their planted foot moves at the player's real speed,
+        // but never faster than this (beyond it the stepping looks frantic; a little slide is the better trade).
+        private const string ModelPath = "Assets/_Project/Art/Models/Characters/SK_Player_Officer.fbx";
+        private const float MaxLocomotionTimeScale = 1.6f;
+        private const int GroundSpeedSamples = 120;
+
         // Used only when the prefab's PlayerController can't be read.
         private const float FallbackWalkSpeed = 4.5f;
         private const float FallbackSprintSpeed = 7.5f;
@@ -211,8 +217,79 @@ namespace RunwayPanic.PlayerTools
             tree.AddChild(walk, walkSpeed);
             tree.AddChild(run, sprintSpeed);
 
+            // Against foot sliding: play walk and run at the speed where their feet keep pace with the ground.
+            ChildMotion[] children = tree.children;
+            children[1].timeScale = MatchTimeScale(walk, walkSpeed);
+            children[2].timeScale = MatchTimeScale(run, sprintSpeed);
+            tree.children = children;
+
             controller.layers[0].stateMachine.defaultState = locomotion;
             return locomotion;
+        }
+
+        private static float MatchTimeScale(AnimationClip clip, float moveSpeed)
+        {
+            float natural = MeasureGroundSpeed(clip);
+            if (natural <= 0.01f)
+                return 1f;
+
+            float scale = Mathf.Clamp(moveSpeed / natural, 1f, MaxLocomotionTimeScale);
+            float slide = 1f - natural * scale / moveSpeed;
+            Debug.Log($"[Player Animator] {clip.name}: feet cover {natural:F2} m/s at normal speed; played at ×{scale:F2} " +
+                      $"for {moveSpeed} m/s ({Mathf.Max(0f, slide) * 100f:F0}% foot slide left).");
+            return scale;
+        }
+
+        /// <summary>
+        /// The ground speed a locomotion clip shows at normal speed: how far the lower (planted) foot travels
+        /// backwards over one cycle, divided by the cycle's length. Sampled on the officer model.
+        /// </summary>
+        private static float MeasureGroundSpeed(AnimationClip clip)
+        {
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
+            if (model == null || clip.length <= 0f)
+                return 0f;
+
+            GameObject instance = Object.Instantiate(model);
+            instance.hideFlags = HideFlags.HideAndDontSave;
+            instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            try
+            {
+                Animator animator = instance.GetComponentInChildren<Animator>();
+                Transform left = animator != null ? animator.GetBoneTransform(HumanBodyBones.LeftFoot) : null;
+                Transform right = animator != null ? animator.GetBoneTransform(HumanBodyBones.RightFoot) : null;
+                if (left == null || right == null)
+                    return 0f;
+
+                Vector3 forward = instance.transform.forward;
+                Vector3 previousLeft = default, previousRight = default;
+                float travelled = 0f;
+
+                AnimationMode.StartAnimationMode();
+                for (int i = 0; i <= GroundSpeedSamples; i++)
+                {
+                    AnimationMode.BeginSampling();
+                    AnimationMode.SampleAnimationClip(instance, clip, clip.length * i / GroundSpeedSamples);
+                    AnimationMode.EndSampling();
+
+                    Vector3 l = left.position, r = right.position;
+                    if (i > 0)
+                    {
+                        Vector3 planted = l.y < r.y ? l - previousLeft : r - previousRight;
+                        travelled += Mathf.Max(0f, -Vector3.Dot(planted, forward));
+                    }
+
+                    previousLeft = l;
+                    previousRight = r;
+                }
+
+                return travelled / clip.length;
+            }
+            finally
+            {
+                AnimationMode.StopAnimationMode();
+                Object.DestroyImmediate(instance);
+            }
         }
 
         //   Locomotion ──Jump──► JumpStart ──(clip ends)──► Fall ──IsGrounded──► Land ──(clip ends)──► Locomotion
