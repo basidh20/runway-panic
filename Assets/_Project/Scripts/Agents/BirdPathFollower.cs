@@ -96,6 +96,16 @@ namespace RunwayPanic.Agents
         /// <summary>Metres left along the smoothed path, or 0 when not following one.</summary>
         public float RemainingDistance => IsFollowing ? Mathf.Max(0f, path.Length - progress) : 0f;
 
+        /// <summary>
+        /// Scene-view path gizmos. Off for crowds (stress tests): with Gizmos on in the Game view, drawing hundreds of
+        /// lines per bird every frame costs far more than the flying itself.
+        /// </summary>
+        public bool DrawPathGizmos
+        {
+            get => drawPathGizmos;
+            set => drawPathGizmos = value;
+        }
+
         /// <summary>Current roll into the turn in degrees (+ = banking right).</summary>
         public float BankAngle => bank;
 
@@ -250,10 +260,12 @@ namespace RunwayPanic.Agents
             if (version != pathVersion)
                 return; // a WaypointReached handler set a new path
 
+            // Arrived = near the end ALONG the path, and either at the last waypoint or stopped. Checking only the
+            // distance to the last waypoint would end a closed loop (last waypoint = start) on its first step.
             float remaining = path.Length - progress;
             Vector3 toEnd = path.EndPoint - position;
-            bool arrived = toEnd.sqrMagnitude <= arrivalRadius * arrivalRadius ||
-                           (remaining <= arrivalRadius && speed <= HoverSpeed);
+            bool arrived = remaining <= arrivalRadius &&
+                           (toEnd.sqrMagnitude <= arrivalRadius * arrivalRadius || speed <= HoverSpeed);
             if (arrived)
             {
                 CompletePath(version);
