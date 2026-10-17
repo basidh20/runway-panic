@@ -52,8 +52,8 @@ namespace RunwayPanic.Agents.Crow
             foreach (Pickup p in CrowPickupClaims.Pickups)
             {
                 if (p == null || !p.isActiveAndEnabled || CrowPickupClaims.IsClaimed(p) || CrowPickupClaims.IsUnreachable(p) ||
-                    p.GetComponentInParent<CrowBrain>() != null || IsAtStash(p.transform.position))
-                    continue;
+                    CrowPickupClaims.IsStashed(p) || p.GetComponentInParent<CrowBrain>() != null || IsAtStash(p.transform.position))
+                    continue; // already crow loot, or out of reach
                 if ((p.transform.position - Hub.PlayerPosition).sqrMagnitude < guardSq)
                     continue; // the player is standing on it
 
@@ -140,9 +140,7 @@ namespace RunwayPanic.Agents.Crow
             float sq = (target - Motor.Position).sqrMagnitude;
             if (sq <= DeliverDistance * DeliverDistance || stateTime > MaxTheftTime)
             {
-                DropLoot(stashTarget);
-                CrowStats.TheftsSucceeded++;
-                ChangeState(CrowState.Patrol);
+                DeliverLoot(stashTarget);
                 return;
             }
 
@@ -162,10 +160,18 @@ namespace RunwayPanic.Agents.Crow
             else if (!LastRequestWasThrottled)
             {
                 // The stash can't be reached from here: drop the loot where we are — it's still been moved away.
-                DropLoot(Motor.Position);
-                CrowStats.TheftsSucceeded++;
-                ChangeState(CrowState.Patrol);
+                DeliverLoot(Motor.Position);
             }
+        }
+
+        // Puts the loot down as delivered: crow loot from now on, never stolen again (until the player takes it back).
+        private void DeliverLoot(Vector3 near)
+        {
+            if (carried != null)
+                CrowPickupClaims.MarkStashed(carried.Item);
+            DropLoot(near);
+            CrowStats.TheftsSucceeded++;
+            ChangeState(CrowState.Patrol);
         }
 
         /// <summary>Drops whatever is carried at <paramref name="near"/> and releases the claim.</summary>
