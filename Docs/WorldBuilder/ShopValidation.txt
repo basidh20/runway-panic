@@ -1,0 +1,25 @@
+Main shop — one focused integration flow; Unity 6000.6.4f1
+Uses real GameManager wave/pause hooks and shop Button.onClick listeners, not simulated mouse input.
+Test coins, inventory filling and wave completions exist only in this opt-in Play session.
+PASS: Exactly one active shop controller and UI
+PASS: All five supplied catalogue items connected
+PASS: Shop stays hidden during ordinary gameplay
+PASS: Purchases refused while closed
+PASS: Completing real wave 1 opens the between-wave shop
+PASS: Shopping frees and shows cursor
+PASS: One EventSystem with the Input System UI module
+PASS: Five live item rows built, template excluded
+PASS: Insufficient funds refused without spending
+PASS: Poor-player row displays NEED and disables Buy
+PASS: Buy becomes available when coins change
+PASS: Buy row charges exact gun price, grants and equips gun
+PASS: Owned gun row cannot be bought again
+PASS: Duplicate weapon refused without spending
+PASS: Consumable Buy row charges exact price and delivers item
+PASS: Full inventory refused without spending
+PASS: Full consumable row disables Buy and shows FULL
+PASS: Pause hides shop
+PASS: Resume restores shopping screen
+PASS: Next wave UI button closes shop and emits one ShopClosed handoff
+PASS: Wave 2 can start through public hook after shop closes (test acts as WaveManager)
+Failures: 0
