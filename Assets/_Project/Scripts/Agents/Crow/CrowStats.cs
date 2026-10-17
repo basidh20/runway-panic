@@ -26,13 +26,15 @@ namespace RunwayPanic.Agents.Crow
         public static int Enrages;
         /// <summary>Times a crow started guarding a shelter exit.</summary>
         public static int Vigils;
+        /// <summary>Times a crow dodged a shot that passed close.</summary>
+        public static int Evasions;
 
         /// <summary>Sets every counter back to zero.</summary>
         public static void Reset()
         {
             Approaches = AttackHits = DangerStamps = 0;
             TheftsAttempted = TheftsSucceeded = TheftsRecovered = 0;
-            FuneralAttendances = Enrages = Vigils = 0;
+            FuneralAttendances = Enrages = Vigils = Evasions = 0;
         }
 
         // Statics survive Play mode when domain reload is off: start every session clean.

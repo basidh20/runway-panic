@@ -15,7 +15,7 @@ namespace RunwayPanic.Agents.Crow
     {
         private const float RefreshInterval = 0.25f;
         private const float PanelWidth = 300f;
-        private const float PanelHeight = 330f;
+        private const float PanelHeight = 350f;
         private const float Margin = 10f;
 
         private static readonly int StateCount = System.Enum.GetValues(typeof(CrowState)).Length;
@@ -119,6 +119,7 @@ namespace RunwayPanic.Agents.Crow
             b.Append("  funerals: ").Append(CrowStats.FuneralAttendances)
              .Append("   rages: ").Append(CrowStats.Enrages)
              .Append("   vigils: ").Append(CrowStats.Vigils).Append('\n');
+            b.Append("  evasions: ").Append(CrowStats.Evasions).Append('\n');
             return b.ToString();
         }
 

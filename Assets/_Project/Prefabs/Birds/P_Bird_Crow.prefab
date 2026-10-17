@@ -109,4 +109,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d387af241c6f6343b91d329a408a1fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Crow.CrowBrain
+  funeralCawClip: {fileID: 8300000, guid: 17fb0bec30d92c74b8102000dac34d9a, type: 3}
+  theftCallClip: {fileID: 8300000, guid: c3db0413df328c54cbdf0fe67670a96f, type: 3}
+  rageCallClip: {fileID: 8300000, guid: efd3abd9cd1d4ab4b864cdb3a98de8a2, type: 3}
+  callVolume: 0.8
+  funeralCawsPerPattern: 3
+  funeralCawSpacing: 0.4
+  funeralPatternInterval: 1.8
+  callMinDistance: 3
+  callMaxDistance: 45
   config: {fileID: 11400000, guid: 0796ae735d0d727408d14a42ff1c0bf4, type: 2}

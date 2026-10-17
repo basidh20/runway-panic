@@ -43,4 +43,9 @@ MonoBehaviour:
   vigilEnterDelay: 1
   maxVigilCrows: 3
   vigilLandTimeout: 3
+  evadeRadius: 3
+  evadeDistance: 4
+  evadeSpeedMultiplier: 1.5
+  evadeDuration: 0.7
+  evadeCooldown: 2.5
   repathInterval: 0.75

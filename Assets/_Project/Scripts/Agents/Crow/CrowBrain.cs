@@ -64,6 +64,7 @@ namespace RunwayPanic.Agents.Crow
             base.OnEnable();
             SubscribeFuneral();
             SubscribeVigil();
+            SubscribeEvasion();
         }
 
         protected override void OnDisable()
@@ -71,6 +72,7 @@ namespace RunwayPanic.Agents.Crow
             base.OnDisable();
             UnsubscribeFuneral();
             UnsubscribeVigil();
+            UnsubscribeEvasion();
         }
 
         private void Start()
@@ -99,6 +101,7 @@ namespace RunwayPanic.Agents.Crow
                 UpdateDetection();
 
             TickState(state);
+            TickTells();
         }
 
         /// <summary>
@@ -113,6 +116,7 @@ namespace RunwayPanic.Agents.Crow
             state = next;
             stateTime = 0f;
             EnterState(next);
+            OnStateEntered(next);
         }
 
         protected override void OnBirdDied()
@@ -138,6 +142,7 @@ namespace RunwayPanic.Agents.Crow
                 case CrowState.Funeral: EnterFuneral(); break;
                 case CrowState.Enraged: EnterEnraged(); break;
                 case CrowState.Vigil: EnterVigil(); break;
+                case CrowState.Evade: EnterEvade(); break;
                 case CrowState.Dead: Motor.Stop(); break;
             }
         }
@@ -155,6 +160,7 @@ namespace RunwayPanic.Agents.Crow
                 case CrowState.Funeral: TickFuneral(); break;
                 case CrowState.Enraged: TickEnraged(); break;
                 case CrowState.Vigil: TickVigil(); break;
+                case CrowState.Evade: TickEvade(); break;
             }
         }
 
@@ -165,6 +171,7 @@ namespace RunwayPanic.Agents.Crow
                 case CrowState.Funeral: ExitFuneral(); break;
                 case CrowState.Enraged: ExitEnraged(); break;
                 case CrowState.Vigil: ExitVigil(); break;
+                case CrowState.Evade: ExitEvade(); break;
             }
         }
 
@@ -175,6 +182,15 @@ namespace RunwayPanic.Agents.Crow
 
         partial void EnsureDangerMap();
         partial void EnsureDebugOverlay();
+
+        partial void OnStateEntered(CrowState entered);
+        partial void TickTells();
+
+        partial void SubscribeEvasion();
+        partial void UnsubscribeEvasion();
+        partial void EnterEvade();
+        partial void TickEvade();
+        partial void ExitEvade();
 
         partial void UpdateDetection();
         partial void EnterApproach();
