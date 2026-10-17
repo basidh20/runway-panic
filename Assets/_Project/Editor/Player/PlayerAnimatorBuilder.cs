@@ -12,8 +12,11 @@ namespace RunwayPanic.PlayerTools
     /// <c>Art/Animations/Player/</c> and wires it onto <c>P_Player_Gameplay</c>. Re-runnable: the controller keeps its
     /// asset (and GUID) and is rebuilt from scratch each time, so the result never depends on hand edits.
     /// <para>
-    /// Clips are found by name. <c>ArtModelPostprocessor</c> imports every FBX in <c>Art/Animations/Player/</c> as
-    /// Humanoid and names its clip after the file, so <c>A_Player_Idle.fbx</c> gives the clip <c>A_Player_Idle</c>.
+    /// Clips are found by name: <c>A_Player_Idle</c>, <c>A_Player_Walk</c>, <c>A_Player_Run</c>. If any is missing,
+    /// <see cref="PlayerClipGenerator"/> generates them from the officer's rig first. A downloaded clip can replace a
+    /// generated one: <c>ArtModelPostprocessor</c> imports every FBX in <c>Art/Animations/Player/</c> as Humanoid and
+    /// names its clip after the file, so <c>A_Player_Run.fbx</c> gives the clip <c>A_Player_Run</c> (delete the
+    /// generated <c>.anim</c> of the same name).
     /// </para>
     /// </summary>
     public static class PlayerAnimatorBuilder
@@ -36,6 +39,13 @@ namespace RunwayPanic.PlayerTools
         public static void Build()
         {
             Dictionary<string, AnimationClip> clips = FindClips();
+            if (!clips.ContainsKey(IdleClip) || !clips.ContainsKey(WalkClip) || !clips.ContainsKey(RunClip))
+            {
+                // No clips yet (none downloaded): generate them from the officer's rig.
+                PlayerClipGenerator.GenerateLocomotion();
+                clips = FindClips();
+            }
+
             if (!clips.TryGetValue(IdleClip, out AnimationClip idle) |
                 !clips.TryGetValue(WalkClip, out AnimationClip walk) |
                 !clips.TryGetValue(RunClip, out AnimationClip run))
