@@ -20,6 +20,8 @@ Patrol ──player within 30 m──► Approach ──arrived at approach poin
    │
    └── player in a shelter ≥ 1 s (nearest 3 crows) ──► Vigil (land at an exit) ──player leaves──► Enraged (3 s)
 
+Approach / Attack / Retreat + a shot passes within 3 m (miss) ──► Evade (jink sideways, 0.7 s) ──► Approach (new side)
+
 Any state + own death ──► Dead (drops carried loot / releases claim)
 ```
 
@@ -112,6 +114,25 @@ and the path is re-planned every `repathInterval` = 0.75 s.
   the door. When the player walks out: 3 s burst of rage. No central coordinator — each crow decides independently.
   A crow that hasn't landed within `vigilLandTimeout` (3 s) stops and hovers within 1.5 m of its exit instead —
   a workaround for the shared motor's landing bug (`BirdMotor.LandAt` can circle its point; see IS handoff).
+
+### Tells (every surprise warns the player first)
+
+| Behaviour | Tell |
+|---|---|
+| Theft | The pickup is visible in the crow's beak, and a quick high "ca-caw" (`SFX_Crow_Call`) when it grabs it |
+| Funeral | A slow repeating caw · caw · caw pattern (`SFX_Crow_Caw`, 3 caws per 1.8 s) — no other behaviour sounds like it |
+| Rage (after a funeral or vigil) | A long, low, rough call (`SFX_Crow_Rage`) as the crow turns on the player |
+
+The calls are synthesised by `Tools > IS > Crow > Generate Crow Calls` (buzzy voice through two nasal resonances, rising-then-falling
+pitch, rasp and breath noise; caw ≈ 680 Hz, call ≈ 800 Hz, rage ≈ 540 Hz). Each call's pitch varies ±8% so several crows
+never sound like one.
+
+### Evasion
+
+A crow that is approaching, attacking or retreating dodges when a shot passes within `evadeRadius` (3 m) without hitting it:
+it jinks `evadeDistance` (4 m) sideways — away from the line of fire, on its own side of it — at 1.5× speed, then picks a new
+approach point. The novelty term in the approach score makes it come from a different side (measured: 161° change). A
+`evadeCooldown` (2.5 s) stops endless dodging. Missing a crow costs the player the crow's position, not just the bullet.
 
 ## 7. Evidence (fill in from playtests)
 
