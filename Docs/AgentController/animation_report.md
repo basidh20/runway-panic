@@ -1,22 +1,24 @@
 # Bird animation report
 
-Written by **Tools > Agents > Build Bird Animations** on 2026-10-17 12:42. Every run overwrites this file.
+Written by **Tools > Agents > Build Bird Animations** on 2026-10-17 13:47. Every run overwrites this file.
 
 ## Clips
 
 | Clip | Length (s) | Loops | Curves | Keys generated | Keys after reduction | Editor memory |
 |---|---:|---|---:|---:|---:|---:|
-| `A_Bird_Fly` | 0.50 | yes | 29 | 261 | 134 | 38.9 KB |
-| `A_Bird_Hawk_Fly` | 0.50 | yes | 29 | 261 | 138 | 37.3 KB |
-| `A_Bird_Glide` | 0.50 | yes | 29 | 261 | 79 | 33.5 KB |
-| `A_Bird_Hawk_Glide` | 0.50 | yes | 29 | 261 | 78 | 33.8 KB |
-| `A_Bird_Dive` | 0.50 | no | 30 | 60 | 60 | 25.6 KB |
-| `A_Bird_Hawk_Dive` | 0.50 | no | 30 | 60 | 60 | 25.5 KB |
-| `A_Bird_Hit` | 0.30 | no | 16 | 64 | 60 | 21.5 KB |
-| `A_Bird_Hawk_Hit` | 0.30 | no | 16 | 64 | 60 | 21.5 KB |
-| `A_Bird_Death` | 0.80 | no | 29 | 116 | 100 | 33.1 KB |
-| `A_Bird_Hawk_Death` | 0.80 | no | 29 | 116 | 100 | 33.1 KB |
-| **Total** | | | | **1524** | **869** (43% removed) | **304.0 KB** |
+| `A_Bird_Fly` | 0.50 | yes | 29 | 261 | 134 | 35.7 KB |
+| `A_Bird_Hawk_Fly` | 0.50 | yes | 29 | 261 | 138 | 34.1 KB |
+| `A_Bird_Glide` | 0.50 | yes | 29 | 261 | 79 | 30.3 KB |
+| `A_Bird_Hawk_Glide` | 0.50 | yes | 29 | 261 | 78 | 30.6 KB |
+| `A_Bird_Dive` | 0.50 | no | 30 | 60 | 60 | 22.6 KB |
+| `A_Bird_Hawk_Dive` | 0.50 | no | 30 | 60 | 60 | 22.5 KB |
+| `A_Bird_Perch` | 2.00 | yes | 30 | 270 | 73 | 32.4 KB |
+| `A_Bird_Hawk_Perch` | 2.00 | yes | 30 | 270 | 73 | 32.4 KB |
+| `A_Bird_Hit` | 0.30 | no | 16 | 64 | 60 | 20.7 KB |
+| `A_Bird_Hawk_Hit` | 0.30 | no | 16 | 64 | 60 | 20.7 KB |
+| `A_Bird_Death` | 0.80 | no | 29 | 116 | 100 | 30.0 KB |
+| `A_Bird_Hawk_Death` | 0.80 | no | 29 | 116 | 100 | 29.9 KB |
+| **Total** | | | | **2064** | **1015** (51% removed) | **342.1 KB** |
 
 Editor memory = `Profiler.GetRuntimeMemorySizeLong` in the Editor; a build stores clips more compactly.
 
