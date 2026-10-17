@@ -16,6 +16,7 @@ namespace RunwayPanic.Agents.Crow
 
         private static readonly Dictionary<Pickup, CrowBrain> claims = new Dictionary<Pickup, CrowBrain>();
         private static readonly Dictionary<Pickup, float> unreachableUntil = new Dictionary<Pickup, float>();
+        private static readonly HashSet<Pickup> stashed = new HashSet<Pickup>();
         private static readonly List<Pickup> cache = new List<Pickup>(16);
         private static float cacheTime = float.NegativeInfinity;
         private static int cachedWave = -1;
@@ -52,6 +53,20 @@ namespace RunwayPanic.Agents.Crow
         /// <summary>True while <paramref name="pickup"/> is remembered as unreachable.</summary>
         public static bool IsUnreachable(Pickup pickup) =>
             pickup != null && unreachableUntil.TryGetValue(pickup, out float until) && Time.time < until;
+
+        /// <summary>
+        /// Remembers that a crow delivered <paramref name="pickup"/>: it is crow loot now and no crow steals it again,
+        /// even if it lies a little away from the stash marker (a crow that can't path the last metres drops it short).
+        /// Forgotten when the player collects it (the pickup is destroyed).
+        /// </summary>
+        public static void MarkStashed(Pickup pickup)
+        {
+            if (pickup != null)
+                stashed.Add(pickup);
+        }
+
+        /// <summary>True when a crow has already delivered <paramref name="pickup"/>.</summary>
+        public static bool IsStashed(Pickup pickup) => pickup != null && stashed.Contains(pickup);
 
         /// <summary>Releases the claim on <paramref name="pickup"/> (ignored if none).</summary>
         public static void Release(Pickup pickup)
@@ -100,6 +115,8 @@ namespace RunwayPanic.Agents.Crow
                     toRemove.Add(pair.Key);
             foreach (Pickup p in toRemove)
                 unreachableUntil.Remove(p);
+
+            stashed.RemoveWhere(p => p == null); // collected by the player
         }
 
         // Statics survive Play mode when domain reload is off: start every session clean.
@@ -108,6 +125,7 @@ namespace RunwayPanic.Agents.Crow
         {
             claims.Clear();
             unreachableUntil.Clear();
+            stashed.Clear();
             cache.Clear();
             cacheTime = float.NegativeInfinity;
             cachedWave = -1;

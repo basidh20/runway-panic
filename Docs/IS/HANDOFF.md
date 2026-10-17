@@ -73,9 +73,10 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
     - `Stashes/` — 2 × `BirdPoint` **Stash** on open ground the player can walk to: behind the hangar (−47.4, 0, −16.2) and beside the terminal (25.0, 0, 37.5). Crows drop stolen pickups there.
     - `ShelterA/`, `ShelterB/` — a `ShelterZone` trigger filling each shelter and a `BirdPoint` **ShelterExit** at its doorway. Crows guard the exit while the player hides inside.
   - Checked in `Main` (17 Oct): zones inside the shelters, exits at the doorways with a clear view in, stashes on `Ground_100x80` with nothing in the way.
+  - Played in `Main` with this prefab and a `FlightGrid` added for the test only: **7 of 7 crow checks pass** (A\* routes, approach, steal Main's pickups, deliver to a stash, vigil, rage on leaving, funeral) — `Docs/IS/Crow/main_integration.md`. Re-run any time: `Tools > IS > Crow > Run Main Integration Check` in Play mode.
   - Keep the prefab root at (0, 0, 0). If you move a shelter, the hangar or the terminal, tell the crow owner (or move the matching child with it).
-  - The crow also needs, in `Main`: a **`FlightGrid`** (pathfinding; without it crows fly in straight lines) and a **`P_PickupSpawner`** (otherwise there is nothing to steal).
-- **Action needed:** World Builder — drag `P_CrowSetup_Main` into `Main` at the origin; add a `FlightGrid` and a `P_PickupSpawner`.
+  - The crow also needs, in `Main`: a **`FlightGrid`** (pathfinding; without it crows fly in straight lines). `P_PickupSpawner` is already there (thanks).
+- **Action needed:** World Builder — drag `P_CrowSetup_Main` into `Main` at the origin and add a `FlightGrid` (the default bounds cover the airport).
 - **Status:** open
 
 ## 2026-10-17 — to: Systems Engineer — crows steal pickups (no change needed)

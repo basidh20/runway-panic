@@ -134,21 +134,34 @@ it jinks `evadeDistance` (4 m) sideways — away from the line of fire, on its o
 approach point. The novelty term in the approach score makes it come from a different side (measured: 161° change). A
 `evadeCooldown` (2.5 s) stops endless dodging. Missing a crow costs the player the crow's position, not just the bullet.
 
-## 7. Evidence (fill in from playtests)
+## 7. Evidence (measured 17 Oct)
 
-| Measurement | How | Result |
+Measured by scripted playtests, re-runnable from the menu: **`Tools > IS > Crow > Run Evidence Playtest`** (Play mode in
+`Sandbox_IS_Crow`; full results in [evidence.md](evidence.md)) and **`Run Main Integration Check`** (Play mode in `Main`;
+[main_integration.md](main_integration.md)). Kills go through the real death path: `PlayerShooting.ShotFired`, then damage.
+
+| Measurement | Result |
+|---|---|
+| Grudge written by deaths | 3 crows shot from one spot → 3 danger stamps; danger at the shooter's spot **3.01** |
+| A\* with vs without danger (same 44 m flight across the kill zone) | Without danger costs: 44.0 m, crosses **19.5** danger (peak 3.01). With danger costs: 47.2 m (**+7%**), crosses **0.1** (peak 0.02) |
+| Picture | ![paths](path_comparison.png) Blue = no danger costs (straight through), green = what crows fly (around) |
+| Approach side after kills | Crows at 8 bearings around the player: approaches within 30° of the line of fire **1 of 8 before → 0 of 8 after**; the crow sitting on the kill line switches to **−90°**; a live crow there also came in at −90° |
+| Forgetting | Danger at the shooter's spot **3.01 → 1.60** after 33 s (6 steps × 0.9) — ratio **0.53**, matches the 32.9 s half-life |
+| Thefts | 4 tried, **1 delivered** to a stash, **1 recovered** (thief shot in flight); delivered loot left alone afterwards |
+| Script cost, 6 crows + map (Editor) | **0.014 ms** per frame on average (worst frame 0.47 ms, an A\* search) — target was < 0.5 ms |
+| In the real level (`Main`) | **7 of 7** checks pass: A\* routes, approach, steal, deliver to a stash, vigil at the shelter exit, rage on leaving, funeral → rage |
+
+## 8. Tuning and fixes
+
+No tuning values needed changing: every measurement above uses the defaults in `CrowStrategyConfig`.
+
+Bugs the playtests found and fixed (17 Oct):
+
+| Found by | Bug | Fix |
 |---|---|---|
-| Crow path with vs without danger | Sandbox: kill 3 crows from one spot, screenshot the path gizmo; then `[CrowDangerMap]` → *Debug: Clear*, screenshot again | _screenshots: `Docs/IS/Crow/path_danger.png`, `path_clear.png`_ |
-| Approaches from a new side after kills | F4 overlay + watch: same spot, 5 kills | _e.g. 4 of 5 approaches from a different side_ |
-| Thefts tried / stashed / recovered | F4 overlay after a 3-minute session | _ / _ / _ |
-| Danger half-life observed | F4 *hottest cell* at t = 0 and t = 33 s | _expected ≈ half_ |
-| Script cost, 6 crows + map | Profiler, `CrowBrain.Update` + `CrowDangerMap.Update` | _target < 0.5 ms_ |
-
-## 8. Tuning changes
-
-| Date | Value | From → to | Why |
-|---|---|---|---|
-| | | | |
+| Theft session | Crows re-stole loot lying near a stash: a crow that can't path the last metres drops it a few metres short, outside the "at a stash" radius, so the loot was shuffled around forever | `CrowPickupClaims.MarkStashed`: a delivered pickup is crow loot and never stolen again until the player collects it |
+| `Main` check | Vigil crows waited forever if the player left the shelter without walking out (respawn after dying inside): Unity sends no trigger-exit when the `CharacterController` is switched off to move the player | `ShelterZone` also checks every frame that the player is still inside its box |
+| Vigil test | Crows circled their shelter exit forever (`BirdMotor.LandAt` bug) | After `vigilLandTimeout` the crow stops and hovers at the exit |
 
 ## 9. Viva one-liner
 
