@@ -14,6 +14,12 @@ Template:
 
 ---
 
+## 2026-10-17 — to: S2 + all species owners — confirmed species/weapon data corrected
+- **What:** shared bird enum/data, weapon target matching, shop text; details and tuning rationale in `Docs/WorldBuilder/BirdProgression.md`.
+- **Details:** Gull replaces Eagle at the same serialized ID 3 and keeps the asset GUID. IDs Pigeon=0, Crow=1, Hawk=2 remain unchanged; introduction order is explicitly Gull → Pigeon → Crow → Hawk, not numeric enum order. Pistol → Gull (30 HP), AR → Pigeon (20 HP), sniper → Crow (60 HP), RPG → Hawk (300 HP). Kill coins are 8/10/15/25. One focused asset/reference/damage check passed (41 checks); no full-wave balance claim.
+- **Action needed:** after merge, pull develop before editing shared data. Do not recreate an Eagle asset or reorder enum IDs. S2 can tune the baseline further; AI owners should check their existing brains against updated values. Wave counts/economy still need integration playtesting.
+- **Status:** implemented on `fix/gull-species-progression`; human commit/merge into develop pending.
+
 ## Who owns what
 
 | Part | Folder | Owner | Status (17 Oct) |
@@ -148,5 +154,5 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
     | 3 | Crow (1) | Sniper — Rare | `Weapon_Tier3_Sniper` → 1 | 40 HP |
     | 4 | Hawk (2) | RPG — Legendary | `Weapon_Tier4_RPG` → 2 | 60 HP — raise to the toughest (e.g. Eagle's old 300 HP) |
   - Also: rename `BirdSpecies_Eagle.asset` → `BirdSpecies_Gull.asset` (move it with its `.meta` in Unity so the GUID stays), set its `speciesName` to Gull and its `prefab` to `Prefabs/Birds/P_Bird_Gull`. Update the enum's summary comment (it says the values are in wave order).
-- **Action needed:** Systems Engineer — make the change, or reply if you prefer a different mapping. HP/damage/coin numbers are yours to balance.
-- **Status:** open
+- **Action needed:** original rename/remap request implemented by the shared-data fix described above; S2 reviews subsequent balancing rather than repeating the migration. The table above records the old values/proposed mapping, not current tuning.
+- **Status:** implemented on `fix/gull-species-progression`; merge pending. See `Docs/WorldBuilder/BirdProgression.md` for current values.

@@ -15,11 +15,11 @@ MonoBehaviour:
   speciesName: Crow
   species: 1
   prefab: {fileID: 8578278086019283625, guid: 41313cf356033304a882e6738945654d, type: 3}
-  maxHP: 40
+  maxHP: 60
   moveSpeed: 5.5
   attackDamage: 8
   attackRange: 1.5
   attackCooldown: 1.2
-  coinReward: 10
-  requiredWeaponRarity: 1
+  coinReward: 15
+  requiredWeaponRarity: 2
   wrongWeaponDamageMultiplier: 0.1

@@ -20,6 +20,6 @@ MonoBehaviour:
   attackDamage: 5
   attackRange: 1.5
   attackCooldown: 1.5
-  coinReward: 6
-  requiredWeaponRarity: 0
+  coinReward: 10
+  requiredWeaponRarity: 1
   wrongWeaponDamageMultiplier: 0.1

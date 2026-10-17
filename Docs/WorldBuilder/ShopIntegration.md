@@ -10,7 +10,7 @@ This is a between-wave screen, not a physical vendor. `ShopPosition_Reserved` re
 
 The supplied catalogue is Assault Rifle (40 coins), Sniper (75), RPG (100), Medkit (15), Shield (25). Weapon prices come from WeaponData; consumable prices come from ShopItem assets. Buttons show BUY / OWNED / FULL / NEED, and successful gun purchases equip the weapon immediately.
 
-Visual preview at the current Full HD Game view confirmed all five rows, prices, NEED labels and Next wave button are visible. Existing content follow-up for S2: the RPG description still mentions "eagles", while the confirmed species are Gull, Pigeon, Crow and Hawk. Review that copy alongside the shared weapon/species design; this integration does not change species enums or rebalance weapons.
+Visual preview at the current Full HD Game view confirmed all five rows, prices, NEED labels and Next wave button are visible. The subsequent `BirdProgression.md` fix resolves the old Eagle/Gull mismatch and updates the AR/sniper/RPG descriptions and bird/weapon matching. Shop prices, UI behaviour and prefab remain unchanged.
 
 ## Wave handoff
 

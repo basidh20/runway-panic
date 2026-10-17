@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Shop_3_RPG
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.ShopItem
   displayName: RPG
-  description: Legendary. The only real answer to eagles.
+  description: Legendary. Full damage against hawks; two direct hits at full health.
   icon: {fileID: 0}
   kind: 0
   weapon: {fileID: 11400000, guid: 7b35ec9f9e50b674283e9615b329a24f, type: 2}

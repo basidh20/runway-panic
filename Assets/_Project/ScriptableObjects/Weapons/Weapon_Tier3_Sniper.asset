@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.WeaponData
   weaponName: Sniper
   rarity: 2
-  targetSpecies: 2
+  targetSpecies: 1
   prefab: {fileID: 1209553613016583175, guid: 2f159211c083bbb40972bbf875f30163, type: 3}
   holdType: 1
   damage: 60

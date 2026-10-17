@@ -17,11 +17,10 @@ namespace RunwayPanic.ArtTools
         const string SpeciesFolder = "Assets/_Project/ScriptableObjects/Birds/";
         const string MeshName = "Bird_Mesh";
 
-        // Prefab name → species asset names to try in order. The gull asset is still called Eagle until the
-        // Systems Engineer renames it; the rename keeps its GUID, so the reference stays valid.
+        // Species assets use the confirmed team names. The Gull migration preserves its original asset GUID.
         static readonly (string Prefab, string[] Species)[] Variants =
         {
-            ("P_Bird_Gull", new[] { "BirdSpecies_Gull", "BirdSpecies_Eagle" }),
+            ("P_Bird_Gull", new[] { "BirdSpecies_Gull" }),
             ("P_Bird_Pigeon", new[] { "BirdSpecies_Pigeon" }),
             ("P_Bird_Crow", new[] { "BirdSpecies_Crow" }),
         };
