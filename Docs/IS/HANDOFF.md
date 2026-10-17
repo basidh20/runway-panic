@@ -16,18 +16,30 @@ Template:
 
 ## Who owns what
 
-| Part | Folder | Owner |
-|---|---|---|
-| F1 Pathfinding (3D flight grid + A*) | `Scripts/AI/` | Basidh (Hawk owner) |
-| F2 Player event hub, registries, `BirdPoint` markers, base brain | `Scripts/Agents/Shared/` | Basidh (Hawk owner) |
-| F3 `BirdHealth`, `BirdContactAttack` | `Scripts/Agents/Shared/` | Agent Controller |
-| F4 Real `BirdMotor` + Animator-based bird animator | `Scripts/Agents/Movement/` | Agent Controller (GV graded) |
-| F5 Shared components on the bird prefabs | `Prefabs/Birds/` | Core Developer (Basidh) |
-| Species brains | `Scripts/Agents/<Species>/` | one owner per species |
+| Part | Folder | Owner | Status (17 Oct) |
+|---|---|---|---|
+| F1 Pathfinding (3D flight grid + A*) | `Scripts/AI/` | Basidh (Hawk owner) | ✅ merged (PR #18/#19) |
+| F2 Player event hub, registries, `BirdPoint` markers, base brain | `Scripts/Agents/Shared/` | Basidh (Hawk owner) | ✅ merged (PR #18/#19) |
+| F3 `BirdHealth`, `BirdContactAttack` | `Scripts/Agents/Shared/` | Agent Controller | open — stubs in place |
+| F4 Real `BirdMotor` + Animator-based bird animator | `Scripts/Agents/Movement/` | Agent Controller (GV graded) | open — stand-ins in place |
+| F5 Shared components on the bird prefabs | `Prefabs/Birds/` | Core Developer (Basidh) | ✅ merged (PR #19) |
+| Species brains | `Scripts/Agents/<Species>/` | one owner per species | open — can start now |
 
 Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → Crow → Hawk (wave 4, toughest)**.
 
 ---
+
+## 2026-10-17 — to: species owners + Agent Controller — the bird prefabs now carry the shared AI components (F5)
+- **What:** `Prefabs/Birds/P_Bird_Base` (inherited by `P_Bird_Gull`, `_Pigeon`, `_Crow`) and `P_Bird_Hawk` (own prefab, set up separately). Re-runnable tool: `Tools > S3 > Add Bird AI Components`.
+- **Details:**
+  - Root: kinematic `Rigidbody` (no gravity, interpolated), `SimpleBirdMotor`, `BirdHealth`, `BirdContactAttack`, `BirdStateLabel`. Model child: `BlendShapeBirdAnimator`.
+  - `BirdHealth.species` per prefab: Gull → `BirdSpecies_Eagle` (becomes `BirdSpecies_Gull` after the rename; same GUID, nothing to redo), Pigeon → `BirdSpecies_Pigeon`, Crow → `BirdSpecies_Crow`, Hawk → `BirdSpecies_Hawk`. `P_Bird_Base` has none.
+  - No brain is on any prefab. An idle `SimpleBirdMotor` (no orders) does not touch the Rigidbody, so prototypes that move the transform directly still work.
+  - ⚠ If you added these components by hand to a bird **in a scene**, that bird now has them twice (e.g. two `BirdHealth` → counted twice in `BirdRegistry`). Delete the scene bird and place the prefab again.
+- **Action needed:**
+  - Species owners: add **only your brain** to **your** prefab (`P_Bird_Gull` / `_Pigeon` / `_Crow` / `_Hawk`) — never to `P_Bird_Base`.
+  - Agent Controller (F4): replace `SimpleBirdMotor` and `BlendShapeBirdAnimator` on **`P_Bird_Base` and `P_Bird_Hawk`** (the variants follow the base). Assign the bird Animator Controller on both model children (see `SourceArt/HANDOFF.md`, 11 Oct).
+- **Status:** done
 
 ## 2026-10-17 — to: Agent Controller — F3 replaces two stubs; F4 implements two interfaces
 - **What:** `Scripts/Agents/Shared/BirdHealth.cs`, `BirdContactAttack.cs` (stubs), `IBirdMotor.cs`, `IBirdAnimator.cs`
@@ -46,7 +58,7 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
   - Overriding `Awake` / `OnEnable` / `OnDisable`: call `base.` first. Return cached strings from `CurrentStateName` (it is shown above the bird; **F3** toggles the labels).
   - Unsubscribe from the hub you subscribed to (store the reference); don't read `PlayerEventHub.Instance` in `OnDestroy`.
   - Sandbox shortcut: `Tools > IS > Set Up Agents Test Scene` adds a grid, the player (with all four guns), the GameManager, a test hawk and `AgentsDebugLogger` to the open scene.
-- **Action needed:** none until F5 puts the shared components on the bird prefabs; then add only your own brain to your species prefab.
+- **Action needed:** F5 is done (see the entry above): add only your own brain to your species prefab.
 - **Status:** done
 
 ## 2026-10-17 — to: species owners — flight pathfinding (F1) is available
@@ -59,7 +71,7 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
   - Gull debris: `FlightGrid.Instance.SetManualBlock(bounds, true)` when it lands, `(bounds, false)` with the **same bounds** when it is removed. Blocks stack, so overlapping debris is safe.
   - Moved barricades update the grid automatically (`Barricade.Settled`).
   - Grid paths fly at ≥ ~1.5 m; the last waypoint is the exact target when it is flyable and in sight of the last cell. Use `IBirdMotor.FlyTo` (F2) for the final swoop or landing.
-  - **Shelters are sealed air to the grid**: their doorways are narrower than a cell plus clearance (~2.8 m). A path to a player inside a safe room fails instantly (`TryFindPath` returns false — no frame spike). Plan your brain's "player is hiding" behaviour around that (e.g. crow Vigil: wait outside the door).
+  - **Shelters are sealed air to the grid** (the self-test finds 3 free-air regions: outside + 2 shelters): the 2.8 m doorway is no wider than one cell plus its clearance (2 m + 2 × 0.4 m), so no cell in it is free, door open or not. A path to a player inside a safe room fails instantly (`TryFindPath` returns false — no frame spike). Plan your brain's "player is hiding" behaviour around that (e.g. crow Vigil: wait outside the door). The shelter doors themselves are not placed in `Main` yet (Systems Engineer's request to the World Builder, 16 Oct).
 - **Action needed:** none yet; brains start after F2 (`BirdBrain.RequestPath` wraps all of the above).
 - **Status:** done
 
