@@ -16,7 +16,8 @@ namespace RunwayPanic.PlayerTools
     /// <c>JumpStart → Fall → Land</c> (<c>Jump</c> trigger, <c>IsGrounded</c>, <c>VerticalSpeed</c>); walking off a
     /// ledge goes straight to <c>Fall</c>. <c>UpperBody</c> layer (arms and fingers only, <c>AM_Player_UpperBody</c>):
     /// pistol/rifle aim, fire, equip and reload (<c>WeaponType</c>, <c>Fire</c>, <c>Equip</c>, <c>Reload</c>,
-    /// <c>IsReloading</c>, <c>ReloadSpeed</c>).
+    /// <c>IsReloading</c>, <c>ReloadSpeed</c>). <c>Death</c> on the base layer (<c>Dead</c>), and an additive
+    /// <c>Reactions</c> layer (spine, head and arms, <c>AM_Player_Reactions</c>) for the <c>Hit</c> flinch.
     /// </para>
     /// <para>
     /// Clips are found by name (<c>A_Player_Idle</c>, <c>_Walk</c>, <c>_Run</c>, <c>_JumpStart</c>, <c>_Fall</c>,
@@ -47,13 +48,22 @@ namespace RunwayPanic.PlayerTools
         private const string RifleEquipClip = "A_Player_RifleEquip";
         private const string PistolReloadClip = "A_Player_PistolReload";
         private const string RifleReloadClip = "A_Player_RifleReload";
+        private const string StandClip = "A_Player_Stand";
+        private const string HitClip = "A_Player_Hit";
+        private const string DeathClip = "A_Player_Death";
 
         private static readonly string[] RequiredClips =
         {
             IdleClip, WalkClip, RunClip, JumpStartClip, FallClip, LandClip,
             PistolAimClip, PistolFireClip, PistolEquipClip, RifleAimClip, RifleFireClip, RifleEquipClip,
-            PistolReloadClip, RifleReloadClip,
+            PistolReloadClip, RifleReloadClip, StandClip, HitClip, DeathClip,
         };
+
+        private const string ReactionsMaskPath = ClipsFolder + "/AM_Player_Reactions.mask";
+        private const string ReactionsLayer = "Reactions";
+        private const string HitTag = "Hit"; // PlayerAimIK loosens the aim while this plays
+        private const string HitParameter = "Hit";
+        private const string DeadParameter = "Dead";
 
         private const string MaskPath = ClipsFolder + "/AM_Player_UpperBody.mask";
         private const string UpperBodyLayer = "UpperBody";
@@ -108,7 +118,9 @@ namespace RunwayPanic.PlayerTools
             AnimatorState locomotion = BuildLocomotion(controller, clips[IdleClip], clips[WalkClip], clips[RunClip],
                 walkSpeed, sprintSpeed);
             BuildJump(controller, locomotion, clips[JumpStartClip], clips[FallClip], clips[LandClip]);
+            BuildDeath(controller, locomotion, clips[DeathClip]);
             BuildUpperBody(controller, LoadOrCreateUpperBodyMask(), clips);
+            BuildReactions(controller, LoadOrCreateReactionsMask(), clips[StandClip], clips[HitClip]);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
 
@@ -245,6 +257,28 @@ namespace RunwayPanic.PlayerTools
             Transition(land, locomotion, 0.15f, exitTime: 0.8f);
         }
 
+        // ---- Death (base layer) ----
+
+        //   Any ──Dead──► Death (holds the last frame, lying down) ──not Dead (respawned)──► Locomotion
+        private static void BuildDeath(AnimatorController controller, AnimatorState locomotion, AnimationClip deathClip)
+        {
+            controller.AddParameter(DeadParameter, AnimatorControllerParameterType.Bool);
+
+            AnimatorStateMachine machine = controller.layers[0].stateMachine;
+            AnimatorState death = machine.AddState("Death");
+            death.motion = deathClip;
+
+            AnimatorStateTransition die = machine.AddAnyStateTransition(death);
+            die.hasFixedDuration = true;
+            die.duration = 0.1f;
+            die.hasExitTime = false;
+            die.canTransitionToSelf = false;
+            die.AddCondition(AnimatorConditionMode.If, 0f, DeadParameter);
+
+            // Respawn has already moved the player: snap back to standing.
+            Transition(death, locomotion, 0.05f).AddCondition(AnimatorConditionMode.IfNot, 0f, DeadParameter);
+        }
+
         // ---- Upper body (weapons) ----
 
         // Arms and fingers only: the legs and spine keep playing locomotion and jumps underneath.
@@ -331,6 +365,60 @@ namespace RunwayPanic.PlayerTools
 
             Transition(pistolAim, rifleAim, 0.15f).AddCondition(AnimatorConditionMode.Equals, RifleType, WeaponTypeParameter);
             Transition(rifleAim, pistolAim, 0.15f).AddCondition(AnimatorConditionMode.Equals, PistolType, WeaponTypeParameter);
+        }
+
+        // ---- Reactions (additive) ----
+
+        // Spine, head and arms: a flinch shows on the upper body without disturbing the legs.
+        private static AvatarMask LoadOrCreateReactionsMask()
+        {
+            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(ReactionsMaskPath);
+            if (mask == null)
+            {
+                mask = new AvatarMask();
+                AssetDatabase.CreateAsset(mask, ReactionsMaskPath);
+            }
+
+            for (var part = AvatarMaskBodyPart.Root; part < AvatarMaskBodyPart.LastBodyPart; part++)
+            {
+                bool upper = part == AvatarMaskBodyPart.Body || part == AvatarMaskBodyPart.Head ||
+                             part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.RightArm;
+                mask.SetHumanoidBodyPartActive(part, upper);
+            }
+
+            EditorUtility.SetDirty(mask);
+            return mask;
+        }
+
+        //   Any ──Hit──► Hit (restarts on every hit) ──(clip ends)──► None
+        // Additive: only the change from each clip's first frame is added on top of the layers below. "None" plays a
+        // still stand, whose change from itself is zero — so it adds nothing.
+        private static void BuildReactions(AnimatorController controller, AvatarMask mask, AnimationClip standClip,
+            AnimationClip hitClip)
+        {
+            controller.AddParameter(HitParameter, AnimatorControllerParameterType.Trigger);
+
+            controller.AddLayer(ReactionsLayer);
+            AnimatorControllerLayer[] layers = controller.layers;
+            int layerIndex = layers.Length - 1;
+            layers[layerIndex].avatarMask = mask;
+            layers[layerIndex].blendingMode = AnimatorLayerBlendingMode.Additive;
+            layers[layerIndex].defaultWeight = 1f;
+            controller.layers = layers;
+
+            AnimatorStateMachine machine = controller.layers[layerIndex].stateMachine;
+            AnimatorState none = State(machine, "None", standClip, "");
+            AnimatorState hit = State(machine, "Hit", hitClip, HitTag);
+            machine.defaultState = none;
+
+            AnimatorStateTransition flinch = machine.AddAnyStateTransition(hit);
+            flinch.hasFixedDuration = true;
+            flinch.duration = 0.02f;
+            flinch.hasExitTime = false;
+            flinch.canTransitionToSelf = true;
+            flinch.AddCondition(AnimatorConditionMode.If, 0f, HitParameter);
+
+            Transition(hit, none, 0.1f, exitTime: 0.95f);
         }
 
         private static AnimatorState State(AnimatorStateMachine machine, string name, Motion motion, string tag)
