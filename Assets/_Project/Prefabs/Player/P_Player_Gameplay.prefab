@@ -1714,6 +1714,7 @@ GameObject:
   - component: {fileID: 3956810274463825192}
   - component: {fileID: 9101243093440750850}
   - component: {fileID: 6817391851223279392}
+  - component: {fileID: 3485412674391604826}
   m_Layer: 0
   m_Name: P_Player_Gameplay
   m_TagString: Player
@@ -2003,6 +2004,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Player.PlayerAnimator
   animator: {fileID: 2265026349505040561}
   speedDampTime: 0.1
+  armsBlendSpeed: 6
+--- !u!114 &3485412674391604826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8402448470462990780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41b7840e1dc8fd24481cb9d9f6b94208, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Player.PlayerAimIK
+  maxAimAngle: 70
+  aimDistance: 40
+  blendSpeed: 8
+  pistolSupport: {x: -0.03, y: -0.03, z: 0}
+  rifleSupportAlongBarrel: 0.5
+  rifleSupportBelowBarrel: 0.05
 --- !u!1 &8930974583446172621
 GameObject:
   m_ObjectHideFlags: 0
