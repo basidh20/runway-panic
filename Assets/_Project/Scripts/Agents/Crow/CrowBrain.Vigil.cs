@@ -16,6 +16,7 @@ namespace RunwayPanic.Agents.Crow
         private const float VigilLandDistance = 3f;
         private const float VigilApproachHeight = 2f;
         private const float VigilBurstRage = 3f;
+        private const float VigilHoverRadius = 1.5f; // a crow that can't land stops this close to its exit
 
         private static readonly List<BirdPoint> exitBuffer = new List<BirdPoint>(4);
         private static readonly List<BirdHealth> crowBuffer = new List<BirdHealth>(16);
@@ -23,6 +24,8 @@ namespace RunwayPanic.Agents.Crow
         private ShelterZone vigilZone;
         private BirdPoint vigilExit;
         private bool vigilLanding;
+        private bool vigilHovering;
+        private float vigilLandStartTime;
         private float nextVigilCheckTime;
         private float nextVigilRepathTime;
 
@@ -94,7 +97,25 @@ namespace RunwayPanic.Agents.Crow
             }
 
             if (vigilLanding)
-                return; // perched, waiting
+            {
+                // BirdMotor.LandAt can circle its point forever when the bird arrives from the side (open bug in
+                // Docs/IS/HANDOFF.md): its turn radius stays wider than the landing snap distance, and HoldPosition
+                // steers the same way. So if the crow hasn't landed in time, it waits until its circle passes close to
+                // the exit and simply stops there, hovering — still guarding the door, never circling.
+                float landing = Time.time - vigilLandStartTime;
+                if (!vigilHovering && !Motor.IsLanded && landing > config.vigilLandTimeout)
+                {
+                    Vector3 offset = Motor.Position - vigilExit.Position;
+                    offset.y = 0f;
+                    if (offset.sqrMagnitude <= VigilHoverRadius * VigilHoverRadius || landing > 2f * config.vigilLandTimeout)
+                    {
+                        Motor.Stop();
+                        vigilHovering = true;
+                    }
+                }
+
+                return; // perched (or hovering), waiting
+            }
 
             Vector3 above = vigilExit.Position + Vector3.up * VigilApproachHeight;
             if ((above - Motor.Position).sqrMagnitude <= VigilLandDistance * VigilLandDistance)
@@ -103,6 +124,7 @@ namespace RunwayPanic.Agents.Crow
                 facing.y = 0f;
                 Motor.LandAt(vigilExit.Position, facing.sqrMagnitude > 0.0001f ? facing.normalized : Vector3.forward);
                 vigilLanding = true;
+                vigilLandStartTime = Time.time;
                 return;
             }
 
@@ -115,6 +137,7 @@ namespace RunwayPanic.Agents.Crow
             vigilZone = null;
             vigilExit = null;
             vigilLanding = false;
+            vigilHovering = false;
         }
 
         private void HandlePlayerLeftShelter(ShelterZone zone)
