@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: beea383a975bfff42af65fbaff984a0c, type: 3}
+  m_Name: BirdSpecies_Crow
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.BirdSpeciesData
+  speciesName: Crow
+  species: 1
+  prefab: {fileID: 8578278086019283625, guid: 41313cf356033304a882e6738945654d, type: 3}
+  maxHP: 40
+  moveSpeed: 5.5
+  attackDamage: 8
+  attackRange: 1.5
+  attackCooldown: 1.2
+  coinReward: 10
+  requiredWeaponRarity: 1
+  wrongWeaponDamageMultiplier: 0.1
