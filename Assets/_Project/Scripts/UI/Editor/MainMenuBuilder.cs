@@ -487,6 +487,7 @@ namespace RunwayPanic.UI.EditorTools
                 ("Use medkit", "Q", "D-pad up"),
                 ("Use shield", "F", "D-pad down"),
                 ("Pause", "Esc", "Start"),
+                ("Aim / sniper scope", "Right mouse", "LT"),
             };
 
             RectTransform table = Rect("Controls", box, new Vector2(380, -25), new Vector2(660, 640));
