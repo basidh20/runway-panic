@@ -1,5 +1,7 @@
 # Shelter doors — integration batch, commit 2 of 4
 
+**Update:** Main now also has timed shelter controllers and a separate status display. See `SafeRoomController.md` for the current behaviour. The door-only descriptions below record the earlier door integration and validation.
+
 Unity: **6000.6.4f1**. Branch: **feature/world-level-integration**. Merge target: **develop**, after this four-commit batch is ready.
 
 ## Placement and ownership
