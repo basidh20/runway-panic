@@ -63,5 +63,27 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5648174821525129418, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4225740923287026092}
   m_SourcePrefab: {fileID: 100100000, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+--- !u!1 &7907624009396832584 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5648174821525129418, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+  m_PrefabInstance: {fileID: 2585030111795167618}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4225740923287026092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7907624009396832584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80a7f4989bfbc4678842d16689050635, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.GullBrain
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  previewStateCycle: 1
