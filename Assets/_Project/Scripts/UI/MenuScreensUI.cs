@@ -1,6 +1,8 @@
 using RunwayPanic.Core;
 using RunwayPanic.Player;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -8,8 +10,11 @@ namespace RunwayPanic.UI
 {
     /// <summary>
     /// Pause, Game Over and Victory screens. Each is shown automatically when the GameManager enters
-    /// that state. Restart reloads the current scene; Quit leaves the game (or stops Play mode in the Editor).
+    /// that state. Restart reloads the current scene; Main Menu returns to the main menu scene (hidden when the build
+    /// has none); Quit leaves the game (or stops Play mode in the Editor). The pause screen also opens the shared
+    /// settings panel, which Esc / Start closes without unpausing. Keyboard and gamepad focus the first button.
     /// </summary>
+    [DefaultExecutionOrder(-50)] // before the GameManager, so closing settings can consume the Esc press
     public sealed class MenuScreensUI : MonoBehaviour
     {
         [Header("Screens")]
@@ -22,7 +27,12 @@ namespace RunwayPanic.UI
         [Header("Buttons")]
         [SerializeField] private Button resumeButton;
         [SerializeField] private Button[] restartButtons = System.Array.Empty<Button>();
+        [SerializeField] private Button[] mainMenuButtons = System.Array.Empty<Button>();
         [SerializeField] private Button[] quitButtons = System.Array.Empty<Button>();
+
+        [Header("Settings")]
+        [SerializeField] private Button settingsButton;
+        [SerializeField] private SettingsPanelUI settingsPanel;
 
         private GameManager gameManager;
 
@@ -33,8 +43,20 @@ namespace RunwayPanic.UI
             resumeButton.onClick.AddListener(() => gameManager?.Resume());
             foreach (Button button in restartButtons)
                 button.onClick.AddListener(Restart);
+            foreach (Button button in mainMenuButtons)
+            {
+                button.onClick.AddListener(SceneFlow.LoadMainMenu);
+                button.gameObject.SetActive(SceneFlow.HasMainMenu);
+            }
             foreach (Button button in quitButtons)
                 button.onClick.AddListener(Quit);
+
+            if (settingsButton != null && settingsPanel != null)
+            {
+                settingsButton.onClick.AddListener(OpenSettings);
+                settingsPanel.Closed += CloseSettings;
+                settingsPanel.gameObject.SetActive(false);
+            }
 
             ShowFor(GameState.Playing);
         }
@@ -48,6 +70,12 @@ namespace RunwayPanic.UI
                 gameManager.StateChanged += HandleStateChanged;
                 ShowFor(gameManager.CurrentState);
             }
+
+            if (settingsPanel != null && settingsPanel.IsOpen && BackPressed())
+            {
+                gameManager?.ConsumePauseInput();
+                settingsPanel.Close();
+            }
         }
 
         private void OnDestroy()
@@ -60,6 +88,9 @@ namespace RunwayPanic.UI
 
         private void ShowFor(GameState state)
         {
+            if (settingsPanel != null && state != GameState.Paused)
+                settingsPanel.gameObject.SetActive(false);
+
             pauseScreen.SetActive(state == GameState.Paused);
             gameOverScreen.SetActive(state == GameState.GameOver);
             victoryScreen.SetActive(state == GameState.Victory);
@@ -75,7 +106,43 @@ namespace RunwayPanic.UI
 
             if (state == GameState.Victory && victoryDetail != null)
                 victoryDetail.text = $"All {totalWaves} waves cleared.\nThe airport is open again - {coins} coins left.";
+
+            GameObject shown = state == GameState.Paused ? pauseScreen
+                : state == GameState.GameOver ? gameOverScreen
+                : state == GameState.Victory ? victoryScreen
+                : null;
+            FocusFirstButton(shown);
         }
+
+        private void OpenSettings()
+        {
+            pauseScreen.SetActive(false);
+            settingsPanel.Open();
+        }
+
+        private void CloseSettings()
+        {
+            if (gameManager == null || !gameManager.IsPaused)
+                return;
+            pauseScreen.SetActive(true);
+            FocusFirstButton(pauseScreen, settingsButton);
+        }
+
+        // Keyboard and gamepad players need a selected button to press.
+        private static void FocusFirstButton(GameObject screen, Selectable preferred = null)
+        {
+            if (screen == null || EventSystem.current == null)
+                return;
+            Selectable target = preferred != null && preferred.gameObject.activeInHierarchy
+                ? preferred
+                : screen.GetComponentInChildren<Button>();
+            if (target != null)
+                EventSystem.current.SetSelectedGameObject(target.gameObject);
+        }
+
+        private static bool BackPressed() =>
+            (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
+            (Gamepad.current != null && (Gamepad.current.startButton.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame));
 
         private static void Restart()
         {
