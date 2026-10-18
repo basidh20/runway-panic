@@ -51,7 +51,8 @@ namespace RunwayPanic.ArtTools
             new Species("Crow", 0.8f, 30f, "M_Bird_Crow_Atlas"),     // black, slightly glossier plumage
 
             // Modelled separately (11 Oct) at real size: 0.56 m beak to tail, 1.51 m wingspan; colours from Blender.
-            new Species("Hawk", 1.0f, 100f, null),
+            // Scaled 1.3 (18 Oct): 0.73 m, 1.96 m wingspan, so the wave-4 boss reads as the biggest bird (gull 1.66 m).
+            new Species("Hawk", 1.3f, 100f, null),
         };
 
         [MenuItem("Tools/S3/Build Bird Species Variants")]
