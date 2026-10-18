@@ -1,0 +1,44 @@
+Main Gull/Pigeon markers — focused Edit-mode geometry/approach check
+Unity: 6000.6.4f1
+PASS: One kettle centre, eight FOD collection points and three roosts, no duplicate types elsewhere
+PASS: Existing airport spawns, Hawk perches and Crow markers retained
+PASS: KettleCenter_Runway has the intended metadata and no collision/rendering at (0.00, 10.00, 0.00), radius 8
+PASS: Roost_HangarRoof has the intended metadata and no collision/rendering at (-38.46, 6.00, -12.70), radius 2
+PASS: Roost_HangarRoof centre and eight landing-ring samples fit the intended roof/wing
+PASS: Roost_HangarRoof has a clear, reachable prospective flight approach
+PASS: Roost_TerminalRoof has the intended metadata and no collision/rendering at (20.00, 6.40, 30.00), radius 2
+PASS: Roost_TerminalRoof centre and eight landing-ring samples fit the intended roof/wing
+PASS: Roost_TerminalRoof has a clear, reachable prospective flight approach
+PASS: Roost_PlaneA_Wing has the intended metadata and no collision/rendering at (-17.37, 1.35, -23.34), radius 0.6
+PASS: Roost_PlaneA_Wing centre and eight landing-ring samples fit the intended roof/wing
+PASS: Roost_PlaneA_Wing has a clear, reachable prospective flight approach
+PASS: FodSpawn_West_South30 has the intended metadata and no collision/rendering at (-8.50, 0.00, -30.00), radius 0.5
+PASS: FodSpawn_West_South30 rests on solid airport ground
+PASS: FodSpawn_West_South30 has a clear, reachable prospective flight approach
+PASS: FodSpawn_West_South10 has the intended metadata and no collision/rendering at (-8.50, 0.00, -10.00), radius 0.5
+PASS: FodSpawn_West_South10 rests on solid airport ground
+PASS: FodSpawn_West_South10 has a clear, reachable prospective flight approach
+PASS: FodSpawn_West_North10 has the intended metadata and no collision/rendering at (-8.50, 0.00, 10.00), radius 0.5
+PASS: FodSpawn_West_North10 rests on solid airport ground
+PASS: FodSpawn_West_North10 has a clear, reachable prospective flight approach
+PASS: FodSpawn_West_North30 has the intended metadata and no collision/rendering at (-8.50, 0.00, 30.00), radius 0.5
+PASS: FodSpawn_West_North30 rests on solid airport ground
+PASS: FodSpawn_West_North30 has a clear, reachable prospective flight approach
+PASS: FodSpawn_East_South30 has the intended metadata and no collision/rendering at (8.50, 0.00, -30.00), radius 0.5
+PASS: FodSpawn_East_South30 rests on solid airport ground
+PASS: FodSpawn_East_South30 has a clear, reachable prospective flight approach
+PASS: FodSpawn_East_South10 has the intended metadata and no collision/rendering at (8.50, 0.00, -10.00), radius 0.5
+PASS: FodSpawn_East_South10 rests on solid airport ground
+PASS: FodSpawn_East_South10 has a clear, reachable prospective flight approach
+PASS: FodSpawn_East_North10 has the intended metadata and no collision/rendering at (8.50, 0.00, 10.00), radius 0.5
+PASS: FodSpawn_East_North10 rests on solid airport ground
+PASS: FodSpawn_East_North10 has a clear, reachable prospective flight approach
+PASS: FodSpawn_East_North30 has the intended metadata and no collision/rendering at (8.50, 0.00, 30.00), radius 0.5
+PASS: FodSpawn_East_North30 rests on solid airport ground
+PASS: FodSpawn_East_North30 has a clear, reachable prospective flight approach
+PASS: Kettle centre and radius-8 orbit samples at runway-relative heights 6, 10 and 14 m are clear
+PASS: Marker group contains no runtime brain, FOD source, spawner or test behaviour
+Geometry/approach samples only, not live AI, full landing-ring capacity or continuous orbit certification. No Play-mode suite run.
+Kettle anchor is y=10; orbit heights 6–14 are ABOVE GROUND, not added again to anchor y.
+FodSpawnPoint/FOD prefabs and runtime wiring remain Gull G2 work; Pigeon rally goals are dynamic, not static markers.
+Failures: 0

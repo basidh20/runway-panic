@@ -38,7 +38,7 @@ Recorded run: **24 checks passed, zero failures**. The grid had 1,336 blocked ce
 1. FlightGrid and original spawn markers — this milestone.
 2. Eight Hawk vantage/perch markers — implemented; see `HawkPerchIntegration.md` and its focused report.
 3. Supplied `P_CrowSetup_Main` installed at the origin — see `CrowSetupIntegration.md`; its stashes/zones/exits are reused unchanged.
-4. Gull/Pigeon behaviour markers based on their current plans.
+4. One Gull kettle centre, eight FOD collection points and three Pigeon roosts — implemented; see `GullPigeonMarkerIntegration.md`. All four scene-preparation milestones are ready for human review/commit and merge into develop; runtime Gull/Pigeon AI and production waves are not included.
 
 The human commits/pushes each milestone. Suggested message for this first milestone:
 

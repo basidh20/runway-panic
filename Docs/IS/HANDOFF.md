@@ -14,6 +14,12 @@ Template:
 
 ---
 
+## 2026-10-18 — to: Gull / Pigeon owners — Main behaviour markers prepared
+- **What:** Main's `GullPigeonBehaviourPoints`: one KettleCenter at (0,10,0), eight ground-level FodSpawn markers along the runway edges, and three Roost markers on the hangar roof, terminal roof and Plane A wing. See `Docs/WorldBuilder/GullPigeonMarkerIntegration.md` for positions/radii and runtime wiring still required.
+- **Details:** Existing shared `BirdPoint` only; no brains, FOD source components/prefabs or test spawners added. Existing eight Spawn points, Hawk perches and Crow setup retained. One focused Edit-mode surface/approach check passed, not live species testing.
+- **Action needed:** after the four-milestone branch merges into **develop**, use these markers in the species sandboxes/runtime integration. Gull: add G2 FodSpawnPoint wiring when implemented; keep kettle heights 6–14 m above ground, not added again to the y=10 anchor. Pigeon: respect each roost radius (small wing radius 0.6 m); generate rally goals dynamically. All bird work refers to `BIRD_STRATEGIES.md`, plus `01_GULL_PLAN.md` for Gull. The current team decision is **three waves with four species**, overriding older four-wave examples below.
+- **Status:** scene preparation complete on `feature/world-ai-integration`; human fourth commit/PR into develop pending. Gull/Pigeon runtime AI and production waves remain separate.
+
 ## 2026-10-17 — to: S2 + all species owners — confirmed species/weapon data corrected
 - **What:** shared bird enum/data, weapon target matching, shop text; details and tuning rationale in `Docs/WorldBuilder/BirdProgression.md`.
 - **Details:** Gull replaces Eagle at the same serialized ID 3 and keeps the asset GUID. IDs Pigeon=0, Crow=1, Hawk=2 remain unchanged; introduction order is explicitly Gull → Pigeon → Crow → Hawk, not numeric enum order. Pistol → Gull (30 HP), AR → Pigeon (20 HP), sniper → Crow (60 HP), RPG → Hawk (300 HP). Kill coins are 8/10/15/25. One focused asset/reference/damage check passed (41 checks); no full-wave balance claim.
