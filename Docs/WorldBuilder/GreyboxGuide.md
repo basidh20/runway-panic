@@ -18,7 +18,7 @@ The first gameplay integration is documented in `PlayerIntegration.md`: Main now
 - Six barricade prefab instances placed beside the runway, with routes left open.
 - A simple control-tower and terminal placeholder to establish airport scale and landmarks.
 - Basic reusable URP colour materials and realtime preview lighting.
-- Player-start, eight bird-spawn, four pickup, two checkpoint, and reserved-shop markers. Checkpoints are functional; the four pickup markers feed the shared spawner (see `PickupIntegration.md`). The shared between-wave shop screen is installed (`ShopIntegration.md`), but is not a physical vendor at the reserved marker. Bird-spawn and reserved-shop markers remain placement references.
+- Player-start, eight bird-spawn, four pickup, two checkpoint, and reserved-shop markers. Checkpoints are functional; the four pickup markers feed the shared spawner (see `PickupIntegration.md`). The shared between-wave shop screen is installed (`ShopIntegration.md`), but is not a physical vendor at the reserved marker. The eight bird-spawn markers are now typed `BirdPoint` Spawn points and Main has a shared FlightGrid (`FlightIntegration.md`); production bird spawning is not implemented yet.
 - A temporary first-person walkthrough rig and overview camera.
 
 The greybox is made of ordinary saved Unity objects and reusable prefabs. It is not generated on every Play. You can edit positions and sizes directly in the Inspector.
@@ -64,7 +64,7 @@ Use Tools > Runway Panic > Validate Aircraft Greyboxes after plane edits. `Aircr
 
 ## Next milestones
 
-The merged shared foundation now includes a 3D FlightGrid/A*, bird movement/animation and Hawk/Crow AI. These still need deliberate Main-scene integration; do not rebuild them from the older NavMesh-sampling proposal. After player integration, the environment milestones are doors/checkpoints, shop/pickups, flight navigation and species markers, movable cover, waves/safe-room integration, then final art and lighting. See `PlayerIntegration.md` and the latest teammate handoffs.
+Main now has the shared 3D FlightGrid/A* and typed spawn points; see `FlightIntegration.md`. Do not rebuild these from the older NavMesh-sampling proposal. Next are Hawk vantage markers, the supplied Crow setup prefab and Gull/Pigeon markers, then production waves (three waves with four species), movable cover/safe-room integration and final environment presentation. Bird movement/animation and Hawk/Crow brains already exist, but full Main gameplay still needs their deliberate integration.
 
 The builder menu creates Main only when it does not already exist; it deliberately refuses to overwrite a saved scene. Use normal scene editing for future work. The teammate's Sandbox_Basidh scene and existing render/input configuration are preserved. Main is added as the first build scene, with the existing sandbox entry retained.
 

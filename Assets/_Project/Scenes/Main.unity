@@ -495,6 +495,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 86099909}
+  - component: {fileID: 86099910}
   m_Layer: 0
   m_Name: BirdSpawn_08
   m_TagString: Untagged
@@ -517,6 +518,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 999693031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &86099910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 86099908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efce9aedbf4423f4494688bf2a067cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPoint
+  type: 0
+  radius: 1.5
+  group: AirportSpawn
 --- !u!1 &97936747
 GameObject:
   m_ObjectHideFlags: 0
@@ -656,6 +672,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 120721656}
+  - component: {fileID: 120721657}
   m_Layer: 0
   m_Name: BirdSpawn_03
   m_TagString: Untagged
@@ -678,6 +695,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 999693031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &120721657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 120721655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efce9aedbf4423f4494688bf2a067cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPoint
+  type: 0
+  radius: 1.5
+  group: AirportSpawn
 --- !u!1 &146547966
 GameObject:
   m_ObjectHideFlags: 0
@@ -1097,6 +1129,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 208311251}
+  - component: {fileID: 208311252}
   m_Layer: 0
   m_Name: BirdSpawn_01
   m_TagString: Untagged
@@ -1119,6 +1152,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 999693031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &208311252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 208311250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efce9aedbf4423f4494688bf2a067cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPoint
+  type: 0
+  radius: 1.5
+  group: AirportSpawn
 --- !u!1 &210173222 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1207962095137404717, guid: a9eb3344f7136446ba36f523364aa010, type: 3}
@@ -2526,6 +2574,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 391631758}
+  - component: {fileID: 391631759}
   m_Layer: 0
   m_Name: BirdSpawn_02
   m_TagString: Untagged
@@ -2548,6 +2597,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 999693031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &391631759
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 391631757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efce9aedbf4423f4494688bf2a067cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPoint
+  type: 0
+  radius: 1.5
+  group: AirportSpawn
 --- !u!1 &401830679
 GameObject:
   m_ObjectHideFlags: 0
@@ -5185,6 +5249,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 860914539}
+  - component: {fileID: 860914540}
   m_Layer: 0
   m_Name: BirdSpawn_04
   m_TagString: Untagged
@@ -5207,6 +5272,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 999693031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &860914540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 860914538}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efce9aedbf4423f4494688bf2a067cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPoint
+  type: 0
+  radius: 1.5
+  group: AirportSpawn
 --- !u!1 &865435856
 GameObject:
   m_ObjectHideFlags: 0
@@ -5738,6 +5818,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 927262251}
+  - component: {fileID: 927262252}
   m_Layer: 0
   m_Name: BirdSpawn_06
   m_TagString: Untagged
@@ -5760,6 +5841,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 999693031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &927262252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 927262250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efce9aedbf4423f4494688bf2a067cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPoint
+  type: 0
+  radius: 1.5
+  group: AirportSpawn
 --- !u!1001 &941007817
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5893,6 +5989,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 952396882}
+  - component: {fileID: 952396883}
   m_Layer: 0
   m_Name: BirdSpawn_05
   m_TagString: Untagged
@@ -5915,6 +6012,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 999693031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &952396883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 952396881}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efce9aedbf4423f4494688bf2a067cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPoint
+  type: 0
+  radius: 1.5
+  group: AirportSpawn
 --- !u!1 &998181598
 GameObject:
   m_ObjectHideFlags: 0
@@ -6531,6 +6643,65 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1083227893}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1134447647
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1134447649}
+  - component: {fileID: 1134447648}
+  m_Layer: 0
+  m_Name: FlightGrid
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1134447648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1134447647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c2cf561e96bec445bea2cccb02bb988, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.AI.FlightGrid
+  boundsCenter: {x: 0, y: 12.5, z: 0}
+  boundsSize: {x: 100, y: 24, z: 80}
+  cellSize: 2
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  clearance: 0.4
+  flyableRadius: 0.3
+  maxExpandedNodes: 8000
+  maxSearchesPerFrame: 6
+  snapRadius: 3
+  snapLineRadius: 0.1
+  drawGizmos: 1
+  gizmoOnlyBlocked: 1
+  logBuildTime: 1
+--- !u!4 &1134447649
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1134447647}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1143175572
 GameObject:
   m_ObjectHideFlags: 0
@@ -7711,6 +7882,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1330602805}
+  - component: {fileID: 1330602806}
   m_Layer: 0
   m_Name: BirdSpawn_07
   m_TagString: Untagged
@@ -7733,6 +7905,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 999693031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1330602806
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1330602804}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efce9aedbf4423f4494688bf2a067cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdPoint
+  type: 0
+  radius: 1.5
+  group: AirportSpawn
 --- !u!1 &1335449486
 GameObject:
   m_ObjectHideFlags: 0
@@ -11533,3 +11720,4 @@ SceneRoots:
   - {fileID: 644137724}
   - {fileID: 1244687961}
   - {fileID: 350801236}
+  - {fileID: 1134447649}
