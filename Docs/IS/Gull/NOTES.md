@@ -231,7 +231,7 @@ Counters collect while hidden. Debug instrumentation calls are compiled out of n
 
 Recorded counter-check result: **10 checks passed, zero failures** on Unity 6000.6.4f1 after correcting first-impact hub initialization. The diagnostic arranged one real HP-damaging impact and one miss; their mean impact-to-player distance was **4.00 m**. This validates measurement/counter semantics, not game balance or predictive-AI accuracy.
 
-**Visual verification outstanding:** the native-editor preview attempts did not produce a confirmed visible panel in this session. Do not mark F4/rendering acceptance complete from the counter check alone. Verify the panel manually using F4 or the explicit preview command before closing G6a. Unity was left outside Play; no scene was saved by these checks.
+**Visual verification:** the project owner subsequently confirmed that the panel appears and its counters work in the Gull sandbox. This is user-observed confirmation, separate from the automated ten-check counter result. The prior native-editor automation attempts alone had not confirmed rendering.
 
 ### Current strategy flow (not the historical G1 label demo)
 
@@ -253,15 +253,30 @@ Any state + death -> Dead (terminal until shared respawn lifecycle)
 
 The ordinary drop token serializes bombing/swoop turns; the planned distress exception can dispatch several Gulls together. Aim prediction, warning-time locking, capped lead and close-target braking are documented in G4 above. The defaults remain unchanged by G6.
 
-### G6b — evidence still to collect
+### G6b — accuracy evidence and remaining profiling
 
-- Existing G4 single samples are real functional results: standing lost 6 HP, straight walking lost 6 HP, warning-time direction change lost 0 HP. They are not a statistically meaningful standing/moving hit-rate comparison. Repeat comparable autonomous-bird runs, record sample counts/hits and reset stats between conditions. Include speed, player movement pattern and any cover/shield use; avoid mixing conditions in one percentage.
+- Existing G4 single samples are real functional results: standing lost 6 HP, straight walking lost 6 HP, warning-time direction change lost 0 HP. They are not a statistically meaningful standing/moving hit-rate comparison.
+- **Tools > IS > Gull > Measure Six Accuracy Attempts** runs one bounded sample: three standing and three straight-walking attempts, with three different Gull starting points repeated for each condition. Each fresh Gull must collect real FOD, enter the kettle, warn and drop normally. Player HP/position, supply/formation/debris and debug counters reset between attempts; no forced attack state or final game assets are changed. The player's normal controller is temporarily replaced by scripted +Z movement commanded at 2 m/s during approach/warning/fall. Actual hub speed at the warning is recorded because Editor-driven movement is not guaranteed to run on every Play frame.
+- `AccuracySamples.md` records every outcome, HP loss, first-impact-to-player distance, warning-time speed, warning-to-release delay and per-condition totals. First-impact measurements are checked against the live overlay counters. A 32-second unresolved attempt is reported as a timeout, not silently replaced or counted as a resolved miss. This small repeated sample is functional evidence, not a statistically reliable population hit rate. Human-input, cover/shield and broader movement tests remain future balance work.
+
+Recorded six-attempt run on Unity 6000.6.4f1 / Apple M1 / macOS 15.7.7:
+
+| Condition | Resolved / attempted | HP-damaging impacts | Mean first-impact-to-player distance |
+|---|---:|---:|---:|
+| Standing | 3 / 3 | 3 / 3 | 0.44 m |
+| Straight walking, commanded 2 m/s | 3 / 3 | 3 / 3 | 0.80 m |
+
+All six releases followed a measured **0.61 s warning**, each damaging impact removed **6 HP**, and the overlay matched all six observed impacts. No attempts timed out. Walking hub speeds at the warning were **2.00, 1.38 and 1.98 m/s**: the fixture is explicitly not a guarantee of perfectly constant 2 m/s movement. The complete individual rows are in `AccuracySamples.md`.
+
+Interpretation: the lead prediction can still hit a slowly moving player who continues straight; movement alone is not the intended counter. The existing G4 single sharp-turn example avoided damage after changing direction at the warning. Six attempts do not prove a true 100% hit probability, final fairness, or a reliable standing-versus-walking difference. No balance tuning was changed on this evidence. The earlier close-target braking and warning-time aim lock remain the documented tuning decisions.
+
 - The controlled G6 diagnostic's arranged 1-hit/1-miss result must never be presented as a 50% autonomous strategy hit rate.
 - The plan's **eight Gulls <0.5 ms of scripts/frame** target remains unverified. Profile a representative eight-Gull run in a development player, with labels/overlays and Deep Profile disabled, and record hardware/build settings plus typical/peak script costs. Do not substitute whole-frame FPS or this overlay's refresh rate for that measurement.
 - Production Main wiring and end-to-end weapon/cover/wave checks remain separate integration work. No Main scene, other bird strategy, species balance or three-wave configuration was changed by this overlay milestone.
 
 Suggested G6a commit: `feat(ai-gull): add gull debug stats overlay`.
-Reserve `docs(ai-gull): record gull strategy design, formulas and playtest results` for the later measured evidence milestone.
+Suggested sampler commit: `test(ai-gull): add bounded autonomous accuracy sampling`.
+Suggested evidence commit: `docs(ai-gull): record gull strategy design, formulas and playtest results`.
 
 ## Remaining phases / evidence
 
@@ -269,8 +284,8 @@ Reserve `docs(ai-gull): record gull strategy design, formulas and playtest resul
 - G3 formation/token implementation is delivered in the Gull sandbox and now drives G4 attacks.
 - G4 prediction, warning, real drop and fallback swoop are implemented in the Gull sandbox; final tuning/art/sound and wider balance checks remain integration work.
 - G5 damage-triggered distress reaction and cooldown are implemented in the Gull sandbox.
-- G6a debug metrics overlay is implemented; G6b repeated accuracy/performance measurements and final viva evidence remain outstanding.
+- G6a debug metrics overlay is implemented and visually confirmed by the project owner. G6b includes six measured autonomous accuracy attempts; the eight-Gull performance target and final integration/viva evidence remain outstanding.
 
-Do not present G1's timer cycle as completed intelligent behaviour. G4 records single-sample miss distances, not a statistical hit rate; performance results are still outstanding. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
+Do not present G1's timer cycle as completed intelligent behaviour. G4 and G6b provide small functional samples, not a statistically reliable hit rate; performance results are still outstanding. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
 
 Suggested G1 commit: `feat(ai-gull): add gull strategy config and state machine skeleton`.
