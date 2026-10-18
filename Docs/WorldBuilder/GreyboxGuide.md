@@ -10,6 +10,8 @@ The first gameplay integration is documented in `PlayerIntegration.md`: Main now
 
 ## What is built
 
+Bird-work reference rule: consult the parent workspace's `BIRD_STRATEGIES.md` for bird-related tasks; also consult `01_GULL_PLAN.md` for Gull work. The user's current three-wave/four-species decision takes precedence over the strategy document's older four-wave example.
+
 - Solid 100 x 80 m ground and perimeter walls.
 - Central 75 x 14 m runway (extended by the student), with aligned threshold bars, centre stripes, edge markings, and runway numbers.
 - Four recognisable aircraft greyboxes under Environment/Aircraft, refined from the student's parking cubes. Plane A uses a 12 m-long / 9 m-span utility-aircraft prefab; B/C/D share a 9 m-long / 8 m-span light-aircraft prefab. Each has fuselage, cockpit, wings, tail, engines, wheels, and compound collision. Parking was adjusted for wing clearance and terminal/hangar routes. See `AircraftArtHandoff.md` for final-model specifications.
@@ -64,7 +66,7 @@ Use Tools > Runway Panic > Validate Aircraft Greyboxes after plane edits. `Aircr
 
 ## Next milestones
 
-Main now has the shared 3D FlightGrid/A*, typed spawn points and eight Hawk vantage markers; see `FlightIntegration.md` and `HawkPerchIntegration.md`. Do not rebuild navigation from the older NavMesh-sampling proposal. Next are the supplied Crow setup prefab and Gull/Pigeon markers, then production waves (three waves with four species), movable cover/safe-room integration and final environment presentation. Bird movement/animation and Hawk/Crow brains already exist, but full Main gameplay still needs their deliberate integration.
+Main now has the shared 3D FlightGrid/A*, typed spawn points, eight Hawk vantage markers and the connected Crow stash/zone/exit setup; see `FlightIntegration.md`, `HawkPerchIntegration.md` and `CrowSetupIntegration.md`. Do not rebuild navigation from the older NavMesh-sampling proposal. Next are Gull/Pigeon behaviour markers, then production waves (three waves with four species), movable cover/safe-room integration and final environment presentation. Bird movement/animation and Hawk/Crow brains already exist, but full Main gameplay still needs their deliberate integration.
 
 The builder menu creates Main only when it does not already exist; it deliberately refuses to overwrite a saved scene. Use normal scene editing for future work. The teammate's Sandbox_Basidh scene and existing render/input configuration are preserved. Main is added as the first build scene, with the existing sandbox entry retained.
 

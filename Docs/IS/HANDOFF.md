@@ -76,8 +76,8 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
   - Played in `Main` with this prefab and a `FlightGrid` added for the test only: **7 of 7 crow checks pass** (A\* routes, approach, steal Main's pickups, deliver to a stash, vigil, rage on leaving, funeral) — `Docs/IS/Crow/main_integration.md`. Re-run any time: `Tools > IS > Crow > Run Main Integration Check` in Play mode.
   - Keep the prefab root at (0, 0, 0). If you move a shelter, the hangar or the terminal, tell the crow owner (or move the matching child with it).
   - The crow also needs, in `Main`: a **`FlightGrid`** (pathfinding; without it crows fly in straight lines). `P_PickupSpawner` is already there (thanks).
-- **Action needed:** World Builder — drag `P_CrowSetup_Main` into `Main` at the origin and add a `FlightGrid` (the default bounds cover the airport).
-- **Status:** open
+- **Action needed:** Crow owner — after the AI-level batch merges, the delivered setup is saved at Main's origin; the FlightGrid and pickup spawner are present. See `Docs/WorldBuilder/CrowSetupIntegration.md`. Shared Crow code/config/prefab is unchanged; test normal production-wave behaviour when the wave loop is connected.
+- **Status:** scene setup implemented on `feature/world-ai-integration`, human commit/merge pending. Focused placement/group/approach check passed; live Crow AI suite not rerun for this milestone.
 
 ## 2026-10-17 — to: Systems Engineer — crows steal pickups (no change needed)
 - **What:** `Pickup`, `PickupSpawner` (read-only use from `Scripts/Agents/Crow/`)

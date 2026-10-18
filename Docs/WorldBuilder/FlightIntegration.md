@@ -37,7 +37,7 @@ Recorded run: **24 checks passed, zero failures**. The grid had 1,336 blocked ce
 
 1. FlightGrid and original spawn markers — this milestone.
 2. Eight Hawk vantage/perch markers — implemented; see `HawkPerchIntegration.md` and its focused report.
-3. Install the supplied `P_CrowSetup_Main` at the origin (reuse its stashes/zones/exits rather than rebuilding them).
+3. Supplied `P_CrowSetup_Main` installed at the origin — see `CrowSetupIntegration.md`; its stashes/zones/exits are reused unchanged.
 4. Gull/Pigeon behaviour markers based on their current plans.
 
 The human commits/pushes each milestone. Suggested message for this first milestone:
