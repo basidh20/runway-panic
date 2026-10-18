@@ -18,6 +18,8 @@ GameObject:
   - component: {fileID: 8774714783133304080}
   - component: {fileID: 4114557338294029405}
   - component: {fileID: 3977696598478603792}
+  - component: {fileID: 3059267542142402607}
+  - component: {fileID: 360392685161672301}
   m_Layer: 0
   m_Name: P_Bird_Hawk
   m_TagString: Untagged
@@ -187,11 +189,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Hawk.HawkBrain
   config: {fileID: 11400000, guid: 74f7e165f6cbae645a4701fb45b71737, type: 2}
-  perchPivotHeight: 0.24
-  eyeHeight: 0.3
-  perchTurnSpeed: 120
-  skeletonPhaseDuration: 2
+  motorTurnRate: 90
+  stoopAimHeight: 1.2
+  stoopFlareHeight: 1
+  minDiveClearance: 1.5
+  stoopPassMargin: 2
+  stoopStartArriveDistance: 2
+  screamClip: {fileID: 8300000, guid: cab3b34f43db22f428f41a4aba0e5480, type: 3}
+  screamSource: {fileID: 360392685161672301}
   logTransitions: 1
+  debugHitKey: 22
 --- !u!114 &3977696598478603792
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -205,6 +212,125 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Hawk.PlayerWeaknessModel
   logWindows: 1
+--- !u!114 &3059267542142402607
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5803779697159008263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a2115cf87c5d214b97d440725cc5979, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.BirdSounds
+  flap: {fileID: 11400000, guid: a202fc42efab40c4cbfc91e80c2b5062, type: 2}
+  flapRate: {x: 2.5, y: 5}
+  dive: {fileID: 11400000, guid: 002c6441f0f5cb247b9cf2329e95d84b, type: 2}
+  diveSpeed: 6
+  hit: {fileID: 11400000, guid: d7987be28105cc64fad67e7f99dbf85c, type: 2}
+  death: {fileID: 11400000, guid: 2db1b46ba9f696d4abfdb50297b9fabb, type: 2}
+  gullCall: {fileID: 11400000, guid: eda85bf749fc8dc478ef0f2ea8f689fa, type: 2}
+  pigeonCall: {fileID: 11400000, guid: 85b5649f7121d3a4bb9dddbf8dea9e81, type: 2}
+  crowCall: {fileID: 11400000, guid: 2f9eb81db443bf946940e67fa686ee3a, type: 2}
+  callInterval: {x: 6, y: 14}
+--- !u!82 &360392685161672301
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5803779697159008263}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 0.9
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 0
+  MinDistance: 6
+  MaxDistance: 120
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1001 &9188167793776847282
 PrefabInstance:
   m_ObjectHideFlags: 0

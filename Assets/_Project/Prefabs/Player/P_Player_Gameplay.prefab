@@ -1716,6 +1716,8 @@ GameObject:
   - component: {fileID: 6817391851223279392}
   - component: {fileID: 3485412674391604826}
   - component: {fileID: 6052845187304252278}
+  - component: {fileID: 2101766982114493602}
+  - component: {fileID: 624334289985087988}
   m_Layer: 0
   m_Name: P_Player_Gameplay
   m_TagString: Player
@@ -2055,6 +2057,58 @@ MonoBehaviour:
   impactColor: {r: 1, g: 0.9, b: 0.6, a: 1}
   impactDuration: 0.08
   impactSize: 0.18
+--- !u!114 &2101766982114493602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8402448470462990780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54124e4bc73cb7042a8447330222bcb6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.WeaponSounds
+  shotByRarity:
+  - {fileID: 11400000, guid: 386caba5f25a5d44d84f388019cbda36, type: 2}
+  - {fileID: 11400000, guid: dc68c2c57082e5d4c997f035eb0b19fc, type: 2}
+  - {fileID: 11400000, guid: 5723155267a56a749934fe62df9ad0b1, type: 2}
+  - {fileID: 11400000, guid: f70c1ad12daab15429fdf8bfcbde60b1, type: 2}
+  reloadStart: {fileID: 11400000, guid: 27ae16ea35da502419d79d07ebe7f1e9, type: 2}
+  reloadFinish: {fileID: 11400000, guid: 23fabfebeed600e4b845d0942a2038db, type: 2}
+  equip: {fileID: 11400000, guid: 0e89bae6e92044b4fabc0663ebdafca7, type: 2}
+  impact: {fileID: 11400000, guid: 12670f40d6267d64791d88437a7ce276, type: 2}
+--- !u!114 &624334289985087988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8402448470462990780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b7392fdcd344bf439d057e55fded579, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.PlayerSounds
+  footstepWalk: {fileID: 11400000, guid: 604cd5b4b26eae8439f44dcf1d04a36d, type: 2}
+  footstepRun: {fileID: 11400000, guid: 22897d70facba6a4687c32a22a909e38, type: 2}
+  walkStride: 1.6
+  runStride: 2.2
+  runSpeed: 6
+  jump: {fileID: 11400000, guid: 9ade18a04e6c5944bba240e6d4c217c7, type: 2}
+  land: {fileID: 11400000, guid: 3bc9324fbcea53e4a9989987f5d334c3, type: 2}
+  minAirTimeForLanding: 0.25
+  hurt: {fileID: 11400000, guid: ca0661a5b48c4194abdea7d9e3f0fb74, type: 2}
+  hurtCooldown: 0.35
+  death: {fileID: 11400000, guid: a38e0d0e1f75bfc48a61f82d903d0d74, type: 2}
+  respawn: {fileID: 11400000, guid: 4639b9bb6ad36e9468a276ae6ee84326, type: 2}
+  heartbeatBelow: 0.3
+  heartbeat: {fileID: 11400000, guid: 0b9e0c67a5993b343b43594a4f9a1a48, type: 2}
+  medkit: {fileID: 11400000, guid: 2f2fbceee76af6f41825a0728661ddd3, type: 2}
+  shieldOn: {fileID: 11400000, guid: 2da711fa95dfebe4597a93521229e2b9, type: 2}
+  shieldHum: {fileID: 11400000, guid: d94d5a7a21ba127489656bac255d2b87, type: 2}
+  shieldOff: {fileID: 11400000, guid: 08ca836160b8a494db9fcdc740dbd878, type: 2}
+  pickup: {fileID: 11400000, guid: ca7c69038e58f7f46820ecb53d6a4247, type: 2}
 --- !u!1 &8930974583446172621
 GameObject:
   m_ObjectHideFlags: 0

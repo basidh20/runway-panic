@@ -1992,6 +1992,9 @@ GameObject:
   m_Component:
   - component: {fileID: 2290345716803826515}
   - component: {fileID: 6604816249957320183}
+  - component: {fileID: 1469449866959581917}
+  - component: {fileID: 7941074328921870854}
+  - component: {fileID: 4340944714069309349}
   m_Layer: 0
   m_Name: P_GameManager
   m_TagString: Untagged
@@ -2030,6 +2033,84 @@ MonoBehaviour:
   initialState: 1
   playerLives: {fileID: 0}
   totalWaves: 4
+--- !u!114 &1469449866959581917
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4713025986613049721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f64a97cc212b62439b48e8bf5de9e0e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.GameSounds
+  waveStart: {fileID: 11400000, guid: b50ee1d3df648954cbb68fcdc979afce, type: 2}
+  waveCleared: {fileID: 11400000, guid: c41b5ad7f3718864f869cfc32312f3ff, type: 2}
+  gameOver: {fileID: 11400000, guid: 123f014107bdcd64097220e270b5742f, type: 2}
+  victory: {fileID: 11400000, guid: 5752f4bdad6266a4ca055d673a6a8a55, type: 2}
+  coin: {fileID: 11400000, guid: 08b435babc76cee48893dfad0d11543c, type: 2}
+  purchase: {fileID: 11400000, guid: c753e857550408246bd17de6c197eff2, type: 2}
+  purchaseDenied: {fileID: 11400000, guid: d3d7f89e7f33c8a4f906a38851daa7c3, type: 2}
+  buttonClick: {fileID: 11400000, guid: cf19672bf04924a4a8d7b62ac30024f7, type: 2}
+  buttonScanInterval: 1
+--- !u!114 &7941074328921870854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4713025986613049721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 600363925ab911540a4e81e0c52cef86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.AmbienceLoop
+  ambience: {fileID: 11400000, guid: dafd549bd9f17794c9a18e3804c4259d, type: 2}
+  wind: {fileID: 11400000, guid: 994a888e146bd2f41b748e0952483571, type: 2}
+  windVolume: {x: 0.8, y: 1}
+  events:
+  - {fileID: 11400000, guid: a9fc70e17c7a366408df8031d6251fa8, type: 2}
+  - {fileID: 11400000, guid: 9fc0d9e45fac95b4e9a72f2e0bad7c08, type: 2}
+  - {fileID: 11400000, guid: e7678bdae39a1c6449289e9a5919a8c2, type: 2}
+  - {fileID: 11400000, guid: b086777d4aeb67e4c99943e98066c0c2, type: 2}
+  eventInterval: {x: 40, y: 90}
+  eventDistance: {x: 25, y: 60}
+  muffledVolume: 0.45
+  muffledCutoff: 700
+  blendTime: 0.6
+--- !u!114 &4340944714069309349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4713025986613049721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c06d44c7c1f6abb438646a44db138858, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.WaveMusic
+  pad: {fileID: 11400000, guid: 7ad6789aa3336de4aaf9f006a5ad56bf, type: 2}
+  tension:
+  - {fileID: 11400000, guid: 88deef072d94be24098380250900e893, type: 2}
+  - {fileID: 11400000, guid: ad3bad7609cbb76468c72cef75ff0a3e, type: 2}
+  - {fileID: 11400000, guid: a1528ec569b885742a6c9ae403493568, type: 2}
+  - {fileID: 11400000, guid: 7d3a22c34912c284898921f577c99a2a, type: 2}
+  tensionFrom:
+  - 0
+  - 0.3
+  - 0.6
+  - 1
+  fadeInTime: 1.5
+  fadeOutTime: 5
+  endFadeTime: 0.8
+  waveLoudness: {x: 1, y: 1.5}
+  rushFrom: 0.6
+  maxRush: 1.08
+  rushTime: 90
+  pausedVolume: 0.5
+  pausedCutoff: 900
 --- !u!1 &5210612128980816385
 GameObject:
   m_ObjectHideFlags: 0
