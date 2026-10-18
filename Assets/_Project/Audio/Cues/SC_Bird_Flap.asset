@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2686fb11d8f19524aa701f2aa3c11695, type: 3}
+  m_Name: SC_Bird_Flap
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.SoundCue
+  clips:
+  - {fileID: 8300000, guid: fa7276cf83504214b9a78a12ab077957, type: 3}
+  - {fileID: 8300000, guid: b10314e8cd9fda5469c6a3cb6aa646d9, type: 3}
+  - {fileID: 8300000, guid: e08029d799d70a54db30893e1be4a40e, type: 3}
+  category: 4
+  volume: 0.3
+  pitchRange: {x: 0.85, y: 1.15}
+  spatial: 1
+  minDistance: 2
+  maxDistance: 25
+  maxInstances: 10

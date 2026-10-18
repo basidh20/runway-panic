@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2686fb11d8f19524aa701f2aa3c11695, type: 3}
+  m_Name: SC_Player_Death
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.SoundCue
+  clips:
+  - {fileID: 8300000, guid: d26e487e909c6094d8d90bfbbfa8cd7a, type: 3}
+  category: 3
+  volume: 0.8
+  pitchRange: {x: 1, y: 1}
+  spatial: 0
+  minDistance: 3
+  maxDistance: 50
+  maxInstances: 1
