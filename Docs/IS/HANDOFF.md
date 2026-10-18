@@ -14,6 +14,23 @@ Template:
 
 ---
 
+## 2026-10-18 — to: Agent Controller — fix `BirdMotor.LandAt`, then remove the crow's vigil landing timeout
+- **What:** `Scripts/Agents/Movement/BirdMotor.cs` (yours), then `Scripts/Agents/Crow/CrowBrain.Vigil.cs` and `CrowStrategyConfig.cs` (the crow owner hands this part to you, so the fix and its clean-up land together).
+- **Details:**
+  - **The bug** (open since 17 Oct, entry below; `BirdMotor.cs` is unchanged since F4): a bird sent to `LandAt` (or `HoldPosition`) from the side can circle its point for ever. Near the point the target speed is `min(cornering speed, √(2·a·d))`, but the heading turns at most `maxTurnRate`; when the point is beside the bird, the turn radius `v / ω` stays larger than the distance, so it orbits 3–4 m out and never gets within `landSnapDistance` (0.3 m).
+  - **Same cause, second symptom** (18 Oct, wave-3 playtest): a crow carrying loot overshot its final direct hop to the terminal stash and brushed the invisible north boundary.
+  - **Suggested fix:** within a few metres of a `Land`/`Hold` point, cap the speed so `v / maxTurnRate < distance` (the bird can always turn in), or switch to a slow "flutter-in" that moves straight to the point regardless of heading, turning to `facing` once there.
+- **Action needed (Agent Controller):**
+  1. Fix `LandAt` / `HoldPosition` in `BirdMotor` as above.
+  2. **Remove the vigil landing timeout** — the crow's workaround for this bug:
+     - `CrowBrain.Vigil.cs`: delete the block under `if (vigilLanding)` that starts with the comment *"BirdMotor.LandAt can circle its point forever…"* (the `landing > config.vigilLandTimeout` check, `Motor.Stop()` and `vigilHovering = true`), keep the `return;`; then delete the now-unused `vigilHovering` field (and its reset in the exit code) and the `VigilHoverRadius` constant.
+     - `CrowStrategyConfig.cs`: delete the `vigilLandTimeout` field and its tooltip.
+     - `Docs/IS/Crow/NOTES.md`: in §6 (Vigil) remove the sentence about `vigilLandTimeout`; in §8 change the "Vigil test" row's fix to "fixed in `BirdMotor.LandAt`".
+  3. Test: in Play mode in `Sandbox_IS_Crow` and in `Main`, run `Tools > IS > Crow > Run Main Integration Check` — "Crows guard the shelter while the player hides" must pass with the crows **landed** at the exits (watch F3 labels: Vigil, not circling). Then `Tools > IS > Crow > Run Wave 3 Playtest`: "Touching level geometry" should be 0.
+  4. Set this entry and the 17 Oct `LandAt` entry below to **done**.
+  - Suggested branch: `fix/agents-landat-and-crow-vigil-timeout`; commits: `fix(agents): let birds land at a point they arrive at from the side` · `refactor(ai-crow): remove the vigil land timeout now that LandAt converges` · `docs(ai): close the LandAt hand-off`.
+- **Status:** open
+
 ## 2026-10-18 — to: all — crow re-checked with the new stats and in the real game
 - **What:** `Scripts/Agents/Crow/` (theft scan, evasion, `ShelterZone.Contains`), crow test tools in `Scripts/Agents/Crow/Debug/`, reports `Docs/IS/Crow/evidence.md`, `main_integration.md`, `wave3_playtest.md`; summary in `Docs/IS/Crow/NOTES.md` §7–8.
 - **Details:**
