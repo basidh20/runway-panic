@@ -192,14 +192,30 @@ The no-FOD case made one warned, bounded swoop and returned its token; that one 
 
 Suggested G4 commit: `feat(ai-gull): add predictive FOD drop with telegraph call`.
 
+## G5 — distress call and one group dive
+
+References: `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` G5.
+
+A surviving positive-damage hit raises one audible call. The registry supplies living Gulls within **25 m** of the hit Gull, including itself. Each eligible responder returns any bombing token, leaves the kettle, keeps its carried FOD and commits to the shooter's recorded position plus **1 m**. Speed is **2.2×** normal. Contact damage uses the existing attack component and requires clear player line of sight; blocked travel uses the shared budgeted pathfinder rather than flying directly through cover.
+
+A successful contact attack, passing the committed point, or **4 active-gameplay seconds** ends the pass. Speed/diving/wings reset and the Gull rejoins the kettle. Each responder has its own **8 active-gameplay second cooldown**; further damage/calls cannot restart that pass. Shop/pause time does not consume the cooldown. Lethal hits do not broadcast. Health-event subscriptions are removed on disable/death.
+
+Small safety refinement to the plan: use `BirdHealth.LastHitShotOrigin`, which records the matching shot before `Damaged`, rather than blindly using the hub's potentially stale last shot. Non-gun damage uses the health component's existing bird-position fallback. A distress dive commits once; it does not home continuously on the player.
+
+Preview: in the saved Gull sandbox, Play and B once, let the Gulls form, then hit one without killing it. Nearby Gulls should break formation together, make one pass and reform. **Tools > IS > Gull > Run Focused G5 Distress Check** exercises one group response using a simulated shot-recording callback and actual damage/motor components. See `G5Validation.txt` for the measured result and explicit test limitations. Final audio, end-to-end weapon/cover checks and broader balance remain integration work.
+
+Suggested G5 commit: `feat(ai-gull): add distress call that triggers a group dive on the shooter`.
+
+Recorded G5 result: **11 checks passed, zero failures** on Unity 6000.6.4f1. Five nearby Gulls responded, a distant control did not, carried props survived interruption, token/membership cleared, a repeated hit did not restart the pass, and all five recovered within four active seconds with normal speed. This was one focused simulated-shot/damage run, not an end-to-end gun, roof, lethal-hit, cooldown-expiry or performance test.
+
 ## Remaining phases / evidence
 
 - G2 collection/item/manager implementation is delivered in the Gull sandbox. Production Main wiring is deferred until the remaining strategy phases are integrated.
-- G3 formation/token implementation is delivered in the Gull sandbox; its current departure uses staging until G4 supplies the actual attack.
+- G3 formation/token implementation is delivered in the Gull sandbox and now drives G4 attacks.
 - G4 prediction, warning, real drop and fallback swoop are implemented in the Gull sandbox; final tuning/art/sound and wider balance checks remain integration work.
-- G5: damage-triggered distress reaction and cooldown.
+- G5 damage-triggered distress reaction and cooldown are implemented in the Gull sandbox.
 - G6: debug metrics, measured accuracy/performance and viva evidence.
 
-Do not present G1's timer cycle as completed intelligent behaviour. No hit-rate, miss-distance or performance results exist yet. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
+Do not present G1's timer cycle as completed intelligent behaviour. G4 records single-sample miss distances, not a statistical hit rate; performance results are still outstanding. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
 
 Suggested G1 commit: `feat(ai-gull): add gull strategy config and state machine skeleton`.

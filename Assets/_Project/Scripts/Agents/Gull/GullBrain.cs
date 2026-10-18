@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace RunwayPanic.Agents.Gull
 {
-    /// <summary>Gull collection, formation and token-controlled predictive bombing. Distress response follows in G5.</summary>
+    /// <summary>Gull collection, token-controlled predictive bombing and damage-triggered group distress dive.</summary>
     [DisallowMultipleComponent]
     public sealed class GullBrain : BirdBrain
     {
@@ -39,6 +39,9 @@ namespace RunwayPanic.Agents.Gull
         private AudioSource warningSource;
         private AudioClip fallbackCall;
         private bool swooping;
+        private readonly List<BirdHealth> distressNeighbours = new List<BirdHealth>();
+        private float distressCooldownRemaining;
+        private Vector3 distressAim, distressStart;
 
         public GullStrategyConfig Config => config;
         public GullState State => state;
@@ -77,6 +80,7 @@ namespace RunwayPanic.Agents.Gull
                 return;
             }
             if (suspended) { suspended = false; nextRepath = 0f; }
+            distressCooldownRemaining = Mathf.Max(0f, distressCooldownRemaining - Time.deltaTime);
             stateTime += Time.deltaTime;
             if (!previewStateCycle)
             {
@@ -89,6 +93,7 @@ namespace RunwayPanic.Agents.Gull
                     case GullState.Telegraph: Telegraph(); break;
                     case GullState.Drop: Drop(); break;
                     case GullState.ClimbToTop: ClimbToTop(); break;
+                    case GullState.DistressDive: DistressDive(); break;
                 }
                 return;
             }
@@ -232,6 +237,61 @@ namespace RunwayPanic.Agents.Gull
             if (state != GullState.Dead && !previewStateCycle) ChangeState(GullState.ClimbToTop);
         }
 
+        private bool CanReceiveDistress => started && enabled && IsAlive && IsGameplayActive &&
+            !previewStateCycle && state != GullState.DistressDive && distressCooldownRemaining <= 0f;
+
+        private void OnDamaged(float damage, float hpAfter)
+        {
+            // Damaged fires before Died: a lethal hit must not start a group response.
+            if (damage <= 0f || hpAfter <= 0f || !CanReceiveDistress) return;
+            PlayWarning();
+            // Health records the matching shot before this event; do not chase a stale previous shot.
+            Vector3 shooter = Health.LastHitShotOrigin;
+            BirdRegistry.GetAlive(BirdSpecies.Gull, distressNeighbours);
+            float radiusSquared = config.distressRadius * config.distressRadius;
+            foreach (var neighbour in distressNeighbours)
+            {
+                if ((neighbour.transform.position - Motor.Position).sqrMagnitude > radiusSquared) continue;
+                var gull = neighbour.GetComponent<GullBrain>();
+                if (gull != null) gull.ReceiveDistress(shooter);
+            }
+        }
+
+        private void ReceiveDistress(Vector3 shooter)
+        {
+            if (!CanReceiveDistress) return;
+            distressCooldownRemaining = Mathf.Max(0f, config.distressCooldown);
+            if (kettle != null)
+            {
+                if (kettle.TokenHolder == this) kettle.ReturnToken(this);
+                kettle.Leave(this);
+            }
+            distressStart = Motor.Position;
+            distressAim = shooter + Vector3.up;
+            // A state change releases a supply claim, not the piece already being carried.
+            ChangeState(GullState.DistressDive);
+        }
+
+        private void DistressDive()
+        {
+            var grid = FlightGrid.Instance;
+            bool clearRoute = grid != null && PathSmoother.IsClear(Motor.Position, distressAim, grid.SnapLineRadius, grid.ObstacleMask);
+            if (clearRoute) Motor.FlyTo(distressAim);
+            else if (Time.time >= nextRepath)
+            {
+                Motor.Stop();
+                if (RequestPath(distressAim) || !LastRequestWasThrottled) nextRepath = Time.time + Mathf.Max(.1f, config.repathInterval);
+            }
+            bool seesPlayer = Hub != null && Hub.HasPlayer && grid != null &&
+                PathSmoother.IsClear(Motor.Position, Hub.PlayerHeadPosition, grid.SnapLineRadius, grid.ObstacleMask);
+            if ((seesPlayer && Attack != null && Attack.TryAttack()) ||
+                Vector3.Dot(distressAim - distressStart, distressAim - Motor.Position) <= 0f || stateTime >= 4f)
+            {
+                Motor.Stop();
+                ChangeState(GullState.JoinKettle);
+            }
+        }
+
         private void GatherFod()
         {
             if (carriedFod != null) { ChangeState(GullState.JoinKettle); return; }
@@ -352,7 +412,14 @@ namespace RunwayPanic.Agents.Gull
                     if (!previewStateCycle && kettle != null && kettle.TokenHolder == this) kettle.ReturnToken(this);
                     break;
                 case GullState.DistressDive:
-                    // Damage-driven distress follows in G5.
+                    if (!previewStateCycle)
+                    {
+                        nextRepath = 0f;
+                        swooping = false;
+                        Motor.Stop();
+                        Motor.SpeedMultiplier = config.distressDiveSpeedMultiplier;
+                        Anim.SetDiving(true);
+                    }
                     break;
             }
             if (Application.isEditor || Debug.isDebugBuild)
@@ -368,6 +435,8 @@ namespace RunwayPanic.Agents.Gull
                     break;
                 case GullState.DistressDive:
                     if (Motor != null) Motor.SpeedMultiplier = 1f;
+                    Anim.SetDiving(false);
+                    Anim.SetWingsSpread(1f);
                     break;
                 case GullState.Telegraph:
                     Anim.SetWingsSpread(1f);
@@ -385,6 +454,7 @@ namespace RunwayPanic.Agents.Gull
         protected override void OnDisable()
         {
             base.OnDisable();
+            if (Health != null) Health.Damaged -= OnDamaged;
             if (warningSource != null) warningSource.Stop();
             Anim.SetDiving(false);
             Anim.SetWingsSpread(1f);
@@ -397,6 +467,7 @@ namespace RunwayPanic.Agents.Gull
         protected override void OnEnable()
         {
             base.OnEnable();
+            if (Health != null) Health.Damaged += OnDamaged;
             if (started && state != GullState.Dead && !previewStateCycle)
             { ChangeState(GullState.GatherFod); stateTime = 0f; }
         }
