@@ -14,6 +14,14 @@ Template:
 
 ---
 
+## 2026-10-18 — to: all — Pigeon P1: brain on `P_Bird_Pigeon`, flock coordinator, pigeon sandbox
+- **What:** `Scripts/Agents/Pigeon/` (`PigeonBrain`, `PigeonFlock`, `PigeonStrategyConfig`, `PigeonState`, `PigeonFlockMode`, `PigeonStats`), `ScriptableObjects/Birds/Strategy/PigeonStrategyConfig.asset`, `Prefabs/Birds/P_Bird_Pigeon.prefab` (`PigeonBrain` added on the variant only; `P_Bird_Base` unchanged), `Scenes/Sandbox/Sandbox_IS_Pigeon.unity` (a copy of Main), tool `Tools > IS > Pigeon > Set Up Pigeon Sandbox and Prefab`.
+- **Details:**
+  - P1 is the skeleton only: in waves 2 and 3, pigeons join one flock (`[PigeonFlock]`, created at runtime, so there is nothing to place in Main) and hover where they spawn, as they did without a brain. They still don't attack, so the note in `Docs/SystemsEngineer/WaveBalanceReport.md` that pigeons don't attack stays true until P4.
+  - The sandbox copy turns its production `WaveManager` off (a prefab-instance override, the same as the Gull sandbox). Main, Build Settings and every other prefab are unchanged.
+- **Action needed:** none. World Builder: nothing to add to Main. Systems Engineer: a pigeon balance note follows with the attack phase (P4).
+- **Status:** on `feature/is-pigeon`; human review and PR into **develop** pending.
+
 ## 2026-10-18 — to: all — Gull / S2 merge resolution and four-wave decision
 - **Decision:** retain S2's production four-wave system with all four bird species. This supersedes the earlier three-wave decision and missing-wave-loop statements in older World Builder/Gull notes below.
 - **Camera:** retain S2's complete shoulder-camera, aiming, scope and recoil setup. PlayerCameraRig now permits 75 degrees upward and retains S2's 70-degree downward limit; the saved gameplay prefab and script default agree.
