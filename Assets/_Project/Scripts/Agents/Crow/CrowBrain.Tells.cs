@@ -5,7 +5,8 @@ namespace RunwayPanic.Agents.Crow
     /// <summary>
     /// Tells: every crow surprise warns the player first, so it reads as intelligence, not as a bug.
     /// Funeral crows caw in a distinct repeating pattern, a thief calls out the moment it grabs a pickup, and an
-    /// enraged crow gives a rage call. Clips are optional: with none assigned the crow is simply silent.
+    /// enraged crow gives a rage call. A hit on the player sounds like a crow strike (wings, beak, "kraa!"), not only
+    /// the player's own hurt sound. Clips are optional: with none assigned the crow is simply silent.
     /// (The other theft tell — the pickup visible in the beak — is in CrowBrain.Theft.cs.)
     /// </summary>
     public sealed partial class CrowBrain
@@ -19,6 +20,8 @@ namespace RunwayPanic.Agents.Crow
         [SerializeField] private AudioClip theftCallClip;
         [Tooltip("Call played when the crow becomes enraged (after a funeral or a vigil).")]
         [SerializeField] private AudioClip rageCallClip;
+        [Tooltip("Wing beats, a beak strike and a harsh \"kraa!\": played the moment the crow's attack hits the player.")]
+        [SerializeField] private AudioClip strikeClip;
         [Tooltip("Volume of all crow calls.")]
         [SerializeField, Range(0f, 1f)] private float callVolume = 0.8f;
         [Tooltip("Caws in one funeral pattern.")]
@@ -71,6 +74,9 @@ namespace RunwayPanic.Agents.Crow
                 ? funeralCawSpacing
                 : funeralPatternInterval - funeralCawSpacing * (funeralCawsPerPattern - 1);
         }
+
+        /// <summary>The crow's attack just hit the player.</summary>
+        private void PlayStrike() => PlayCall(strikeClip);
 
         private void PlayCall(AudioClip clip)
         {
