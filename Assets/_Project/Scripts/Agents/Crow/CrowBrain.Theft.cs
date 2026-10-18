@@ -56,6 +56,8 @@ namespace RunwayPanic.Agents.Crow
                     continue; // already crow loot, or out of reach
                 if ((p.transform.position - Hub.PlayerPosition).sqrMagnitude < guardSq)
                     continue; // the player is standing on it
+                if (ShelterZone.Contains(p.transform.position + Vector3.up * 0.5f))
+                    continue; // indoors: birds cannot fly into a shelter, so don't claim it (and keep retrying)
 
                 float sq = (p.transform.position - position).sqrMagnitude;
                 if (sq < bestSq)

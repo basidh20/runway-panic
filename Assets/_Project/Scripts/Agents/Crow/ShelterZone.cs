@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RunwayPanic.Player;
 using UnityEngine;
 
@@ -38,8 +39,22 @@ namespace RunwayPanic.Agents.Crow
         private const float ExitMargin = 0.5f;
         private const float BodyHeight = 1f;
 
+        private static readonly List<ShelterZone> active = new List<ShelterZone>();
+
         private BoxCollider box;
         private Transform player;
+
+        /// <summary>
+        /// True if <paramref name="point"/> is inside any shelter. Birds cannot fly in there, so crows use this to skip
+        /// loot they could never reach.
+        /// </summary>
+        public static bool Contains(Vector3 point)
+        {
+            foreach (ShelterZone zone in active)
+                if (zone.box != null && zone.box.bounds.Contains(point))
+                    return true;
+            return false;
+        }
 
         private void Reset()
         {
@@ -49,6 +64,12 @@ namespace RunwayPanic.Agents.Crow
         private void Awake()
         {
             box = GetComponent<BoxCollider>();
+        }
+
+        private void OnEnable()
+        {
+            if (!active.Contains(this))
+                active.Add(this);
         }
 
         private void OnTriggerEnter(Collider other)
@@ -89,6 +110,7 @@ namespace RunwayPanic.Agents.Crow
 
         private void OnDisable()
         {
+            active.Remove(this);
             if (PlayerInside == this)
                 PlayerLeft();
         }
@@ -116,6 +138,7 @@ namespace RunwayPanic.Agents.Crow
             PlayerExited = null;
             PlayerInside = null;
             PlayerInsideSince = 0f;
+            active.Clear();
         }
     }
 }
