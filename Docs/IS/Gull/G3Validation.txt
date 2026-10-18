@@ -1,0 +1,15 @@
+Gull G3 — focused formation/token sandbox check, Unity 6000.6.4f1
+PASS: Five test Gulls and ground-relative runway kettle anchor
+PASS: Five unique spiral slots have radius 8 and ground heights 6/8/10/12/14 m
+PASS: Five actual Gulls join and follow their slots carrying distinct debris
+PASS: Rotation advances and every bird moves through the shared motor
+PASS: Formation scheduling freezes while Shopping
+PASS: Exactly one departure; other Gulls cannot take or return its token
+PASS: Only the logical bottom member obtains the drop token
+PASS: 12-second timeout returns its holder to the top and gives the next bottom Gull a turn, retaining undropped FOD
+PASS: Actual holder death immediately removes membership and releases ownership
+PASS: The next living bottom Gull takes the token within one second of holder death
+PASS: Only one living Gull remains in departure after death recovery
+PASS: WaveCompleted clears kettle members, token and rotation
+G3 staging retains debris; predictive targeting, telegraph, release and distress response remain G4/G5. No production wave or stress suite run.
+Failures: 0

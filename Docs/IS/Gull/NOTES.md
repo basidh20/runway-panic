@@ -107,10 +107,44 @@ Recorded G2b result: **12 checks passed, zero failures**. Five Gulls collected d
 
 Suggested G2b commit: `feat(ai-gull): add FOD manager and spawn points with cooldown`.
 
+## G3 — rotating kettle and single drop token
+
+References consulted: `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` G3. The completed G2b collection flows into the formation automatically; there is no additional saved scene object to install. `GullKettle` creates one scene-local instance when first needed.
+
+### Slots and joining
+
+The centre comes from the shared KettleCenter marker. The airport marker `(0,10,0)` yields a ground reference of y=0, an **8 m radius**, and slots from **14 m at the top to 6 m at the bottom**. Five members occupy heights 14/12/10/8/6. The rotation is **25 degrees per active-gameplay second**. One member uses the bottom slot, with an explicit branch avoiding division by zero. Without a marker, the descriptive centre falls back to `(0,12,0)` while heights remain ground-relative.
+
+A Gull paths to the moving top entry through shared `RequestPath`, honouring the budget/repath interval. When it is within 3 m, `Join` inserts it at the top and it enters InKettle. Non-members use a defined top entry rather than an invalid negative index. Members follow their rotating slots through `IBirdMotor.FlyTo`; the runway's prepared orbit volume is clear. Joining/removing a member remaps the logical slots, so the real birds steer into the new arrangement rather than snapping their transforms.
+
+### Token and current staging behaviour
+
+- Only the logical bottom member in InKettle can take a free token. A brief 0.75 s state dwell prevents an immediate transition on the joining frame. During G3, a Gull also needs carried FOD to request a turn; the no-FOD swoop remains G4 work.
+- `TakeToken` returns success/failure and records an explicit owner. Other birds cannot take an occupied token or return someone else's token. `HasToken` means eligible for a free token; `TokenHolder` identifies its current owner.
+- The holder enters DescendToDrop and flies to a **staging position at runway centre, 7 m above ground**, retaining its prop. **G3 does not release it or target the player yet.** This makes one visible departure from the spiral while G4's predictive drop/telegraph is still pending.
+- At **12 active-gameplay seconds**, the safety timeout returns the holder to the top, resets ownership and sends that Gull to ClimbToTop. It keeps the undropped FOD and returns to InKettle on reaching its slot. Other members continue moving, and the next bottom Gull may take its turn while the previous one climbs.
+- ClimbToTop also returns a currently held token on entry, preparing the G4 post-drop path. Once G4 releases the prop, reaching the top will leave the kettle and return to GatherFod; a Gull still carrying its prop stays in the formation instead of creating an extra supply item.
+- Disable/death leaves the kettle immediately, including token release; a defensive membership sweep also removes invalid entries. WaveCompleted clears members, ownership and rotation. Event subscriptions use the cached GameManager; the singleton is not created during teardown.
+- Shopping/Paused freezes rotation and token age. Gull decisions stop issuing flight commands while gameplay is inactive; the existing motor brakes after Stop in Shopping and Time.timeScale pauses physics in Paused. On resume, the join path is eligible for an immediate refresh.
+
+### Preview and verification
+
+Open the Gull sandbox, Play, click Game and press **B once**. The five Gulls collect props, climb to the runway and form the rotating stack. One then shows **DescendToDrop** and moves toward the centre staging position. Other birds show InKettle, and the timed-out holder shows ClimbToTop. F3 toggles labels.
+
+To see it, select a spawned Gull, frame it in Scene view with F, then zoom out to include the runway centre. Keep **Gizmos** enabled: the cyan spiral/slot spheres show the formation, and the holder's slot/staging guide is red. Select the runtime `[GullKettle]` in the Hierarchy and temporarily uncheck **Dispatch Enabled** on that component to watch all members circling. Play-mode Inspector changes are temporary.
+
+**Tools > IS > Gull > Run Focused G3 Kettle Check** is an opt-in sandbox check: it observes five real Gulls collecting/joining/orbiting, measures the slot geometry and movement, then checks shopping freeze, exclusive ownership, the real 12 s timeout, holder death/recovery and WaveCompleted reset. It temporarily suspends dispatch while observing the full five-member formation. Results are written to `G3Validation.txt`; G4/G5 attacks, full-wave balance and stress profiling are separate.
+
+The older G2 check now accepts birds progressing beyond JoinKettle, since G3 makes that state a real journey. It still checks the original collection/manager obligations.
+
+Recorded G3 result: **12 checks passed, zero failures**. Five real Gulls reached and followed the formation; exclusivity, timed handoff, real holder death/recovery within one second, shop scheduling freeze and wave reset all passed in the focused run. The sample demonstrates functional movement/scheduling, not final accuracy or performance tuning.
+
+Suggested G3 commit: `feat(ai-gull): add rotating kettle formation with single drop token`.
+
 ## Remaining phases / evidence
 
 - G2 collection/item/manager implementation is delivered in the Gull sandbox. Production Main wiring is deferred until the remaining strategy phases are integrated.
-- G3: rotating kettle membership/slots and one attack token, including death/timeout release.
+- G3 formation/token implementation is delivered in the Gull sandbox; its current departure uses staging until G4 supplies the actual attack.
 - G4: lead prediction with telegraph and real drop/swoop.
 - G5: damage-triggered distress reaction and cooldown.
 - G6: debug metrics, measured accuracy/performance and viva evidence.

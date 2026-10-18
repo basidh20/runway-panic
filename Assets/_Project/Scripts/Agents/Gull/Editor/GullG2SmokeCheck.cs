@@ -84,7 +84,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                     Check(Mathf.Abs(supplies[0].CooldownRemaining - frozenCooldown) < .001f, "Supply cooldown freezes while Shopping");
                     game.CloseShop(); Next(2);
                 }
-                else if (stage == 2 && birds.All(bird => bird.CarriedFod != null && bird.State == GullState.JoinKettle))
+                else if (stage == 2 && birds.All(bird => bird.CarriedFod != null && bird.State != GullState.GatherFod))
                 {
                     Check(birds.All(bird => bird.CarriedFod.transform.parent == bird.transform) && birds.Select(bird => bird.CarriedFod).Distinct().Count() == 5,
                         "Five Gulls fly from airport spawns and collect distinct pieces, attached to their own roots");
@@ -132,7 +132,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 }
                 else if (stage == 6 && EditorApplication.timeSinceStartup - stageBegan > 3.3)
                 {
-                    Check(emptyBird.State == GullState.JoinKettle && emptyBird.CarriedFod == null, "With no usable supply, a Gull proceeds without FOD after three gameplay seconds");
+                    Check(emptyBird.State != GullState.GatherFod && emptyBird.CarriedFod == null, "With no usable supply, a Gull proceeds without FOD after three gameplay seconds");
                     Finish(true);
                 }
             }

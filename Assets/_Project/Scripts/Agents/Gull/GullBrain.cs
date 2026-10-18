@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace RunwayPanic.Agents.Gull
 {
-    /// <summary>G2 collection through shared A*. JoinKettle waits for the G3 formation implementation.</summary>
+    /// <summary>Gull collection, rotating formation and attack-token preparation. Predictive drops follow in G4.</summary>
     [DisallowMultipleComponent]
     public sealed class GullBrain : BirdBrain
     {
@@ -30,12 +30,15 @@ namespace RunwayPanic.Agents.Gull
         private FodItem carriedFod;
         private float noSupplyTime, nextRepath, travelTime;
         private bool started;
+        private GullKettle kettle;
+        private bool suspended;
 
         public GullStrategyConfig Config => config;
         public GullState State => state;
         public float StateTime => stateTime;
         public FodItem CarriedFod => carriedFod;
         public FodSpawnPoint TargetSupply => targetSupply;
+        public bool IsAlive => Health != null && Health.IsAlive;
         public override string CurrentStateName => Labels[(int)state];
 
         private void Start()
@@ -54,11 +57,24 @@ namespace RunwayPanic.Agents.Gull
 
         private void Update()
         {
-            if (!IsGameplayActive || !Health.IsAlive || state == GullState.Dead) return;
+            if (!Health.IsAlive || state == GullState.Dead) return;
+            if (!IsGameplayActive)
+            {
+                if (!suspended) { Motor.Stop(); suspended = true; }
+                return;
+            }
+            if (suspended) { suspended = false; nextRepath = 0f; }
             stateTime += Time.deltaTime;
             if (!previewStateCycle)
             {
-                if (state == GullState.GatherFod) GatherFod();
+                switch (state)
+                {
+                    case GullState.GatherFod: GatherFod(); break;
+                    case GullState.JoinKettle: JoinKettle(); break;
+                    case GullState.InKettle: Orbit(); break;
+                    case GullState.DescendToDrop: StageDrop(); break;
+                    case GullState.ClimbToTop: ClimbToTop(); break;
+                }
                 return;
             }
             if (stateTime < PreviewStateSeconds) return;
@@ -76,6 +92,48 @@ namespace RunwayPanic.Agents.Gull
                 case GullState.ClimbToTop: ChangeState(GullState.DistressDive); break;
                 case GullState.DistressDive: ChangeState(GullState.GatherFod); break;
             }
+        }
+
+        private void JoinKettle()
+        {
+            if (kettle == null) { kettle = GullKettle.Instance; if (kettle == null) return; kettle.Configure(config); }
+            Vector3 target = kettle.JoinPosition;
+            if (Vector3.Distance(Motor.Position, target) <= 3f)
+            {
+                if (kettle.Join(this)) ChangeState(GullState.InKettle);
+                return;
+            }
+            if (Time.time < nextRepath) return;
+            if (RequestPath(target) || !LastRequestWasThrottled) nextRepath = Time.time + Mathf.Max(.1f, config.repathInterval);
+        }
+
+        private void Orbit()
+        {
+            if (kettle == null || !kettle.Contains(this)) { ChangeState(carriedFod != null ? GullState.JoinKettle : GullState.GatherFod); return; }
+            Motor.FlyTo(kettle.GetSlotPosition(this));
+            if (stateTime >= .75f && carriedFod != null && kettle.TakeToken(this)) ChangeState(GullState.DescendToDrop);
+        }
+
+        private void StageDrop()
+        {
+            if (kettle == null || kettle.TokenHolder != this) { ChangeState(GullState.ClimbToTop); return; }
+            // G3 staging only. G4 replaces this with the predictive approach, warning and actual release.
+            Motor.FlyTo(kettle.DropStagingPosition);
+        }
+
+        private void ClimbToTop()
+        {
+            if (kettle == null || !kettle.Contains(this)) { ChangeState(carriedFod != null ? GullState.JoinKettle : GullState.GatherFod); return; }
+            Vector3 top = kettle.GetSlotPosition(this);
+            Motor.FlyTo(top);
+            if (Vector3.Distance(Motor.Position, top) > 3f) return;
+            if (carriedFod != null) ChangeState(GullState.InKettle);
+            else { kettle.Leave(this); ChangeState(GullState.GatherFod); }
+        }
+
+        internal void OnKettleTokenExpired()
+        {
+            if (state != GullState.Dead && !previewStateCycle) ChangeState(GullState.ClimbToTop);
         }
 
         private void GatherFod()
@@ -163,15 +221,18 @@ namespace RunwayPanic.Agents.Gull
                     failedSupplies.Clear();
                     break;
                 case GullState.JoinKettle:
-                    if (!previewStateCycle) Motor?.Stop(); // G3 adds the actual formation journey here.
+                    nextRepath = 0f;
                     break;
                 case GullState.InKettle:
                 case GullState.DescendToDrop:
                 case GullState.Telegraph:
                 case GullState.Drop:
+                    break;
                 case GullState.ClimbToTop:
+                    if (!previewStateCycle && kettle != null && kettle.TokenHolder == this) kettle.ReturnToken(this);
+                    break;
                 case GullState.DistressDive:
-                    // Runtime actions follow in G3–G5.
+                    // Damage-driven distress follows in G5.
                     break;
             }
             if (Application.isEditor || Debug.isDebugBuild)
@@ -202,6 +263,7 @@ namespace RunwayPanic.Agents.Gull
         {
             base.OnDisable();
             ReleaseSupply();
+            if (kettle != null) kettle.Leave(this);
             if (carriedFod != null) { carriedFod.Despawn(); carriedFod = null; }
             if (Motor != null) { Motor.SpeedMultiplier = 1f; Motor.Stop(); }
         }
