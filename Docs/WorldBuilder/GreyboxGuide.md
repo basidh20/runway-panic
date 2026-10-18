@@ -10,6 +10,8 @@ The first gameplay integration is documented in `PlayerIntegration.md`: Main now
 
 ## What is built
 
+Bird-work reference rule: consult the parent workspace's `BIRD_STRATEGIES.md` for bird-related tasks; also consult `01_GULL_PLAN.md` for Gull work. The user's current three-wave/four-species decision takes precedence over the strategy document's older four-wave example.
+
 - Solid 100 x 80 m ground and perimeter walls.
 - Central 75 x 14 m runway (extended by the student), with aligned threshold bars, centre stripes, edge markings, and runway numbers.
 - Four recognisable aircraft greyboxes under Environment/Aircraft, refined from the student's parking cubes. Plane A uses a 12 m-long / 9 m-span utility-aircraft prefab; B/C/D share a 9 m-long / 8 m-span light-aircraft prefab. Each has fuselage, cockpit, wings, tail, engines, wheels, and compound collision. Parking was adjusted for wing clearance and terminal/hangar routes. See `AircraftArtHandoff.md` for final-model specifications.
@@ -18,7 +20,7 @@ The first gameplay integration is documented in `PlayerIntegration.md`: Main now
 - Six barricade prefab instances placed beside the runway, with routes left open.
 - A simple control-tower and terminal placeholder to establish airport scale and landmarks.
 - Basic reusable URP colour materials and realtime preview lighting.
-- Player-start, eight bird-spawn, four pickup, two checkpoint, and reserved-shop markers. Checkpoints are functional; the four pickup markers feed the shared spawner (see `PickupIntegration.md`). The shared between-wave shop screen is installed (`ShopIntegration.md`), but is not a physical vendor at the reserved marker. Bird-spawn and reserved-shop markers remain placement references.
+- Player-start, eight bird-spawn, four pickup, two checkpoint, and reserved-shop markers. Checkpoints are functional; the four pickup markers feed the shared spawner (see `PickupIntegration.md`). The shared between-wave shop screen is installed (`ShopIntegration.md`), but is not a physical vendor at the reserved marker. The eight bird-spawn markers are now typed `BirdPoint` Spawn points and Main has a shared FlightGrid (`FlightIntegration.md`); production bird spawning is not implemented yet.
 - A temporary first-person walkthrough rig and overview camera.
 
 The greybox is made of ordinary saved Unity objects and reusable prefabs. It is not generated on every Play. You can edit positions and sizes directly in the Inspector.
@@ -64,7 +66,7 @@ Use Tools > Runway Panic > Validate Aircraft Greyboxes after plane edits. `Aircr
 
 ## Next milestones
 
-The merged shared foundation now includes a 3D FlightGrid/A*, bird movement/animation and Hawk/Crow AI. These still need deliberate Main-scene integration; do not rebuild them from the older NavMesh-sampling proposal. After player integration, the environment milestones are doors/checkpoints, shop/pickups, flight navigation and species markers, movable cover, waves/safe-room integration, then final art and lighting. See `PlayerIntegration.md` and the latest teammate handoffs.
+Main now has the shared 3D FlightGrid/A*, typed spawn points, eight Hawk vantage markers, the connected Crow stash/zone/exit setup, one Gull kettle centre, eight FOD collection points and three Pigeon roosts; see `FlightIntegration.md`, `HawkPerchIntegration.md`, `CrowSetupIntegration.md` and `GullPigeonMarkerIntegration.md`. This completes the four scene-preparation milestones, not the runtime bird game. Do not rebuild navigation from the older NavMesh-sampling proposal. Next are Gull/Pigeon AI implementation, production waves (three waves with four species), movable cover/safe-room integration and final environment presentation. Bird movement/animation and Hawk/Crow brains already exist, but full Main gameplay still needs their deliberate integration.
 
 The builder menu creates Main only when it does not already exist; it deliberately refuses to overwrite a saved scene. Use normal scene editing for future work. The teammate's Sandbox_Basidh scene and existing render/input configuration are preserved. Main is added as the first build scene, with the existing sandbox entry retained.
 

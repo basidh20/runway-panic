@@ -14,6 +14,12 @@ Template:
 
 ---
 
+## 2026-10-18 — to: Gull / Pigeon owners — Main behaviour markers prepared
+- **What:** Main's `GullPigeonBehaviourPoints`: one KettleCenter at (0,10,0), eight ground-level FodSpawn markers along the runway edges, and three Roost markers on the hangar roof, terminal roof and Plane A wing. See `Docs/WorldBuilder/GullPigeonMarkerIntegration.md` for positions/radii and runtime wiring still required.
+- **Details:** Existing shared `BirdPoint` only; no brains, FOD source components/prefabs or test spawners added. Existing eight Spawn points, Hawk perches and Crow setup retained. One focused Edit-mode surface/approach check passed, not live species testing.
+- **Action needed:** after the four-milestone branch merges into **develop**, use these markers in the species sandboxes/runtime integration. Gull: add G2 FodSpawnPoint wiring when implemented; keep kettle heights 6–14 m above ground, not added again to the y=10 anchor. Pigeon: respect each roost radius (small wing radius 0.6 m); generate rally goals dynamically. All bird work refers to `BIRD_STRATEGIES.md`, plus `01_GULL_PLAN.md` for Gull. The current team decision is **three waves with four species**, overriding older four-wave examples below.
+- **Status:** scene preparation complete on `feature/world-ai-integration`; human fourth commit/PR into develop pending. Gull/Pigeon runtime AI and production waves remain separate.
+
 ## 2026-10-17 — to: S2 + all species owners — confirmed species/weapon data corrected
 - **What:** shared bird enum/data, weapon target matching, shop text; details and tuning rationale in `Docs/WorldBuilder/BirdProgression.md`.
 - **Details:** Gull replaces Eagle at the same serialized ID 3 and keeps the asset GUID. IDs Pigeon=0, Crow=1, Hawk=2 remain unchanged; introduction order is explicitly Gull → Pigeon → Crow → Hawk, not numeric enum order. Pistol → Gull (30 HP), AR → Pigeon (20 HP), sniper → Crow (60 HP), RPG → Hawk (300 HP). Kill coins are 8/10/15/25. One focused asset/reference/damage check passed (41 checks); no full-wave balance claim.
@@ -53,8 +59,8 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
 
     If you move a building, move its marker with it (or parent the marker to the building). The same list is in `Scripts/Agents/Hawk/Editor/HawkPerchSetup.cs`; its menu (`Tools > IS > Hawk > Place Sandbox Perches`) refuses to run on `Main` on purpose.
   - **`GreyboxPreview_TEMPORARY`:** its `CharacterController` blocks the birds' line-of-sight checks (in the hawk sandbox the hawk was blind at spawn until it was disabled), and its camera is a second one tagged `MainCamera`, so anything using `Camera.main` may get the wrong camera. The real player is `P_Player_Gameplay`.
-- **Action needed:** World Builder — add the 8 markers and delete (or at least disable) `GreyboxPreview_TEMPORARY` in `Main`, then tell me so I can test the hawk there.
-- **Status:** open
+- **Action needed:** Hawk owner — after the AI-level batch merges into develop, test live Hawk behaviour in Main. The eight exact handoff markers are placed as Perch points (group HawkVantage), the FlightGrid is installed, and `GreyboxPreview_TEMPORARY` stays disabled. See `Docs/WorldBuilder/HawkPerchIntegration.md`.
+- **Status:** scene setup implemented on `feature/world-ai-integration`, human commit/merge pending. Focused Edit-mode geometry/selector check passed; live Hawk flight not tested in this milestone.
 
 ## 2026-10-17 (evening) — to: Agent Controller + species owners — `BirdMotor.LandAt` can circle its landing point forever
 - **What:** `Scripts/Agents/Movement/BirdMotor.cs` — `LandAt` (and `HoldPosition`) via `SteerToTarget` / `SteerToPoint`.
@@ -76,8 +82,8 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
   - Played in `Main` with this prefab and a `FlightGrid` added for the test only: **7 of 7 crow checks pass** (A\* routes, approach, steal Main's pickups, deliver to a stash, vigil, rage on leaving, funeral) — `Docs/IS/Crow/main_integration.md`. Re-run any time: `Tools > IS > Crow > Run Main Integration Check` in Play mode.
   - Keep the prefab root at (0, 0, 0). If you move a shelter, the hangar or the terminal, tell the crow owner (or move the matching child with it).
   - The crow also needs, in `Main`: a **`FlightGrid`** (pathfinding; without it crows fly in straight lines). `P_PickupSpawner` is already there (thanks).
-- **Action needed:** World Builder — drag `P_CrowSetup_Main` into `Main` at the origin and add a `FlightGrid` (the default bounds cover the airport).
-- **Status:** open
+- **Action needed:** Crow owner — after the AI-level batch merges, the delivered setup is saved at Main's origin; the FlightGrid and pickup spawner are present. See `Docs/WorldBuilder/CrowSetupIntegration.md`. Shared Crow code/config/prefab is unchanged; test normal production-wave behaviour when the wave loop is connected.
+- **Status:** scene setup implemented on `feature/world-ai-integration`, human commit/merge pending. Focused placement/group/approach check passed; live Crow AI suite not rerun for this milestone.
 
 ## 2026-10-17 — to: Systems Engineer — crows steal pickups (no change needed)
 - **What:** `Pickup`, `PickupSpawner` (read-only use from `Scripts/Agents/Crow/`)
