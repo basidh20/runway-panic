@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebf04e28f741de04787cd31f5092a96b, type: 3}
+  m_Name: Wave_3_Crows
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.WaveData
+  waveNumber: 3
+  title: Crows
+  hint: One sniper shot drops a crow. Guard your pickups!
+  duration: 110
+  spawnInterval: 3.5
+  firstSpawnDelay: 1.5
+  maxAlive: 6
+  clearBonus: 20
+  spawnGroups:
+  - species: {fileID: 11400000, guid: 0f7b6716bba34f84db90ae1bf4322735, type: 2}
+    count: 8
+  - species: {fileID: 11400000, guid: 0e99293d4f5d9dc42bd7894aeeeb57bf, type: 2}
+    count: 5

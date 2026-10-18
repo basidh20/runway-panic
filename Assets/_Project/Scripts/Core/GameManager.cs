@@ -22,7 +22,7 @@ namespace RunwayPanic.Core
             { GameState.Victory, new[] { GameState.MainMenu, GameState.Playing } }
         };
 
-        [Tooltip("State on scene start. Playing until a main menu scene exists.")]
+        [Tooltip("State on scene start. The main menu is its own scene, so the game scene starts Playing.")]
         [SerializeField] private GameState initialState = GameState.Playing;
         [Tooltip("Player whose last lost life ends the game. Found in the scene if left empty.")]
         [SerializeField] private PlayerLifeManager playerLives;
@@ -47,6 +47,7 @@ namespace RunwayPanic.Core
         public event Action ShopClosed;
 
         private GameState stateBeforePause;
+        private int pauseInputConsumedFrame = -1;
 
         public GameState CurrentState { get; private set; }
         public bool IsPaused => CurrentState == GameState.Paused;
@@ -105,7 +106,7 @@ namespace RunwayPanic.Core
         {
             bool pausePressed = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
                                 (Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame);
-            if (pausePressed)
+            if (pausePressed && pauseInputConsumedFrame != Time.frameCount)
                 TogglePause();
         }
 
@@ -206,6 +207,12 @@ namespace RunwayPanic.Core
             ShopClosed?.Invoke();
             return true;
         }
+
+        /// <summary>
+        /// Call from UI that uses Esc / Start itself this frame (e.g. closing a settings panel), so the same press
+        /// does not also pause or resume. The UI must run before the GameManager (DefaultExecutionOrder).
+        /// </summary>
+        public void ConsumePauseInput() => pauseInputConsumedFrame = Time.frameCount;
 
         public void TriggerGameOver() => ChangeState(GameState.GameOver);
 

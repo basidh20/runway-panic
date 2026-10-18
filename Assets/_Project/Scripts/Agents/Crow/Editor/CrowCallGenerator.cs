@@ -7,7 +7,7 @@ using Random = System.Random;
 namespace RunwayPanic.Agents.Crow.EditorTools
 {
     /// <summary>
-    /// Tools > IS > Crow > Generate Crow Calls: synthesises the crow's three tell sounds as .wav files, so the tells
+    /// Tools > IS > Crow > Generate Crow Calls: synthesises the crow's four sounds as .wav files, so the tells
     /// need no downloaded audio. Replace them with recorded calls any time (keep the file names).
     /// <para>
     /// A crow's "caw" is harsh and nasal: a buzzy voice (many harmonics) shaped by two resonances, a pitch that rises
@@ -17,7 +17,9 @@ namespace RunwayPanic.Agents.Crow.EditorTools
     /// <item><c>SFX_Crow_Caw</c> — one caw; the funeral plays it in a slow repeating pattern.</item>
     /// <item><c>SFX_Crow_Call</c> — a quick, higher "ca-caw": the thief grabbing a pickup.</item>
     /// <item><c>SFX_Crow_Rage</c> — a long, low, very rough caw: the crow becoming enraged.</item>
+    /// <item><c>SFX_Crow_Strike</c> — wing beats, a beak "tock" and a harsh "kraa!": the crow hitting the player.</item>
     /// </list>
+    /// It also assigns the four clips to <c>P_Bird_Crow</c>.
     /// Deterministic (fixed seed): running it again produces identical files.
     /// </summary>
     public static class CrowCallGenerator
@@ -61,9 +63,85 @@ namespace RunwayPanic.Agents.Crow.EditorTools
                 new Syllable { Start = 0.01f, Length = 0.55f, PitchStart = 430f, PitchPeak = 560f, PitchEnd = 360f, Rasp = 0.75f, Breath = 0.32f, Gain = 1f },
             });
 
+            WriteStrike();
+
             AssetDatabase.Refresh();
-            Debug.Log($"[Crow] Generated SFX_Crow_Caw, SFX_Crow_Call and SFX_Crow_Rage in {Folder}.");
+            AssignToPrefab();
+            Debug.Log($"[Crow] Generated SFX_Crow_Caw, SFX_Crow_Call, SFX_Crow_Rage and SFX_Crow_Strike in {Folder} " +
+                      "and assigned them to P_Bird_Crow.");
         }
+
+        // The crow hitting the player: a burst of wing beats as it dives in, the beak striking (a sharp "tock" with a
+        // little body thump), and a short harsh "kraa!" over the top.
+        private static void WriteStrike()
+        {
+            const float duration = 0.6f, impact = 0.2f;
+            var samples = new float[Mathf.CeilToInt(duration * SampleRate)];
+            var random = new Random(4242);
+
+            // Four quick wing beats, getting louder: soft noise puffs, low-passed.
+            for (int beat = 0; beat < 4; beat++)
+            {
+                int start = Mathf.RoundToInt((0.02f + beat * 0.045f) * SampleRate);
+                int length = Mathf.RoundToInt(0.05f * SampleRate);
+                float gain = 0.25f + 0.12f * beat, low = 0f;
+                for (int i = 0; i < length && start + i < samples.Length; i++)
+                {
+                    low = Mathf.Lerp(low, (float)(random.NextDouble() * 2.0 - 1.0), 0.18f);
+                    samples[start + i] += gain * Mathf.Sin(Mathf.PI * i / length) * low;
+                }
+            }
+
+            // The beak: a click, a falling "tock" ring and a short low thump.
+            int hit = Mathf.RoundToInt(impact * SampleRate);
+            double ring = 0, thump = 0;
+            for (int i = 0; hit + i < samples.Length && i < 0.09f * SampleRate; i++)
+            {
+                float t = i / (float)SampleRate;
+                ring += 2.0 * Math.PI * Mathf.Lerp(1900f, 1100f, Mathf.Clamp01(t / 0.03f)) / SampleRate;
+                thump += 2.0 * Math.PI * Mathf.Lerp(140f, 80f, Mathf.Clamp01(t / 0.05f)) / SampleRate;
+                float click = t < 0.004f ? (float)(random.NextDouble() * 2.0 - 1.0) * (1f - t / 0.004f) : 0f;
+                samples[hit + i] += 0.9f * click
+                                    + 0.8f * Mathf.Sin((float)ring) * Mathf.Exp(-t / 0.012f)
+                                    + 0.6f * Mathf.Sin((float)thump) * Mathf.Exp(-t / 0.03f);
+            }
+
+            // The angry "kraa!": short, rough and higher than the caw.
+            AddSyllable(samples, new Syllable
+            {
+                Start = impact - 0.01f, Length = 0.3f, PitchStart = 640f, PitchPeak = 780f, PitchEnd = 520f,
+                Rasp = 0.7f, Breath = 0.3f, Gain = 0.75f,
+            }, random);
+
+            Normalise(samples);
+            File.WriteAllBytes($"{Folder}/SFX_Crow_Strike.wav", ToWav(samples));
+        }
+
+        // Puts the four calls on the crow prefab's tells (an existing assignment is overwritten with the same clip).
+        private static void AssignToPrefab()
+        {
+            const string prefabPath = "Assets/_Project/Prefabs/Birds/P_Bird_Crow.prefab";
+            GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try
+            {
+                var brain = root.GetComponent<CrowBrain>();
+                if (brain == null)
+                    return;
+                var so = new SerializedObject(brain);
+                so.FindProperty("funeralCawClip").objectReferenceValue = Clip("SFX_Crow_Caw");
+                so.FindProperty("theftCallClip").objectReferenceValue = Clip("SFX_Crow_Call");
+                so.FindProperty("rageCallClip").objectReferenceValue = Clip("SFX_Crow_Rage");
+                so.FindProperty("strikeClip").objectReferenceValue = Clip("SFX_Crow_Strike");
+                so.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static AudioClip Clip(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>($"{Folder}/{name}.wav");
 
         private static void Write(string name, float duration, Syllable[] syllables)
         {

@@ -14,11 +14,27 @@ Template:
 
 ---
 
-## 2026-10-18 — to: S1/World Builder + S2 — Main Gull environment wiring and missing wave loop
+## 2026-10-18 — to: all — Gull / S2 merge resolution and four-wave decision
+- **Decision:** retain S2's production four-wave system with all four bird species. This supersedes the earlier three-wave decision and missing-wave-loop statements in older World Builder/Gull notes below.
+- **Camera:** retain S2's complete shoulder-camera, aiming, scope and recoil setup. PlayerCameraRig now permits 75 degrees upward and retains S2's 70-degree downward limit; the saved gameplay prefab and script default agree.
+- **Integration follow-up:** S2's WaveManager is now present. Do not build a duplicate. Re-check Main gameplay after this merge; Gull sandbox/focused fixtures must isolate themselves from automatic production waves. Historical validation reports predate S2's wave integration and are not a merged-gameplay pass.
+
+## 2026-10-18 — to: S1/World Builder + S2 — Main Gull environment wiring
 - **What:** Main's eight existing FOD markers now have real Gull supplies, plus one configured FodManager and GullKettle under `GullRuntime_Main`. The existing Gull species/prefab mapping is reused. See `Docs/IS/Gull/MainIntegration.md` and its validation reports.
 - **Details:** Level marker transforms/metadata, Pigeon roosts and Hawk/Crow/shared setup are retained. No sandbox spawner or live birds are saved into Main. The old marker validator accepts the intended FOD components. **8 Edit-mode checks + 10 focused Play checks passed, zero failures.** The Main check uses temporary birds and explicit GameManager hooks; it does not implement production waves.
-- **Action needed:** The checked-in runtime still has no WaveManager/Spawner. The role plan assigns that system to S1, co-owned with S2. Implement it separately using WaveData/species prefabs and existing Spawn markers. Apply **three waves / four species** consistently with GameManager total count (currently still four), shop progression and safe leftover-bird cleanup. Do not derive introduction order from enum IDs or claim that pressing Play alone starts this Gull integration.
-- **Status:** Environment connected on `feature/is-gull`; human commits/review/merge into **develop** required. Production wave spawning and the previously recorded performance spike remain open follow-ups.
+- **Action needed:** Reuse S2's production WaveManager and four-wave assets from develop. Check Gull behaviour during real waves, shop transitions and leftover-bird cleanup; do not derive introduction order from enum IDs or add a second spawner.
+- **Status:** Environment connected on `feature/is-gull`; human commit/review/merge into **develop** required. Combined production-wave verification and the previously recorded performance spike remain open follow-ups.
+
+## 2026-10-18 — to: all — crow re-checked with the new stats and in the real game
+- **What:** `Scripts/Agents/Crow/` (theft scan, evasion, `ShelterZone.Contains`), crow test tools in `Scripts/Agents/Crow/Debug/`, reports `Docs/IS/Crow/evidence.md`, `main_integration.md`, `wave3_playtest.md`; summary in `Docs/IS/Crow/NOTES.md` §7–8.
+- **Details:**
+  - Stats: crow 60 HP, one sniper shot kills; other guns do 10% (pistol 60 hits, rifle 50, RPG 4). A near miss makes the crow dodge, and the next sniper shot (inside the dodge cooldown) still kills it.
+  - Evidence re-run in the crow sandbox (kills now use the real sniper), the `Main` check (7 of 7 with the real `FlightGrid`, waves paused during it), and a new `Tools > IS > Crow > Run Wave 3 Playtest` that plays the WaveManager's real wave 3.
+  - Fixed: crows no longer try to steal loot inside a shelter (two of Main's pickup spots are indoors, where birds can't fly); patrolling crows now dodge near misses too (the sniper reaches 150 m, so crows are mostly shot at while patrolling).
+- **Action needed:**
+  - World Builder: nothing. Pickups inside the shelters are fine — they are the player's safe loot, and crows now ignore them.
+  - Agent Controller: a carrying crow overshot its final direct hop and brushed the invisible north boundary near the terminal stash — the same steering overshoot as `LandAt` (entry below).
+- **Status:** done
 
 ## 2026-10-18 — to: Gull / Pigeon owners — Main behaviour markers prepared
 - **What:** Main's `GullPigeonBehaviourPoints`: one KettleCenter at (0,10,0), eight ground-level FodSpawn markers along the runway edges, and three Roost markers on the hangar roof, terminal roof and Plane A wing. See `Docs/WorldBuilder/GullPigeonMarkerIntegration.md` for positions/radii and runtime wiring still required.
@@ -89,7 +105,7 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
   - Keep the prefab root at (0, 0, 0). If you move a shelter, the hangar or the terminal, tell the crow owner (or move the matching child with it).
   - The crow also needs, in `Main`: a **`FlightGrid`** (pathfinding; without it crows fly in straight lines). `P_PickupSpawner` is already there (thanks).
 - **Action needed:** Crow owner — after the AI-level batch merges, the delivered setup is saved at Main's origin; the FlightGrid and pickup spawner are present. See `Docs/WorldBuilder/CrowSetupIntegration.md`. Shared Crow code/config/prefab is unchanged; test normal production-wave behaviour when the wave loop is connected.
-- **Status:** scene setup implemented on `feature/world-ai-integration`, human commit/merge pending. Focused placement/group/approach check passed; live Crow AI suite not rerun for this milestone.
+- **Status:** done — merged with `feature/world-ai-integration` (PR #44). Live crow check re-run in `Main` on 18 Oct with the real `FlightGrid`: 7 of 7 pass (`Docs/IS/Crow/main_integration.md`).
 
 ## 2026-10-17 — to: Systems Engineer — crows steal pickups (no change needed)
 - **What:** `Pickup`, `PickupSpawner` (read-only use from `Scripts/Agents/Crow/`)

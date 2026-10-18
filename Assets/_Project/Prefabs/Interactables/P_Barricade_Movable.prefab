@@ -65,6 +65,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2236286745659912212, guid: 5cee38d91d6e14d94929c17b935bdf11, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6376956917727990130}
+    - targetCorrespondingSourceObject: {fileID: 2236286745659912212, guid: 5cee38d91d6e14d94929c17b935bdf11, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3089162239482021213}
   m_SourcePrefab: {fileID: 100100000, guid: 5cee38d91d6e14d94929c17b935bdf11, type: 3}
 --- !u!1 &8779870223394928957 stripped
 GameObject:
@@ -129,3 +132,17 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0.7, z: 0}
   m_TimeToStationary: 0.5
+--- !u!114 &3089162239482021213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8779870223394928957}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b78e2fad3f1368439486bfcb4f875a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.BarricadeSounds
+  scrape: {fileID: 11400000, guid: 960a1e0a93853a1469c5c30caa469292, type: 2}
+  settle: {fileID: 11400000, guid: 510c1d6da1b59604e82a3dcd08c076b5, type: 2}

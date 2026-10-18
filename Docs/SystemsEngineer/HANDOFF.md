@@ -13,6 +13,33 @@ Template:
 
 ---
 
+## 2026-10-18 — to: all — timed waves, the wave HUD, and a balance / checkpoint playtest
+- **What:** `WaveManager` on `Prefabs/Core/P_GameManager` (already in `Main`, so no scene edit), waves in `ScriptableObjects/Waves/Wave_1_Gulls` … `Wave_4_Hawks`, HUD additions on `P_Player_Gameplay`; tools `Tools > S2 > Build Waves and Wave HUD` and `Tools > S2 > Run Wave and Checkpoint Playtest`; report `Docs/SystemsEngineer/WaveBalanceReport.md`.
+- **Details:**
+  - Each wave: a countdown with a banner (title, which gun to use), then `BeginWave`; birds appear one by one at the World Builder's `BirdSpawn_01`–`08` markers (group AirportSpawn), away from the player and never inside a wall, with a cap on how many are alive. The wave ends when every bird is dead (clear bonus 10 / 15 / 20 coins) or when the timer runs out (survivors fly off); "WAVE CLEARED" / "TIME UP" shows for 2.5 s, then `CompleteWave` opens the shop (or wins after wave 4). Closing the shop starts the next countdown.
+  - Waves: 9 gulls (90 s) → 10 pigeons + 3 gulls (100 s) → 8 crows + 5 pigeons (110 s) → 3 hawks + 3 crows + 3 gulls (120 s). Killing ~60% of each wave still affords the next gun (AR 40, Sniper 75, RPG 100); every kill also leaves money for medkits.
+  - HUD: wave timer under the wave number (red and pulsing in the last 10 s), "BIRDS LEFT" top right, and the centre banner.
+  - Playtest (11 checks, all pass): checkpoint respawn and lives, 3 deaths → Game Over screen + lost sound, Restart, and all four waves played by a perfect-aim player with real gun stats and shop purchases, ending in Victory.
+- **Action needed:**
+  - World Builder: nothing — your spawn markers are used as they are; please keep them in group `AirportSpawn`. Your FlightIntegration doc mentions three waves; the game and README use **four** (GameManager Total Waves = 4) — tell me if the team wants three, and I'll rebuild the waves.
+  - Gull / Pigeon owners: your birds already spawn in waves 1, 2 and 4; until your brains are on `P_Bird_Gull` / `P_Bird_Pigeon` they just hover. Re-run the playtest after adding them.
+  - Anyone tuning waves: edit the table in `WaveSetup.cs` and re-run the builder (it overwrites the wave assets), then re-run the playtest to refresh the report.
+- **Status:** done
+
+## 2026-10-18 — to: all — main menu, settings, and Main Menu buttons in the game
+- **What:** `Scenes/MainMenu.unity` (new, first in the build), `Prefabs/UI/P_SettingsPanel.prefab`, `Prefabs/Core/P_GameManager.prefab` (screens updated); builder `Tools > S2 > Build Main Menu`.
+- **Details:**
+  - The game now starts at the main menu: **Play** (loading screen with tips, then `Main`), **How to Play** (goal, the right gun per bird, all controls for keyboard and gamepad), **Settings**, **Credits**, **Quit** (asks first). Calm menu music and airport ambience; animated dusk backdrop.
+  - **Settings** (saved between sessions): master / music / effects / ambience volume, look sensitivity, invert Y, fullscreen, V-Sync (graphics quality appears only if the project gets more than one quality level). The same panel opens from the **pause screen**.
+  - **Pause** now has Resume · Restart · Settings · Main Menu · Quit; **Game Over** and **Victory** have Try Again · Main Menu · Quit. Esc / B in Settings closes Settings without unpausing.
+  - Mouse, keyboard (arrows, Enter, Esc) and gamepad (stick / D-pad, A, B) all work; a button is always highlighted, and hovering selects it.
+  - `GameManager.ConsumePauseInput()` lets UI use an Esc press without also pausing / resuming.
+- **Action needed:**
+  - World Builder: nothing — `Main.unity` is unchanged. Keep `MainMenu` at index 0 and `Main` in the build list (`SceneFlow.GameScene` loads it by name).
+  - Anyone changing a key or the bird / gun pairing: update the How to Play text in `MainMenuBuilder.BuildHowToPlay` and re-run `Tools > S2 > Build Main Menu`.
+  - Credits list roles only; add names in `MainMenuBuilder` (credits text) if the team wants them, then re-run the builder.
+- **Status:** done
+
 ## 2026-10-17 — to: all — the player is fully animated (move, jump, guns, reload, hit, death)
 - **What:** `Prefabs/Player/P_Player_Gameplay` (already in `Main`); controller `Art/Animations/Player/AC_Player.controller`; tools `Tools > S2 > Build Player Animator` and `Tools > S2 > Generate Player Clips`.
 - **Details:**
@@ -37,7 +64,7 @@ Template:
   - *Next wave* calls `GameManager.CloseShop()` → `ShopClosed` event → your WaveManager starts the next wave.
   - Tested in my sandbox: buy, refusals (closed / owned / too poor / full), pause and resume, next wave.
 - **Action needed:** drag one `P_Shop` into `Main.unity`. The screen is plain greybox UI — restyle it freely (it is all in the prefab's `ShopCanvas`), just keep the object names `Name`, `Description`, `Price`, `BuyButton/Label` in the row template.
-- **Status:** open
+- **Status:** done — placed in `Main` (checked 2026-10-18)
 
 ## 2026-10-17 — to: World Builder — medkits and shields on your pickup markers
 - **What:** `Assets/_Project/Prefabs/Interactables/P_PickupSpawner.prefab` (spawns `P_Pickup_Medkit` and `P_Pickup_Shield`)
@@ -47,7 +74,7 @@ Template:
   - Tested in `Main` (Play mode only, nothing saved): spawns on your markers, replaces collected pickups on a different marker, refills on `BeginWave`.
   - Player side: walking over a medkit heals 30 HP (or stores it, Q to use); a shield halves damage for 10 s (or stores it, F to use).
 - **Action needed:** drag one `P_PickupSpawner` into `Main.unity` (anywhere). Add more markers under `PickupPoints` if you want more possible spots; change *Max Active* / *Respawn Delay* on the spawner to tune.
-- **Status:** open
+- **Status:** done — placed in `Main` (checked 2026-10-18)
 
 ## 2026-10-16 — to: World Builder + Agent Controller — movable barricades
 - **What:** `Assets/_Project/Prefabs/Interactables/P_Barricade_Movable.prefab` — a **prefab variant** of `P_Greybox_Barricade`
@@ -59,7 +86,7 @@ Template:
 - **Action needed:**
   - World Builder: in `Main.unity`, swap the static barricades you want movable for `P_Barricade_Movable` (same position/rotation). Keep some static if you want fixed cover. Leave the movable ones **out of the NavMesh bake** (their obstacle carves instead), or the bake will treat their start position as a permanent wall.
   - Grid owner: subscribe to `Settled` on each barricade and mark grid nodes inside the bounds unwalkable (and the old area walkable again).
-- **Status:** open
+- **Status:** open — still not placed in `Main` (checked 2026-10-18)
 
 ## 2026-10-16 — to: World Builder — doors for the shelters
 - **What:** `Assets/_Project/Prefabs/Interactables/P_Door_Shelter.prefab`
@@ -77,7 +104,7 @@ Template:
   | Hangar side exit (optional) | (0, 0.055, 12.3) | (0, 0, 0) |
 
   The hangar exit is 3.2 m tall, so the door leaves a 0.3 m gap at the top; tell me if you want a taller variant. The 10 m main hangar entrance has no door.
-- **Status:** open
+- **Status:** done — placed in `Main` (checked 2026-10-18)
 
 ## 2026-10-16 — to: World Builder — putting the player, game manager and checkpoints into Main
 - **What:** `Prefabs/Player/P_Player_Gameplay.prefab`, `Prefabs/Core/P_GameManager.prefab`, `Scripts/Player/Checkpoint.cs`
@@ -89,7 +116,7 @@ Template:
   1. Drag in `P_Player_Gameplay` at `PlayerStart` and **disable `GreyboxPreview_TEMPORARY`** (as your GreyboxGuide already says), so only one camera and audio listener are active.
   2. Drag in one `P_GameManager` (anywhere).
   3. On `Checkpoint_A` and `Checkpoint_B`: add a **BoxCollider** (about 4 × 3 × 4 m) and the **`Checkpoint`** component (it ticks *Is Trigger* for you). The player respawns at the marker's position, so keep it at floor level.
-- **Status:** open
+- **Status:** done — placed in `Main` (checked 2026-10-18)
 
 ## 2026-10-16 — to: World Builder (WaveManager / shop UI) — game-state hooks
 - **What:** `GameManager.Instance` (`Scripts/Core/GameManager.cs`)
@@ -103,7 +130,7 @@ Template:
 
   Also available: `CurrentWave`, `TotalWaves` (4), `IsWaveActive`, `IsShopOpen`, `CurrentState`, and the events `WaveStarted`, `WaveCompleted`, `StateChanged`. Calls that make no sense (e.g. `CloseShop()` when the shop is closed) return `false` and change nothing.
 - **Action needed:** build the WaveManager around these calls; ask me if you need another hook.
-- **Status:** open
+- **Status:** done — the WaveManager is built (see the 2026-10-18 waves entry)
 
 ## 2026-10-16 — to: Agent Controller — damage and coins for birds
 - **What:** `IDamageable`, `BirdSpeciesData` assets in `ScriptableObjects/Birds/`, `CoinManager`
@@ -112,4 +139,4 @@ Template:
   - Each species asset (`BirdSpecies_Pigeon` … `_Eagle`) has HP, speed, attack stats, coin reward and the required gun. `GetDamageTaken(amount, rarity)` applies the rule "wrong gun = 10 % damage".
   - `Prefabs/Testing/P_DamageDummy` shows the expected behaviour; it is used in `Sandbox_S2_PlayerController`.
 - **Action needed:** make `BirdHealth` implement `IDamageable`, take its HP from the species asset and reduce damage with `GetDamageTaken(...)`. When a bird dies, call `CoinManager.Instance?.AddCoins(species.CoinReward)`. Birds damage the player with `playerHealth.TakeDamage(species.AttackDamage, WeaponRarity.Common)`.
-- **Status:** open
+- **Status:** done — `BirdHealth` is `IDamageable`, uses the species HP and pays coins (checked 2026-10-18)

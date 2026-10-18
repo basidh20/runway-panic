@@ -5,10 +5,11 @@ using UnityEngine;
 namespace RunwayPanic.Agents.Crow
 {
     /// <summary>
-    /// Evasion: a crow that is approaching, attacking or retreating dodges when a shot passes close without hitting
-    /// it — a sideways jink away from the line of fire, then a fresh approach (the novelty term in
-    /// <see cref="ApproachPointSelector"/> makes it come from a new side). Missing a crow therefore costs the player
-    /// the crow's position, not just the bullet.
+    /// Evasion: a crow that is patrolling, approaching, attacking or retreating dodges when a shot passes close without
+    /// hitting it — a sideways jink away from the line of fire, then a fresh approach (the novelty term in
+    /// <see cref="ApproachPointSelector"/> makes it come from a new side; a patrolling crow has now spotted the
+    /// shooter). Missing a crow therefore costs the player the crow's position, not just the bullet. Patrol is included
+    /// because the sniper (the crow's gun) reaches 150 m: crows are mostly shot at while still patrolling.
     /// </summary>
     public sealed partial class CrowBrain
     {
@@ -37,7 +38,8 @@ namespace RunwayPanic.Agents.Crow
         {
             if (!started || Time.time < nextEvadeTime || ReferenceEquals(target, Health))
                 return; // a hit is not a near miss
-            if (state != CrowState.Approach && state != CrowState.Attack && state != CrowState.Retreat)
+            if (state != CrowState.Patrol && state != CrowState.Approach && state != CrowState.Attack &&
+                state != CrowState.Retreat)
                 return; // funeral, theft, rage and vigil have their own priorities
 
             Vector3 position = Motor.Position;

@@ -28,6 +28,7 @@ namespace RunwayPanic.Agents.Crow
             if (Attack != null && Attack.TryAttack())
             {
                 CrowStats.AttackHits++;
+                PlayStrike();
                 ChangeState(CrowState.Retreat);
             }
             else if (stateTime > MaxAttackTime)

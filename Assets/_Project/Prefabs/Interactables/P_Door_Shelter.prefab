@@ -405,6 +405,7 @@ GameObject:
   - component: {fileID: 2941750371437667148}
   - component: {fileID: 3615665902905383069}
   - component: {fileID: 6402895922871390142}
+  - component: {fileID: 4056349703624226289}
   m_Layer: 0
   m_Name: DoorPanel
   m_TagString: Untagged
@@ -536,3 +537,17 @@ MonoBehaviour:
   startLocked: 0
   openPrompt: Open door
   closePrompt: Close door
+--- !u!114 &4056349703624226289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6067204899216165565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21f1e1c5d1cc0a644b311c67c57724fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.DoorSounds
+  open: {fileID: 11400000, guid: d91766a0022324148ab552c6edf39a5e, type: 2}
+  close: {fileID: 11400000, guid: d071bccc7be322a42b277e97ae9d4b2c, type: 2}

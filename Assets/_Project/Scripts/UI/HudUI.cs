@@ -7,9 +7,10 @@ using UnityEngine.UI;
 namespace RunwayPanic.UI
 {
     /// <summary>
-    /// The player's heads-up display: HP bar, lives, coins, gun and ammo, wave number, carried items,
-    /// shield countdown and a red flash on taking damage. Lives on the player prefab's HUD canvas and
-    /// updates from the player's events rather than polling.
+    /// The player's heads-up display: HP bar, lives, coins, gun and ammo, wave number, wave timer and birds left,
+    /// carried items, shield countdown, a red flash on taking damage, and a banner for the countdown before a wave,
+    /// its start and its end. Lives on the player prefab's HUD canvas and updates from the player's and the
+    /// <see cref="WaveManager"/>'s events; only the timers are read every frame.
     /// </summary>
     public sealed class HudUI : MonoBehaviour
     {
@@ -30,6 +31,19 @@ namespace RunwayPanic.UI
         [SerializeField] private Text itemsText;
         [SerializeField] private Text shieldText;
 
+        [Header("Wave")]
+        [Tooltip("Time left in the running wave, m:ss. Turns red and pulses in the last seconds.")]
+        [SerializeField] private Text waveTimerText;
+        [SerializeField] private Text birdsLeftText;
+        [SerializeField, Min(0f)] private float timerWarning = 10f;
+        [SerializeField] private Color timerColor = Color.white;
+        [SerializeField] private Color timerWarningColor = new Color(1f, 0.3f, 0.25f);
+        [Tooltip("Centre banner: the countdown before a wave, its title as it starts, \"wave cleared\" / \"time up\".")]
+        [SerializeField] private GameObject banner;
+        [SerializeField] private Text bannerTitle;
+        [SerializeField] private Text bannerSubtitle;
+        [SerializeField, Min(0.1f)] private float bannerTime = 2.5f;
+
         [Header("Damage flash")]
         [SerializeField] private Image damageFlash;
         [SerializeField, Range(0f, 1f)] private float flashAlpha = 0.35f;
@@ -42,6 +56,8 @@ namespace RunwayPanic.UI
         private PlayerWeaponHolder weaponHolder;
         private PlayerShield shield;
         private GameManager gameManager;
+        private WaveManager waves;
+        private float bannerHideTime;
         private WeaponBase trackedWeapon;
         private float flashAmount;
 
@@ -74,6 +90,11 @@ namespace RunwayPanic.UI
             if (weaponHolder != null) weaponHolder.WeaponEquipped -= TrackWeapon;
             TrackWeapon(null);
             if (gameManager != null) gameManager.WaveStarted -= ShowWave;
+            if (waves != null)
+            {
+                waves.CountdownStarted -= HandleCountdown;
+                waves.WaveEnded -= HandleWaveEnded;
+            }
         }
 
         private void Start()
@@ -100,10 +121,23 @@ namespace RunwayPanic.UI
             ShowWave(gameManager.CurrentWave);
         }
 
+        private void ConnectWaves()
+        {
+            if (waves != null || WaveManager.Instance == null)
+                return;
+
+            waves = WaveManager.Instance;
+            waves.CountdownStarted += HandleCountdown;
+            waves.WaveEnded += HandleWaveEnded;
+        }
+
         private void Update()
         {
             if (gameManager == null)
                 ConnectGameManager();
+            if (waves == null)
+                ConnectWaves();
+            UpdateWave();
 
             // The only values that change continuously: the shield countdown and the damage flash fading.
             if (shieldText != null)
@@ -160,6 +194,77 @@ namespace RunwayPanic.UI
             waveText.enabled = wave > 0;
             if (wave > 0)
                 waveText.text = $"WAVE  {wave} / {(gameManager != null ? gameManager.TotalWaves : wave)}";
+
+            if (wave > 0 && banner != null && waves != null && gameManager != null && gameManager.IsWaveActive)
+                ShowBanner(BannerTitle(wave), "Defend the runway!", bannerTime);
+        }
+
+        // ---------- Wave timer, birds left and banner ----------
+
+        private void UpdateWave()
+        {
+            bool running = waves != null && waves.Phase == WaveManager.WavePhase.Running;
+
+            if (waveTimerText != null)
+            {
+                waveTimerText.enabled = running;
+                if (running)
+                {
+                    float left = waves.TimeRemaining;
+                    int seconds = Mathf.CeilToInt(left);
+                    waveTimerText.text = $"{seconds / 60}:{seconds % 60:00}";
+                    bool warning = left <= timerWarning;
+                    waveTimerText.color = warning ? timerWarningColor : timerColor;
+                    float pulse = warning ? 1f + 0.12f * Mathf.Abs(Mathf.Sin(Time.time * Mathf.PI)) : 1f;
+                    waveTimerText.rectTransform.localScale = new Vector3(pulse, pulse, 1f);
+                }
+            }
+
+            if (birdsLeftText != null)
+            {
+                birdsLeftText.enabled = running;
+                if (running)
+                    birdsLeftText.text = $"BIRDS LEFT  {waves.BirdsLeft}";
+            }
+
+            if (banner == null)
+                return;
+
+            if (waves != null && waves.Phase == WaveManager.WavePhase.Countdown && waves.CurrentData != null)
+            {
+                // The countdown keeps the banner up and ticks its last line.
+                int seconds = Mathf.CeilToInt(waves.CountdownRemaining);
+                string hint = string.IsNullOrEmpty(waves.CurrentData.Hint) ? "" : waves.CurrentData.Hint + "\n";
+                int coming = gameManager != null ? gameManager.CurrentWave + 1 : 1;
+                ShowBanner(BannerTitle(coming), $"{hint}Starts in {seconds}", 0.2f);
+            }
+
+            if (banner.activeSelf && Time.unscaledTime >= bannerHideTime)
+                banner.SetActive(false);
+        }
+
+        private string BannerTitle(int wave)
+        {
+            string title = waves != null && waves.CurrentData != null ? waves.CurrentData.Title.ToUpperInvariant() : "";
+            return string.IsNullOrEmpty(title) ? $"WAVE {wave}" : $"WAVE {wave}  ·  {title}";
+        }
+
+        private void HandleCountdown(int wave, Data.WaveData data) => UpdateWave();
+
+        private void HandleWaveEnded(int wave, bool cleared, int bonus)
+        {
+            if (cleared)
+                ShowBanner("WAVE CLEARED", bonus > 0 ? $"+{bonus} coins bonus" : "", bannerTime);
+            else
+                ShowBanner("TIME UP", "The birds fly off. You held the runway.", bannerTime);
+        }
+
+        private void ShowBanner(string title, string subtitle, float seconds)
+        {
+            banner.SetActive(true);
+            if (bannerTitle != null) bannerTitle.text = title;
+            if (bannerSubtitle != null) bannerSubtitle.text = subtitle;
+            bannerHideTime = Time.unscaledTime + seconds;
         }
 
         // ---------- Weapon and ammo ----------

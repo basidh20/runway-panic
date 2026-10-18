@@ -22,4 +22,14 @@ MonoBehaviour:
   range: 70
   magazineSize: 30
   reloadTime: 1.8
+  aimFieldOfView: 45
+  hasScope: 0
+  aimSensitivity: 0.7
+  hipSpread: 2.2
+  aimSpread: 0.5
+  spreadPerShot: 0.35
+  maxSpread: 5
+  spreadRecovery: 9
+  recoil: 0.45
+  hitRadius: 0.12
   cost: 40

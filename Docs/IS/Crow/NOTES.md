@@ -20,7 +20,7 @@ Patrol ──player within 30 m──► Approach ──arrived at approach poin
    │
    └── player in a shelter ≥ 1 s (nearest 3 crows) ──► Vigil (land at an exit) ──player leaves──► Enraged (3 s)
 
-Approach / Attack / Retreat + a shot passes within 3 m (miss) ──► Evade (jink sideways, 0.7 s) ──► Approach (new side)
+Patrol / Approach / Attack / Retreat + a shot passes within 3 m (miss) ──► Evade (jink sideways, 0.7 s) ──► Approach (new side)
 
 Any state + own death ──► Dead (drops carried loot / releases claim)
 ```
@@ -95,7 +95,8 @@ and the path is re-planned every `repathInterval` = 0.75 s.
 
 - Scan every 1 s (Patrol/Approach only); the scene's pickups are cached, refreshed every 5 s and on a new wave.
 - A pickup is a target if it is: active, unclaimed, not already carried, not lying in a stash, ≥ 4 m from the player,
-  ≤ 40 m away, and not remembered as unreachable (e.g. inside a sealed shelter, remembered 15 s for all crows).
+  ≤ 40 m away, not inside a shelter (`ShelterZone.Contains` — birds cannot fly indoors, so it is never claimed),
+  and not remembered as unreachable (any other spot A\* can't reach, remembered 15 s for all crows).
 - `CrowPickupClaims`: one crow per pickup, at most `maxConcurrentThieves` = 2 thieves at once.
 - Carrying: the pickup's colliders are disabled and it is parented to the crow's `Head` bone, so it is visible
   (the tell) and the player can't collect it in mid-air. `Pickup.cs` is not modified.
@@ -129,27 +130,33 @@ never sound like one.
 
 ### Evasion
 
-A crow that is approaching, attacking or retreating dodges when a shot passes within `evadeRadius` (3 m) without hitting it:
+A crow that is patrolling, approaching, attacking or retreating dodges when a shot passes within `evadeRadius` (3 m) without
+hitting it (patrol was added on 18 Oct: the crow's gun is now the 150 m sniper, so crows are mostly shot at while patrolling):
 it jinks `evadeDistance` (4 m) sideways — away from the line of fire, on its own side of it — at 1.5× speed, then picks a new
 approach point. The novelty term in the approach score makes it come from a different side (measured: 161° change). A
 `evadeCooldown` (2.5 s) stops endless dodging. Missing a crow costs the player the crow's position, not just the bullet.
 
-## 7. Evidence (measured 17 Oct)
+## 7. Evidence (measured 17 Oct, re-measured 18 Oct with the gull-progression stats)
 
 Measured by scripted playtests, re-runnable from the menu: **`Tools > IS > Crow > Run Evidence Playtest`** (Play mode in
-`Sandbox_IS_Crow`; full results in [evidence.md](evidence.md)) and **`Run Main Integration Check`** (Play mode in `Main`;
-[main_integration.md](main_integration.md)). Kills go through the real death path: `PlayerShooting.ShotFired`, then damage.
+`Sandbox_IS_Crow`; full results in [evidence.md](evidence.md)), **`Run Main Integration Check`** (Play mode in `Main`;
+[main_integration.md](main_integration.md)) and **`Run Wave 3 Playtest`** (plays the real wave 3 in `Main`;
+[wave3_playtest.md](wave3_playtest.md)). Kills go through the real death path: `PlayerShooting.ShotFired`, then one hit
+with the real sniper's damage.
 
 | Measurement | Result |
 |---|---|
-| Grudge written by deaths | 3 crows shot from one spot → 3 danger stamps; danger at the shooter's spot **3.01** |
+| Stats (18 Oct) | Crow **60 HP**, needs the **sniper** (60 damage): **1 shot** kills. Wrong guns do 10%: pistol 60 hits (24.5 s), assault rifle 50 (7.9 s), RPG 4 (15 s) |
+| Near miss (18 Oct) | A sniper shot 1.5 m past an approaching crow: it **dodged** 4.5 m; the next sniper shot 1.25 s later (inside the 2.5 s dodge cooldown) **killed it** — a miss costs one shot, not the crow |
+| Grudge written by deaths | 3 crows shot from one spot (one sniper shot each, all died) → 3 danger stamps; danger at the shooter's spot **3.01** |
 | A\* with vs without danger (same 44 m flight across the kill zone) | Without danger costs: 44.0 m, crosses **19.5** danger (peak 3.01). With danger costs: 47.2 m (**+7%**), crosses **0.1** (peak 0.02) |
 | Picture | ![paths](path_comparison.png) Blue = no danger costs (straight through), green = what crows fly (around) |
 | Approach side after kills | Crows at 8 bearings around the player: approaches within 30° of the line of fire **1 of 8 before → 0 of 8 after**; the crow sitting on the kill line switches to **−90°**; a live crow there also came in at −90° |
-| Forgetting | Danger at the shooter's spot **3.01 → 1.60** after 33 s (6 steps × 0.9) — ratio **0.53**, matches the 32.9 s half-life |
-| Thefts | 4 tried, **1 delivered** to a stash, **1 recovered** (thief shot in flight); delivered loot left alone afterwards |
-| Script cost, 6 crows + map (Editor) | **0.014 ms** per frame on average (worst frame 0.47 ms, an A\* search) — target was < 0.5 ms |
-| In the real level (`Main`) | **7 of 7** checks pass: A\* routes, approach, steal, deliver to a stash, vigil at the shelter exit, rage on leaving, funeral → rage |
+| Forgetting | Danger at the shooter's spot **3.01 → 1.44** after 33 s (7 steps × 0.9; the map decays on its own 5 s tick, so 33 s holds 6 or 7 steps) — matches the 32.9 s half-life |
+| Thefts | 2 tried, **1 delivered** to a stash, **1 recovered** (thief shot in flight); delivered loot left alone afterwards |
+| Script cost, 6 crows + map (Editor) | **0.019 ms** per frame on average (worst frame 0.40 ms, an A\* search) — target was < 0.5 ms |
+| In the real level (`Main`, 18 Oct) | **7 of 7** checks pass with the real `FlightGrid`, `P_CrowSetup_Main` and waves (paused for the check): A\* routes (27–30 m flown in 6 s each), approach, steal, deliver to a stash, vigil at the shelter exit, rage on leaving, funeral → rage |
+| Wave 3 of the real game (18 Oct) | 8 crows + 5 pigeons from the WaveManager. Watching 40 s: no crow stuck; approaches and attacks on the player; 1 theft tried, 1 delivered. Fighting (sniper, every third crow shot a near miss): **3 of 3 near misses dodged**, wave cleared in 22 s |
 
 ## 8. Tuning and fixes
 
@@ -162,6 +169,15 @@ Bugs the playtests found and fixed (17 Oct):
 | Theft session | Crows re-stole loot lying near a stash: a crow that can't path the last metres drops it a few metres short, outside the "at a stash" radius, so the loot was shuffled around forever | `CrowPickupClaims.MarkStashed`: a delivered pickup is crow loot and never stolen again until the player collects it |
 | `Main` check | Vigil crows waited forever if the player left the shelter without walking out (respawn after dying inside): Unity sends no trigger-exit when the `CharacterController` is switched off to move the player | `ShelterZone` also checks every frame that the player is still inside its box |
 | Vigil test | Crows circled their shelter exit forever (`BirdMotor.LandAt` bug) | After `vigilLandTimeout` the crow stops and hovers at the exit |
+
+Re-checked 18 Oct against the gull-progression stats (60 HP, sniper) and in the real game. Still no tuning value changed.
+
+| Found by | Problem | Fix |
+|---|---|---|
+| Wave 3 playtest | 6 thefts tried, 0 delivered: two of Main's four pickup spots are inside the shelters, which birds can't fly into. Crows kept claiming that loot, failing to path, and retrying every 15 s | Crows skip loot inside a `ShelterZone` before claiming it (`ShelterZone.Contains`). Re-run: 1 tried, 1 delivered |
+| Wave 3 playtest | Near misses on patrolling crows never caused a dodge (0 dodges): evasion only ran while approaching, attacking or retreating, but the 150 m sniper mostly shoots crows that are still patrolling | Patrol added to the states that dodge. Re-run: 3 of 3 near misses dodged |
+| `Main` check | "A\* routes" failed 2 of 3 with the real grid — a test error: it measured straight-line distance from the start, and a patrolling crow often flies out and back | The check measures the distance actually flown (27–30 m per crow in 6 s) |
+| Wave 3 playtest (open) | A crow carrying loot brushed the invisible north boundary during the final hop to the terminal stash (the stash sits mid-way in a 5.5 m gap between the terminal and the boundary) | Not changed: it is the motor overshooting a direct hop, the same steering issue as `LandAt` (Agent Controller) |
 
 ## 9. Viva one-liner
 

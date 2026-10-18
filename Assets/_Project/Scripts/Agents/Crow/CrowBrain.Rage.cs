@@ -24,7 +24,10 @@ namespace RunwayPanic.Agents.Crow
             Motor.FlyTo(PlayerChest);
 
             if (Attack != null && Attack.TryAttack())
+            {
                 CrowStats.AttackHits++;
+                PlayStrike();
+            }
 
             if (stateTime >= rageDuration)
                 ChangeState(CrowState.Approach);

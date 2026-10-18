@@ -31,6 +31,8 @@ namespace RunwayPanic.Agents.Crow
         private readonly StringBuilder report = new StringBuilder();
         private readonly List<CrowBrain> crows = new List<CrowBrain>();
         private readonly Dictionary<CrowBrain, HashSet<CrowState>> seen = new Dictionary<CrowBrain, HashSet<CrowState>>();
+        private readonly Dictionary<CrowBrain, Vector3> lastPosition = new Dictionary<CrowBrain, Vector3>();
+        private readonly Dictionary<CrowBrain, float> flown = new Dictionary<CrowBrain, float>();
 
         private PlayerController player;
         private PlayerHealth health;
@@ -97,8 +99,18 @@ namespace RunwayPanic.Agents.Crow
                 health.ResetHealth(); // keep the player alive; this checks the crows
 
             foreach (CrowBrain crow in crows)
+            {
                 if (crow != null && seen.TryGetValue(crow, out HashSet<CrowState> states))
                     states.Add(crow.State);
+
+                // Distance actually flown: a patrolling crow often flies out and back to near where it began.
+                if (crow == null)
+                    continue;
+                Vector3 position = crow.transform.position;
+                if (lastPosition.TryGetValue(crow, out Vector3 last))
+                    flown[crow] = (flown.TryGetValue(crow, out float sum) ? sum : 0f) + Vector3.Distance(last, position);
+                lastPosition[crow] = position;
+            }
         }
 
         // ---------- Level ----------
@@ -114,6 +126,16 @@ namespace RunwayPanic.Agents.Crow
             if (!hasSetup)
                 PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(SetupPrefabPath));
             report.AppendLine($"- Crow setup (stashes, shelter zones, exits): {(hasSetup ? "✅ in the scene" : "❌ **missing** — `P_CrowSetup_Main` added for this test only (World Builder: drag it in)")}");
+
+            // Main runs the real waves now; pause them so only this check's crows fly (Play session only).
+            WaveManager waves = WaveManager.Instance;
+            if (waves != null)
+            {
+                waves.enabled = false;
+                foreach (BirdHealth bird in FindObjectsByType<BirdHealth>())
+                    Destroy(bird.gameObject); // any birds the first wave already spawned
+            }
+            report.AppendLine($"- Waves: {(waves != null ? "✅ WaveManager in the scene (paused for this check)" : "none")}");
 
             yield return null;
             int pickups = FindObjectsByType<Pickup>().Length;
@@ -136,16 +158,21 @@ namespace RunwayPanic.Agents.Crow
                     seen[crow] = new HashSet<CrowState>();
             }
 
-            var start = new Dictionary<CrowBrain, Vector3>();
             foreach (CrowBrain crow in crows)
-                start[crow] = crow.transform.position;
+                flown[crow] = 0f;
             yield return new WaitForSeconds(6f);
 
             int moving = 0;
+            var distances = new List<string>();
             foreach (CrowBrain crow in crows)
-                if (crow != null && Vector3.Distance(start[crow], crow.transform.position) > 5f)
-                    moving++;
-            Result("Crows fly A* routes around the level", moving == crows.Count, $"{moving} of {crows.Count} moved more than 5 m in 6 s");
+                if (crow != null && flown.TryGetValue(crow, out float metres))
+                {
+                    distances.Add($"{metres:0} m");
+                    if (metres > 5f)
+                        moving++;
+                }
+            Result("Crows fly A* routes around the level", moving == crows.Count,
+                $"{moving} of {crows.Count} flew more than 5 m in 6 s ({string.Join(", ", distances)})");
         }
 
         private IEnumerator ApproachPlayer()
@@ -202,7 +229,10 @@ namespace RunwayPanic.Agents.Crow
             seen[mourner] = new HashSet<CrowState>();
             yield return new WaitForSeconds(0.5f);
 
-            victim.GetComponent<BirdHealth>().TakeDamage(10000f, WeaponRarity.Legendary);
+            // One real sniper shot, the crow's gun.
+            var sniper = AssetDatabase.LoadAssetAtPath<RunwayPanic.Data.WeaponData>(
+                "Assets/_Project/ScriptableObjects/Weapons/Weapon_Tier3_Sniper.asset");
+            victim.GetComponent<BirdHealth>().TakeDamage(sniper.Damage, sniper.Rarity);
             float until = Time.time + 6f;
             yield return new WaitUntil(() => mourner == null || seen[mourner].Contains(CrowState.Enraged) || Time.time > until);
             bool ok = mourner != null && seen[mourner].Contains(CrowState.Funeral);

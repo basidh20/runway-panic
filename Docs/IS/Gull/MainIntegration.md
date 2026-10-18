@@ -2,7 +2,11 @@
 
 Branch: `feature/is-gull`. Merge target: **develop**, not main. Unity: **6000.6.4f1**.
 
-References: workspace `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` integration/Gull requirements. The team decision is **three waves with four species**; older four-wave examples are not the desired final design.
+References: workspace `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` integration/Gull requirements. Updated team decision (18 Oct): retain S2's **four waves with four species**.
+
+## Current status after integrating S2's develop changes
+
+S2's production WaveManager, wave HUD and four-wave assets are now present; reuse them rather than building another wave loop. The earlier environment-only results below are historical evidence from before this integration, not a merged production-wave test. Re-check Main and isolate Gull sandbox/focused fixtures from automatic waves before rerunning those controlled checks. The historical three-wave follow-up proposal below is superseded by the four-wave decision.
 
 ## What is saved
 
@@ -13,7 +17,7 @@ References: workspace `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` integ
 
 `Tools > IS > Gull > Connect Gull Runtime in Main` opens Main only from a saved scene outside Play, performs preflight checks, adds/reuses the expected components, checks marker metadata preservation and saves Main. It refuses different existing asset references instead of replacing teammates' settings. `Validate Main Gull Runtime` writes `MainEditValidation.txt`. The older World Builder marker validator now accepts intentional FOD supply components while still rejecting brains/spawners on the marker group; its original layout writer remains guarded against overwriting later runtime setup.
 
-## What is not implemented here
+## Historical state before S2's wave integration
 
 **There is no production WaveManager/Spawner in the checked-in runtime scripts.** `GameManager` exposes state hooks and `WaveData` stores configuration, but neither starts timed waves or spawns birds. Pressing Play in Main alone therefore does not start a Gull wave. Do not confuse the focused test below with an automatic gameplay loop.
 
@@ -33,7 +37,7 @@ This is not a complete three-wave playthrough, all-species/door regression suite
 
 Recorded result on Unity 6000.6.4f1: **8 Edit-mode reference checks passed and 10 Play-mode checks passed, zero failures**. Three actual Gulls collected distinct debris and formed the kettle, one naturally dropped piece settled in Main, nearby Gulls responded to the simulated-shot damage context, and the existing wave-completion hooks cleared FOD/kettle/supplies and entered Shopping. The saved scene diff contains only the eight added supply components and the new manager/kettle root; existing marker layout and other gameplay settings are unchanged.
 
-## Wave-loop handoff / next branch
+## Historical wave-loop proposal — superseded by S2's implementation
 
 After human review/commits and merge into **develop**, start the separate wave feature from updated develop and coordinate with S2. Its implementation must:
 
