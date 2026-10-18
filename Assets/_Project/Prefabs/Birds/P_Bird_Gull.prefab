@@ -86,4 +86,4 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.GullBrain
   config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
-  previewStateCycle: 1
+  previewStateCycle: 0

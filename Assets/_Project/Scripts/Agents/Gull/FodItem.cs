@@ -9,7 +9,7 @@ using UnityEngine.AI;
 
 namespace RunwayPanic.Agents.Gull
 {
-    /// <summary>One reusable carry/drop lifecycle. Supply, global cap and wave cleanup follow in G2b.</summary>
+    /// <summary>One carry/drop lifecycle; the scene FodManager owns landed lifetime, cap and wave cleanup.</summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody), typeof(BoxCollider))]
     public sealed class FodItem : MonoBehaviour
@@ -29,7 +29,8 @@ namespace RunwayPanic.Agents.Gull
         private FlightGrid registeredGrid;
         private Bounds registeredBounds;
         private bool registered, impacted, despawning;
-        private float landedAge, fallingAge;
+        private float fallingAge;
+        private FodManager manager;
         private const float MaxFallSeconds = 15f;
 
         public FodState State { get; private set; } = FodState.Lying;
@@ -69,6 +70,7 @@ namespace RunwayPanic.Agents.Gull
             if (!HasSetup()) return;
             itemCollider.enabled = false;
             if (obstacle != null) obstacle.enabled = false;
+            if (manager != null) manager.RemoveLanded(this);
             RemoveGridBlock();
             RestoreCollisionPairs();
             body.isKinematic = true;
@@ -78,7 +80,7 @@ namespace RunwayPanic.Agents.Gull
             transform.localPosition = localOffset;
             transform.localRotation = Quaternion.identity;
             State = FodState.Carried;
-            landedAge = fallingAge = 0f;
+            fallingAge = 0f;
         }
 
         [ContextMenu("Debug Release")]
@@ -110,12 +112,7 @@ namespace RunwayPanic.Agents.Gull
         private void Update()
         {
             if (!GameplayActive || despawning) return;
-            if (State == FodState.Landed)
-            {
-                landedAge += Time.deltaTime;
-                if (landedAge >= config.fodLifetime) Despawn();
-            }
-            else if (State == FodState.Falling)
+            if (State == FodState.Falling)
             {
                 fallingAge += Time.deltaTime;
                 if (fallingAge >= MaxFallSeconds) Despawn(); // No endless lost projectiles below/outside the airport.
@@ -147,7 +144,6 @@ namespace RunwayPanic.Agents.Gull
             body.isKinematic = true;
             body.useGravity = false;
             State = FodState.Landed;
-            landedAge = 0f;
             if (obstacle == null) obstacle = gameObject.AddComponent<NavMeshObstacle>();
             obstacle.shape = NavMeshObstacleShape.Box;
             obstacle.center = itemCollider.center;
@@ -155,6 +151,7 @@ namespace RunwayPanic.Agents.Gull
             obstacle.carving = true;
             obstacle.enabled = true;
             AddGridBlock();
+            if (manager != null) manager.MarkLanded(this);
             Settled?.Invoke(this);
         }
 
@@ -222,6 +219,7 @@ namespace RunwayPanic.Agents.Gull
         {
             if (despawning) return;
             despawning = true;
+            if (manager != null) manager.Untrack(this);
             itemCollider.enabled = false;
             if (obstacle != null) obstacle.enabled = false;
             RemoveGridBlock();
@@ -231,6 +229,7 @@ namespace RunwayPanic.Agents.Gull
 
         private void OnDisable()
         {
+            if (manager != null) manager.Untrack(this);
             if (itemCollider != null) itemCollider.enabled = false;
             if (obstacle != null) obstacle.enabled = false;
             RemoveGridBlock();
@@ -240,11 +239,14 @@ namespace RunwayPanic.Agents.Gull
         private void OnEnable()
         {
             if (itemCollider == null || despawning) return;
+            manager = FodManager.Instance;
+            if (manager != null) manager.Track(this);
             itemCollider.enabled = State != FodState.Carried;
             if (State == FodState.Landed)
             {
                 if (obstacle != null) obstacle.enabled = true;
                 AddGridBlock();
+                if (manager != null) manager.MarkLanded(this);
             }
         }
 

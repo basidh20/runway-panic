@@ -70,9 +70,46 @@ Recorded G2a result: **15 checks passed, zero failures**. The measured direct-hi
 
 Suggested G2a commit: `feat(ai-gull): add FOD item with carry, splash damage and debris state`.
 
+## G2b — supply, manager and actual collection
+
+References consulted again: `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` G2. Branch remains `feature/is-gull`; merge target remains develop.
+
+The Gull sandbox's existing eight ground FodSpawn markers now also have `FodSpawnPoint`, with the FOD prefab, strategy and Gull species references assigned. One scene-local `FodManager` has the strategy assigned. Its singleton can also create itself on first item use in another scene. Main is not modified by this sandbox setup.
+
+### Real collection
+
+The Gull prefab now has **Preview State Cycle OFF**. The default flow is `Idle → GatherFod → JoinKettle`. The last state waits for G3; it does not pretend that the formation, token or drop is already implemented.
+
+- A Gull looks up shared BirdPoint FodSpawn markers, selects the nearest ready/unclaimed supply, and claims it. A* uses the existing `BirdBrain.RequestPath`/PathService budget; a throttled query retries next frame without dropping its claim.
+- Claim ownership lives on each supply component, rather than a second static HashSet in the brain. This keeps one source of truth: one Gull owns a source at a time, competitors are refused, and disabled/dead owners no longer hold it. The brain releases its target on exit, disable, death or a failed route.
+- The target is 0.8 m above the marker. A short final approach is allowed only after a shared clearance check. The motor slows near the point, and a pickup within 1.15 m attaches the item through `AttachTo`, using the planned `(0,−0.15,0.05)` local carry offset. Only the motor interface moves the bird; no root teleports, scale changes or shared motor edits.
+- A failed route is excluded for that collection attempt. A 15 s travel limit also prevents indefinitely occupying a source if the motor cannot arrive. If no usable source is available for three active-gameplay seconds, the Gull proceeds to JoinKettle without FOD; G4 will supply the fallback attack.
+- Pickup starts that source's **six-second** cooldown. Supply cooldowns and collection decisions tick only while Playing. The source is logical supply: it instantiates the small prop at pickup time, so it does not leave an unlimited pile of physical cubes on the runway.
+- In this phase, disabling or killing a carrier despawns its carried item and frees the claim. This avoids orphaned props on inactive birds. Damage-triggered dives and token/death interactions are later phases.
+
+### Managed debris
+
+`FodManager` tracks all active item states and keeps a landed queue in arrival order. The normal strategy cap is **20 landed pieces**, removing the oldest first. It now owns landed lifetime (40 active-gameplay seconds per the item's strategy), replacing G2a's per-item landed timer; the item retains its 15 s lost-fall timeout.
+
+The item informs its cached manager on enable, settlement, pickup, despawn and disable. Repeated notifications are idempotent. `Impacted` still reports the first contact/damage result; `Settled` reports final scenery landing. Individual grid blocking/unblocking remains in FodItem, with the exact saved bounds and overlapping-piece safety already checked in G2a.
+
+The manager subscribes to the current GameManager and clears **carried, falling, lying and landed** items on `WaveCompleted`. It also resets supply cooldowns/claims. This prevents a projectile carried over from the previous wave landing on someone in the shop. It unsubscribes from the same GameManager when disabled/destroyed and does not recreate itself during teardown.
+
+### Preview / handoff
+
+Open `Sandbox_IS_Gull`, press Play, click Game view, and press **B once**. Five Gulls should fly toward different available ground supply points and carry small metal props. Select a spawned Gull in the Hierarchy and use Scene view/F to follow it; F3 toggles state labels. After collecting they show **JoinKettle** and wait. Stop Play afterwards.
+
+**Tools > IS > Gull > Connect G2 Supply in Gull Sandbox** wires the eight existing markers, manager and Gull prefab; it requires the saved sandbox outside Play. It does not rebuild/copy Main. **Run Focused G2 Collection Check** is the corresponding opt-in runtime check. It uses transient config copies for a small cap and short expiry, leaving the shared 20-piece/40-second/six-second settings intact. See `G2bValidation.txt` for results.
+
+The old G1 state-cycle check is historical and requires the preview flag; it is no longer the acceptance check for the default Gull prefab. G2a's item check remains relevant, with expiry now performed by the manager.
+
+Recorded G2b result: **12 checks passed, zero failures**. Five Gulls collected distinct pieces through the real motor/path interfaces. The check also exercised competing claims, cooldown freeze in the shop, oldest-first removal, expiry/grid release, cleanup through the real WaveCompleted event and the three-second no-supply fallback. This is focused sandbox verification, not a full-wave balance or performance result.
+
+Suggested G2b commit: `feat(ai-gull): add FOD manager and spawn points with cooldown`.
+
 ## Remaining phases / evidence
 
-- G2b: FodManager (global cap / wave cleanup), supply cooldown/claims and real gathering; add `FodSpawnPoint` next to sandbox markers when the component exists. G2a supplies the item and its standalone lifecycle.
+- G2 collection/item/manager implementation is delivered in the Gull sandbox. Production Main wiring is deferred until the remaining strategy phases are integrated.
 - G3: rotating kettle membership/slots and one attack token, including death/timeout release.
 - G4: lead prediction with telegraph and real drop/swoop.
 - G5: damage-triggered distress reaction and cooldown.

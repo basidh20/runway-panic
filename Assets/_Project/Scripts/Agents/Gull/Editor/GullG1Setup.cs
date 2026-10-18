@@ -39,6 +39,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 var brain = contents.AddComponent<GullBrain>();
                 var data = new SerializedObject(brain);
                 data.FindProperty("config").objectReferenceValue = config;
+                data.FindProperty("previewStateCycle").boolValue = true;
                 data.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(contents, PrefabPath);
             }
