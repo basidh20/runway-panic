@@ -1,0 +1,19 @@
+Gull G2a — focused runtime FOD item check (Unity 6000.6.4f1)
+PASS: Carry parents to a scaled carrier, disables collision and keeps the body kinematic
+PASS: Carry preserves the prop's 0.3 x 0.15 x 0.4 m world dimensions on a scale-0.6 carrier
+PASS: Carried prop follows carrier movement
+PASS: Release detaches with gravity, collision and zero inherited velocity
+PASS: Selected bottom grid cell starts clear before debris lands
+PASS: Real drop hits the player once for configured Gull damage (6) across all collision contacts
+PASS: After the player hit, debris reaches airport ground and enables carving/manual grid blocking
+PASS: Disabling debris releases its manual block and stale geometry immediately
+PASS: Re-enabling landed debris restores its block
+PASS: Two physical debris pieces occupy the same bottom grid cell
+PASS: Removing one overlapping piece preserves the other piece's block
+PASS: Removing the last overlapping piece restores the clear cell
+INFO: Previous lifetime-test location (6,0,-24) already blocked by airport geometry: True
+PASS: Lifetime-test runway cell is clear before the timed drop
+PASS: Configured landed lifetime despawns debris and releases navigation; tested with a 0.25 s transient config (landed=True, cell=(26, 0, 17), blocked=False)
+PASS: Additional contacts never raised a second impact for the first release
+One item-lifecycle check only. No supply manager, cooldown/claims, automatic gathering, full AI suite or baked NavMesh carving test.
+Failures: 0

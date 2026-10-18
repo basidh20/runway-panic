@@ -14,6 +14,17 @@ Template:
 
 ---
 
+## 2026-10-18 — to: all — Gull / S2 merge resolution and four-wave decision
+- **Decision:** retain S2's production four-wave system with all four bird species. This supersedes the earlier three-wave decision and missing-wave-loop statements in older World Builder/Gull notes below.
+- **Camera:** retain S2's complete shoulder-camera, aiming, scope and recoil setup. PlayerCameraRig now permits 75 degrees upward and retains S2's 70-degree downward limit; the saved gameplay prefab and script default agree.
+- **Integration follow-up:** S2's WaveManager is now present. Do not build a duplicate. Re-check Main gameplay after this merge; Gull sandbox/focused fixtures must isolate themselves from automatic production waves. Historical validation reports predate S2's wave integration and are not a merged-gameplay pass.
+
+## 2026-10-18 — to: S1/World Builder + S2 — Main Gull environment wiring
+- **What:** Main's eight existing FOD markers now have real Gull supplies, plus one configured FodManager and GullKettle under `GullRuntime_Main`. The existing Gull species/prefab mapping is reused. See `Docs/IS/Gull/MainIntegration.md` and its validation reports.
+- **Details:** Level marker transforms/metadata, Pigeon roosts and Hawk/Crow/shared setup are retained. No sandbox spawner or live birds are saved into Main. The old marker validator accepts the intended FOD components. **8 Edit-mode checks + 10 focused Play checks passed, zero failures.** The Main check uses temporary birds and explicit GameManager hooks; it does not implement production waves.
+- **Action needed:** Reuse S2's production WaveManager and four-wave assets from develop. Check Gull behaviour during real waves, shop transitions and leftover-bird cleanup; do not derive introduction order from enum IDs or add a second spawner.
+- **Status:** Environment connected on `feature/is-gull`; human commit/review/merge into **develop** required. Combined production-wave verification and the previously recorded performance spike remain open follow-ups.
+
 ## 2026-10-18 — to: all — crow re-checked with the new stats and in the real game
 - **What:** `Scripts/Agents/Crow/` (theft scan, evasion, `ShelterZone.Contains`), crow test tools in `Scripts/Agents/Crow/Debug/`, reports `Docs/IS/Crow/evidence.md`, `main_integration.md`, `wave3_playtest.md`; summary in `Docs/IS/Crow/NOTES.md` §7–8.
 - **Details:**

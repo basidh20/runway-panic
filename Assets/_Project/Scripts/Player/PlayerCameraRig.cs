@@ -40,7 +40,7 @@ namespace RunwayPanic.Player
         [Tooltip("Gamepad stick turn speed at full tilt (degrees/s): horizontal, vertical.")]
         [SerializeField] private Vector2 stickDegreesPerSecond = new Vector2(220f, 150f);
         [Tooltip("Lowest (looking up) and highest (looking down) pitch, in degrees.")]
-        [SerializeField] private Vector2 pitchLimits = new Vector2(-60f, 70f);
+        [SerializeField] private Vector2 pitchLimits = new Vector2(-75f, 70f);
 
         [Header("Hip (not aiming)")]
         [SerializeField, Range(30f, 90f)] private float hipFieldOfView = 60f;

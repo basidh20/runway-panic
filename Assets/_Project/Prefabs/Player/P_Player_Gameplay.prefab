@@ -4760,7 +4760,7 @@ MonoBehaviour:
   follow: {fileID: 2715827489516730697}
   mouseDegreesPerPixel: 0.08
   stickDegreesPerSecond: {x: 220, y: 150}
-  pitchLimits: {x: -60, y: 70}
+  pitchLimits: {x: -75, y: 70}
   hipFieldOfView: 60
   hipDistance: 3.2
   hipShoulder: {x: 0.8, y: 0.1, z: 0}

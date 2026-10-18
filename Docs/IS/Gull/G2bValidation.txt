@@ -1,0 +1,15 @@
+Gull G2b — focused collection/supply/manager runtime check, Unity 6000.6.4f1
+PASS: Eight ready supplies and one configured manager with the normal cap of 20
+PASS: One successful take starts the six-second cooldown; immediate repeat is refused
+PASS: A supply accepts one Gull claim and refuses a competing Gull
+PASS: Supply cooldown freezes while Shopping
+PASS: Five Gulls fly from airport spawns and collect distinct pieces, attached to their own roots
+PASS: Completed pickups release every supply claim
+PASS: Transient cap of two removes the oldest landed piece while retaining the two newest
+PASS: Manager expires a landed piece and clears its grid block using a transient 0.25-second lifetime
+PASS: Manager tracks carried and falling pieces as well as landed debris
+PASS: WaveCompleted clears all item states and resets supply cooldowns/claims
+PASS: No debris survives into the shop; the former landed cell is clear
+PASS: With no usable supply, a Gull proceeds without FOD after three gameplay seconds
+Sandbox/transient changes only; no shared config values changed. G3 formation/token and production waves remain future work.
+Failures: 0

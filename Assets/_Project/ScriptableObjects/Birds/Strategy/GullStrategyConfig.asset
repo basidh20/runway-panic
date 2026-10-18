@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f28fdd2b62734aa184733bdc55d5d12, type: 3}
+  m_Name: GullStrategyConfig
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.GullStrategyConfig
+  kettleRadius: 8
+  kettleTopHeight: 14
+  kettleBottomHeight: 6
+  kettleAngularSpeed: 25
+  dropSlotHeight: 7
+  telegraphDuration: 0.6
+  fodSplashRadius: 1.5
+  fodDamageMultiplier: 1
+  fodLifetime: 40
+  maxFodOnGround: 20
+  fodPickupCooldown: 6
+  distressRadius: 25
+  distressDiveSpeedMultiplier: 2.2
+  distressCooldown: 8
+  repathInterval: 0.75

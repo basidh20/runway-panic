@@ -1,0 +1,13 @@
+Gull G1 — one focused sandbox state-preview/config/shop-freeze/death check
+Unity: 6000.6.4f1
+PASS: Five Gull instances, one species brain each
+PASS: All five share the assigned Gull strategy asset
+PASS: Shared state labels present; state names are cached strings
+PASS: Sandbox can enter the shared between-wave shop state
+PASS: State and timer freeze throughout 2.2 seconds in Shopping
+PASS: Closing the shop resumes Playing
+PASS: All five cycle through the nine living preview states; Dead is never entered by the timer
+Observed: Idle, GatherFod, JoinKettle, InKettle, DescendToDrop, Telegraph, Drop, ClimbToTop, DistressDive
+PASS: Actual shared health death enters Dead and disables the brain
+G1 only: no FOD, kettle/token, prediction, distress reaction or production waves tested or implemented.
+Failures: 0

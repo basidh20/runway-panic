@@ -1,0 +1,26 @@
+Gull G4 — focused maths/real bombing sandbox check, Unity 6000.6.4f1
+PASS: Stationary target prediction stays at the player's position
+PASS: Lead includes warning plus fall time and ignores vertical player velocity
+PASS: Lead clamps to eight metres and degenerate tuning stays finite
+INFO: case 0 warning at bird=(0.62, 6.92, 0.33), aim=(0.00, 0.12, 0.00)
+PASS: Case 0: one real release/impact after the warning; committed aim remains fixed (delay 0.61 s)
+MEASURE: case 0, landing-to-aim=0.05 m, HP loss=6.0, release=(0.21, 6.89, 0.11), aim=(0.00, 0.12, 0.00)
+PASS: Stationary player: debris lands within one metre of aim and applies one six-HP hit
+PASS: Case 0: release clears carried FOD and returns the token
+INFO: case 1 warning at bird=(0.01, 7.12, 13.92), aim=(0.00, 0.12, 15.56)
+PASS: Case 1: one real release/impact after the warning; committed aim remains fixed (delay 0.61 s)
+MEASURE: case 1, landing-to-aim=0.73 m, HP loss=6.0, release=(0.00, 6.97, 14.83), aim=(0.00, 0.12, 15.56)
+PASS: Straight walking: the real drop lands ahead of the player position sampled at the warning
+PASS: Case 1: release clears carried FOD and returns the token
+INFO: case 2 warning at bird=(0.01, 7.12, 13.90), aim=(0.00, 0.12, 15.65)
+PASS: Case 2: one real release/impact after the warning; committed aim remains fixed (delay 0.62 s)
+MEASURE: case 2, landing-to-aim=0.78 m, HP loss=0.0, release=(0.00, 6.97, 14.87), aim=(0.00, 0.12, 15.65)
+PASS: Turning during the warning dodges the committed bomb without it retargeting
+PASS: Case 2: release clears carried FOD and returns the token
+INFO: case 3 warning at bird=(-0.70, 7.38, -0.06), aim=(0.00, 0.12, 0.00)
+INFO: late alignment at bird=(2.94, 4.95, 0.26), aim=(0.00, 0.12, 0.00)
+PASS: No supply: a warned swoop is used instead of fabricating debris
+PASS: Fallback is one bounded pass, returns the token and cannot repeat damage in the same turn
+MEASURE: fallback HP loss=0.0
+One focused scripted sandbox run, one drop per scenario. Not statistical balance/performance evidence. The real player was moved only transiently for these checks.
+Failures: 0
