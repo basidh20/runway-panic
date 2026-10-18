@@ -151,7 +151,11 @@ namespace RunwayPanic.Agents.Gull
                 if (bird == null) continue;
                 Gizmos.color = bird == tokenHolder ? Color.red : Color.cyan;
                 Gizmos.DrawWireSphere(GetSlotPosition(bird), .45f);
-                if (bird == tokenHolder) { Gizmos.DrawLine(bird.transform.position, DropStagingPosition); Gizmos.DrawWireSphere(DropStagingPosition, .6f); }
+                if (bird == tokenHolder)
+                {
+                    Vector3 attack = bird.PredictedDropPoint + Vector3.up * config.dropSlotHeight;
+                    Gizmos.DrawLine(bird.transform.position, attack); Gizmos.DrawWireSphere(attack, .6f);
+                }
             }
         }
     }

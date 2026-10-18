@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RunwayPanic.AI;
 using RunwayPanic.Core;
@@ -5,7 +6,7 @@ using UnityEngine;
 
 namespace RunwayPanic.Agents.Gull
 {
-    /// <summary>Gull collection, rotating formation and attack-token preparation. Predictive drops follow in G4.</summary>
+    /// <summary>Gull collection, formation and token-controlled predictive bombing. Distress response follows in G5.</summary>
     [DisallowMultipleComponent]
     public sealed class GullBrain : BirdBrain
     {
@@ -21,6 +22,8 @@ namespace RunwayPanic.Agents.Gull
         [SerializeField] private GullStrategyConfig config;
         [Tooltip("Historical G1 label demonstration only. Leave OFF for real G2 gathering.")]
         [SerializeField] private bool previewStateCycle;
+        [Tooltip("Optional final Gull warning call. An audible synthetic chirp is used until a clip is assigned.")]
+        [SerializeField] private AudioClip callClip;
 
         private GullState state = GullState.Idle;
         private float stateTime;
@@ -32,6 +35,10 @@ namespace RunwayPanic.Agents.Gull
         private bool started;
         private GullKettle kettle;
         private bool suspended;
+        private Vector3 predictedPoint, attackTarget, swoopStart, swoopAim;
+        private AudioSource warningSource;
+        private AudioClip fallbackCall;
+        private bool swooping;
 
         public GullStrategyConfig Config => config;
         public GullState State => state;
@@ -39,6 +46,12 @@ namespace RunwayPanic.Agents.Gull
         public FodItem CarriedFod => carriedFod;
         public FodSpawnPoint TargetSupply => targetSupply;
         public bool IsAlive => Health != null && Health.IsAlive;
+        public Vector3 PredictedDropPoint => predictedPoint;
+        public bool IsSwooping => swooping;
+        /// <summary>Raised when aim locks and the audible/wing warning begins.</summary>
+        public event Action<GullBrain> TelegraphStarted;
+        /// <summary>Actual released piece and locked aim point; useful for G6 accuracy measurements.</summary>
+        public event Action<FodItem, Vector3> FodDropped;
         public override string CurrentStateName => Labels[(int)state];
 
         private void Start()
@@ -72,7 +85,9 @@ namespace RunwayPanic.Agents.Gull
                     case GullState.GatherFod: GatherFod(); break;
                     case GullState.JoinKettle: JoinKettle(); break;
                     case GullState.InKettle: Orbit(); break;
-                    case GullState.DescendToDrop: StageDrop(); break;
+                    case GullState.DescendToDrop: ApproachDrop(); break;
+                    case GullState.Telegraph: Telegraph(); break;
+                    case GullState.Drop: Drop(); break;
                     case GullState.ClimbToTop: ClimbToTop(); break;
                 }
                 return;
@@ -111,14 +126,95 @@ namespace RunwayPanic.Agents.Gull
         {
             if (kettle == null || !kettle.Contains(this)) { ChangeState(carriedFod != null ? GullState.JoinKettle : GullState.GatherFod); return; }
             Motor.FlyTo(kettle.GetSlotPosition(this));
-            if (stateTime >= .75f && carriedFod != null && kettle.TakeToken(this)) ChangeState(GullState.DescendToDrop);
+            if (stateTime >= .75f && kettle.TakeToken(this)) ChangeState(GullState.DescendToDrop);
         }
 
-        private void StageDrop()
+        private bool OwnsAttack()
         {
-            if (kettle == null || kettle.TokenHolder != this) { ChangeState(GullState.ClimbToTop); return; }
-            // G3 staging only. G4 replaces this with the predictive approach, warning and actual release.
-            Motor.FlyTo(kettle.DropStagingPosition);
+            if (kettle != null && kettle.TokenHolder == this && Hub != null && Hub.HasPlayer && Hub.Health.IsAlive) return true;
+            ChangeState(GullState.ClimbToTop);
+            return false;
+        }
+
+        private Vector3 Prediction()
+        {
+            Vector3 point = GullTargeting.PredictDropPoint(Hub.PlayerPosition, Hub.PlayerVelocity, config.dropSlotHeight,
+                config.telegraphDuration, -Physics.gravity.y);
+            var grid = FlightGrid.Instance;
+            if (grid != null)
+            {
+                Bounds bounds = grid.VolumeBounds;
+                point.x = Mathf.Clamp(point.x, bounds.min.x + 1, bounds.max.x - 1);
+                point.z = Mathf.Clamp(point.z, bounds.min.z + 1, bounds.max.z - 1);
+            }
+            return point;
+        }
+
+        private void ApproachDrop()
+        {
+            if (!OwnsAttack()) return;
+            predictedPoint = Prediction();
+            attackTarget = predictedPoint + Vector3.up * config.dropSlotHeight;
+            MoveToAttack(attackTarget, false);
+            float horizontal = Vector2.Distance(new Vector2(Motor.Position.x, Motor.Position.z), new Vector2(attackTarget.x, attackTarget.z));
+            if ((horizontal < .7f && Mathf.Abs(Motor.Position.y - attackTarget.y) < .8f) || stateTime >= 6f)
+            {
+                if (FlightGrid.Instance == null || !FlightGrid.Instance.IsFlyable(attackTarget)) ChangeState(GullState.ClimbToTop);
+                else ChangeState(GullState.Telegraph);
+            }
+        }
+
+        private void Telegraph()
+        {
+            if (!OwnsAttack()) return;
+            // Aim is committed when the warning begins: a sharp direction change during it must be a real counter.
+            MoveToAttack(attackTarget, true);
+            Anim.SetWingsSpread(.65f + .35f * Mathf.Sin(stateTime * 24f));
+            if (stateTime >= Mathf.Max(0f, config.telegraphDuration)) ChangeState(GullState.Drop);
+        }
+
+        private void MoveToAttack(Vector3 target, bool hold)
+        {
+            float distance = Vector3.Distance(Motor.Position, target);
+            // Brake before entering the warning: a fast seek can otherwise overshoot and orbit its aim.
+            Motor.SpeedMultiplier = Mathf.Clamp(distance / 5f, .08f, hold ? .6f : 1.3f);
+            var grid = FlightGrid.Instance;
+            if (grid != null && grid.IsFlyable(target) && PathSmoother.IsClear(Motor.Position, target, grid.SnapLineRadius, grid.ObstacleMask))
+            {
+                if (hold) Motor.HoldPosition(target); else Motor.FlyTo(target);
+            }
+            else if (Time.time >= nextRepath)
+            {
+                if (RequestPath(target) || !LastRequestWasThrottled) nextRepath = Time.time + Mathf.Max(.1f, config.repathInterval);
+            }
+        }
+
+        private void Drop()
+        {
+            if (!OwnsAttack()) return;
+            if (swooping)
+            {
+                Motor.SpeedMultiplier = 1.3f;
+                var grid = FlightGrid.Instance;
+                if (grid != null && PathSmoother.IsClear(Motor.Position, swoopAim, grid.SnapLineRadius, grid.ObstacleMask)) Motor.FlyTo(swoopAim);
+                else if (Time.time >= nextRepath && (RequestPath(swoopAim) || !LastRequestWasThrottled)) nextRepath = Time.time + config.repathInterval;
+                bool seesPlayer = grid != null && PathSmoother.IsClear(Motor.Position, Hub.PlayerHeadPosition, grid.SnapLineRadius, grid.ObstacleMask);
+                if ((seesPlayer && Attack != null && Attack.TryAttack()) || Vector3.Dot(swoopAim - swoopStart, swoopAim - Motor.Position) <= 0 || stateTime >= 4f)
+                    ChangeState(GullState.ClimbToTop);
+                return;
+            }
+            if (carriedFod == null) { ChangeState(GullState.ClimbToTop); return; }
+            MoveToAttack(attackTarget, true);
+            float horizontal = Vector2.Distance(new Vector2(Motor.Position.x, Motor.Position.z), new Vector2(attackTarget.x, attackTarget.z));
+            if (horizontal <= .85f && Mathf.Abs(Motor.Position.y - attackTarget.y) <= 1f)
+            {
+                var released = carriedFod;
+                carriedFod = null;
+                released.Release();
+                FodDropped?.Invoke(released, predictedPoint);
+                ChangeState(GullState.ClimbToTop);
+            }
+            else if (stateTime >= 1.25f) ChangeState(GullState.ClimbToTop); // A badly aligned approach aborts, without teleporting or dropping through cover.
         }
 
         private void ClimbToTop()
@@ -224,11 +320,35 @@ namespace RunwayPanic.Agents.Gull
                     nextRepath = 0f;
                     break;
                 case GullState.InKettle:
+                    break;
                 case GullState.DescendToDrop:
+                    nextRepath = 0f;
+                    swooping = false;
+                    Anim.SetFlying(true);
+                    break;
                 case GullState.Telegraph:
+                    if (!previewStateCycle)
+                    {
+                        // Snapshot aim/height once. The player remains free to dodge during the warning and fall.
+                        predictedPoint = Prediction();
+                        attackTarget = predictedPoint + Vector3.up * config.dropSlotHeight;
+                        swoopAim = Hub.PlayerPosition + new Vector3(Hub.PlayerVelocity.x, 0, Hub.PlayerVelocity.z) * config.telegraphDuration + Vector3.up;
+                        PlayWarning();
+                        TelegraphStarted?.Invoke(this);
+                    }
+                    break;
                 case GullState.Drop:
+                    if (!previewStateCycle)
+                    {
+                        swooping = carriedFod == null;
+                        swoopStart = Motor.Position;
+                        Anim.SetDiving(swooping);
+                    }
                     break;
                 case GullState.ClimbToTop:
+                    Motor.SpeedMultiplier = 1f;
+                    Anim.SetDiving(false);
+                    Anim.SetWingsSpread(1f);
                     if (!previewStateCycle && kettle != null && kettle.TokenHolder == this) kettle.ReturnToken(this);
                     break;
                 case GullState.DistressDive:
@@ -249,6 +369,9 @@ namespace RunwayPanic.Agents.Gull
                 case GullState.DistressDive:
                     if (Motor != null) Motor.SpeedMultiplier = 1f;
                     break;
+                case GullState.Telegraph:
+                    Anim.SetWingsSpread(1f);
+                    break;
                 // FOD claims, kettle membership and token cleanup are added alongside those systems.
             }
         }
@@ -262,6 +385,9 @@ namespace RunwayPanic.Agents.Gull
         protected override void OnDisable()
         {
             base.OnDisable();
+            if (warningSource != null) warningSource.Stop();
+            Anim.SetDiving(false);
+            Anim.SetWingsSpread(1f);
             ReleaseSupply();
             if (kettle != null) kettle.Leave(this);
             if (carriedFod != null) { carriedFod.Despawn(); carriedFod = null; }
@@ -273,6 +399,47 @@ namespace RunwayPanic.Agents.Gull
             base.OnEnable();
             if (started && state != GullState.Dead && !previewStateCycle)
             { ChangeState(GullState.GatherFod); stateTime = 0f; }
+        }
+
+        private void PlayWarning()
+        {
+            if (warningSource == null)
+            {
+                warningSource = gameObject.AddComponent<AudioSource>();
+                warningSource.playOnAwake = false;
+                warningSource.spatialBlend = .7f;
+                warningSource.minDistance = 8f;
+                warningSource.maxDistance = 60f;
+                warningSource.volume = .55f;
+            }
+            if (callClip == null && fallbackCall == null)
+            {
+                const int rate = 16000, count = 3200;
+                var samples = new float[count];
+                for (int i = 0; i < count; i++)
+                {
+                    float t = i / (float)rate;
+                    samples[i] = Mathf.Sin(2f * Mathf.PI * (850f * t + 1000f * t * t)) * Mathf.Sin(Mathf.PI * i / count) * .3f;
+                }
+                fallbackCall = AudioClip.Create("GullWarning_Placeholder", count, 1, rate, false);
+                fallbackCall.SetData(samples, 0);
+            }
+            warningSource.PlayOneShot(callClip != null ? callClip : fallbackCall);
+        }
+
+        private void OnDestroy() { if (fallbackCall != null) Destroy(fallbackCall); }
+        private void OnDrawGizmos()
+        {
+            if (!Application.isPlaying || (state != GullState.DescendToDrop && state != GullState.Telegraph && state != GullState.Drop)) return;
+            Gizmos.color = state == GullState.Telegraph ? Color.yellow : Color.red;
+            Gizmos.DrawLine(transform.position, predictedPoint);
+            float radius = config != null ? config.fodSplashRadius : 1.5f;
+            for (int i = 0; i < 32; i++)
+            {
+                float a = i * Mathf.PI / 16, b = (i + 1) * Mathf.PI / 16;
+                Gizmos.DrawLine(predictedPoint + new Vector3(Mathf.Cos(a) * radius, .05f, Mathf.Sin(a) * radius),
+                    predictedPoint + new Vector3(Mathf.Cos(b) * radius, .05f, Mathf.Sin(b) * radius));
+            }
         }
     }
 }

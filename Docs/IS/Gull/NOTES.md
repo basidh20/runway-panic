@@ -141,11 +141,62 @@ Recorded G3 result: **12 checks passed, zero failures**. Five real Gulls reached
 
 Suggested G3 commit: `feat(ai-gull): add rotating kettle formation with single drop token`.
 
+## G4 — predictive drop, warning and no-FOD swoop
+
+References consulted: `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` G4. This replaces G3's centre staging with a real attack on the player; the existing token still controls one attack at a time.
+
+### Prediction and fair counterplay
+
+`GullTargeting.PredictDropPoint` is a pure maths helper:
+
+```text
+fallTime = sqrt(2 × dropHeight / gravity)
+leadTime = fallTime + telegraphDuration
+prediction = playerPosition + clampMagnitude(horizontalVelocity × leadTime, 8 m)
+```
+
+Vertical player velocity is ignored. Height/warning are bounded at zero and gravity magnitude at 0.01 for finite results with invalid zero/negative tuning. The normal values remain 7 m height, gravity 9.81 and 0.6 s warning. The brain additionally clamps x/z within the airport grid with a 1 m boundary margin.
+
+**Deliberate resolution of a plan conflict:** the G4 prose says to track/re-predict through the warning and release, but its acceptance/counterplay says a sharp direction change *during the call* should dodge. G4 now commits the aim point **when the warning begins**. It tracks before the call, then holds that point through release. This keeps the stated counter learnable and avoids silently correcting the aim after the player reacts. The bomb is a normal gravity object after release, with no homing.
+
+### Attack flow
+
+- DescendToDrop follows the predicted point plus 7 m height. In clear air it uses the motor; if the direct route is blocked, it requests the shared A* route with the existing budget/repath rules. The maximum speed multiplier is 1.3, reduced near the destination to avoid the shared motor's wide close-target circles.
+- Once sufficiently above the aim point (or after the six-second approach limit), it enters Telegraph if the target is clear flight space. Otherwise it aborts back to the formation with its prop.
+- Telegraph commits aim/height, spreads/pulses the wings and plays a warning call. An optional `Call Clip` on GullBrain accepts final audio. Until assigned, a short synthetic chirp is generated once per Gull and reused; it is a prototype warning, not final Gull sound art. The clip/source are runtime objects and the generated clip is cleaned up with its Gull.
+- After at least 0.6 active-gameplay seconds, Drop releases the carried piece **from its real transform**. It requires horizontal alignment within 0.85 m and height within 1 m. A short final motor correction is allowed; if alignment is still poor after 1.25 s, it returns with the prop rather than teleporting into position. Extra alignment time can affect moving-target accuracy and is a future tuning consideration.
+- Release clears the carried reference, raises `FodDropped(item, committedAim)` for measurement, returns the token and climbs. Reaching the top without FOD leaves the kettle to gather/restock. `TelegraphStarted(brain)` exposes the instant aim locks for testing and future evidence.
+- The normal FodItem collision path applies the one splash, settles as debris, blocks the grid, and remains under the manager's cap/lifetime/wave cleanup.
+- An empty Gull can now take its token turn. It uses the same warning, then a single contact swoop toward the player's warning-time trajectory. It uses the shared `BirdContactAttack` range/damage/cooldown, with no fabricated FOD. A hit, passing the aim point, or four seconds ends the pass and returns the token.
+- Missing/dead player, lost token, death, disable or timeout stops the attack/returns to the existing recovery flow. The warning timer follows active gameplay; wings/diving/speed are reset when climbing or disabling.
+
+### Preview / evidence
+
+In `Sandbox_IS_Gull`: Play, click Game, press B once, and stay on the runway to observe a pass. Gulls collect, form the kettle, approach, show Telegraph, chirp, release and climb/restock. Keep moving or change direction when the warning sounds to dodge. Physical roofs/walls can intercept a falling prop. Stop Play before making saved edits.
+
+F3 toggles labels. Scene view/Gizmos show the line and splash-radius disc at the current prediction (red during approach/release, yellow while committed/warning). The disc is a debug guide, not extra game-world collision.
+
+**Tools > IS > Gull > Run Focused G4 Bombing Check** checks the lead helper and runs real stationary, straight-walking, warning-time dodge and no-supply fallback scenarios. It moves the real sandbox player transiently with its CharacterController; no player/shared config assets are edited. Each case uses one Gull and stops after one completed drop/pass. `G4Validation.txt` records actual measured aim error/HP loss and checks; these small samples are functional evidence, not a statistical hit rate or final wave balance.
+
+The old G3 check now observes completed-turn return instead of expecting every turn to last 12 s. The historical G3 result remains evidence for the timeout, whose safety implementation is retained.
+
+Recorded G4 result: **14 checks passed, zero failures**. A close-target overshoot found during verification was corrected by braking earlier and lowering warning-time correction speed through the existing motor interface. The measured successful run was:
+
+| Single scripted scenario | Warning to release | Landing distance from committed aim | Player HP loss |
+|---|---:|---:|---:|
+| Standing still | 0.61 s | 0.05 m | 6 |
+| Walking straight at 2 m/s | 0.61 s | 0.73 m | 6 |
+| Turn sideways at 4.5 m/s when warned | 0.62 s | 0.78 m | 0 |
+
+The no-FOD case made one warned, bounded swoop and returned its token; that one pass missed (0 HP loss). Contact damage remains governed by the existing attack component and range/line-of-sight checks. Do not turn these one-off functional samples into a percentage hit rate. G6 still needs repeated representative samples and performance measurements.
+
+Suggested G4 commit: `feat(ai-gull): add predictive FOD drop with telegraph call`.
+
 ## Remaining phases / evidence
 
 - G2 collection/item/manager implementation is delivered in the Gull sandbox. Production Main wiring is deferred until the remaining strategy phases are integrated.
 - G3 formation/token implementation is delivered in the Gull sandbox; its current departure uses staging until G4 supplies the actual attack.
-- G4: lead prediction with telegraph and real drop/swoop.
+- G4 prediction, warning, real drop and fallback swoop are implemented in the Gull sandbox; final tuning/art/sound and wider balance checks remain integration work.
 - G5: damage-triggered distress reaction and cooldown.
 - G6: debug metrics, measured accuracy/performance and viva evidence.
 

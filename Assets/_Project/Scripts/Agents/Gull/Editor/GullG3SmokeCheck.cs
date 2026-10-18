@@ -94,15 +94,15 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 {
                     originalHolder = kettle.TokenHolder;
                     var other = birds.First(bird => bird != originalHolder);
-                    Check(birds.Count(bird => bird.State == GullState.DescendToDrop) == 1 && !kettle.TakeToken(other) && !kettle.ReturnToken(other),
+                    Check(birds.Count(IsAttacking) == 1 && !kettle.TakeToken(other) && !kettle.ReturnToken(other),
                         "Exactly one departure; other Gulls cannot take or return its token");
                     Check(originalHolder == kettle.Members[kettle.Members.Count - 1], "Only the logical bottom member obtains the drop token");
                     Next(5);
                 }
                 else if (stage == 5 && kettle.TokenHolder != null && kettle.TokenHolder != originalHolder)
                 {
-                    Check(EditorApplication.timeSinceStartup - stageBegan >= 11.5 && kettle.Members[0] == originalHolder && originalHolder.CarriedFod != null,
-                        "12-second timeout returns its holder to the top and gives the next bottom Gull a turn, retaining undropped FOD");
+                    Check(kettle.Members[0] == originalHolder,
+                        "A completed turn returns its holder to the top and gives the next bottom Gull a turn");
                     killedHolder = kettle.TokenHolder;
                     killedHolder.GetComponent<BirdHealth>().Kill(); killedAt = EditorApplication.timeSinceStartup;
                     Check(kettle.Members.Count == 4 && kettle.TokenHolder != killedHolder, "Actual holder death immediately removes membership and releases ownership"); Next(6);
@@ -111,7 +111,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 {
                     Check(EditorApplication.timeSinceStartup - killedAt < 1 && kettle.TokenHolder != killedHolder,
                         "The next living bottom Gull takes the token within one second of holder death");
-                    Check(birds.Where(bird => bird != null && bird.IsAlive).Count(bird => bird.State == GullState.DescendToDrop) == 1,
+                    Check(birds.Where(bird => bird != null && bird.IsAlive).Count(IsAttacking) == 1,
                         "Only one living Gull remains in departure after death recovery");
                     if (!game.BeginWave(1) || !game.CompleteWave()) throw new InvalidOperationException("Could not exercise WaveCompleted.");
                     Check(kettle.Members.Count == 0 && kettle.TokenHolder == null && kettle.Rotation == 0, "WaveCompleted clears kettle members, token and rotation");
@@ -126,11 +126,12 @@ namespace RunwayPanic.Agents.Gull.EditorTools
         {
             running = false; EditorApplication.update -= Tick; SessionState.SetBool(Key, false);
             if (kettle != null) kettle.Clear();
-            Report.Add("G3 staging retains debris; predictive targeting, telegraph, release and distress response remain G4/G5. No production wave or stress suite run.");
+            Report.Add("Current G4 attacks may complete turns before the 12 s timeout. This check observes turn return/death recovery; the original G3 report recorded the timeout separately. No production wave or stress suite run.");
             Report.Add("Failures: " + failures);
             Directory.CreateDirectory("Docs/IS/Gull"); File.WriteAllLines("Docs/IS/Gull/G3Validation.txt", Report);
             Debug.Log("[GullG3Check] Finished with " + failures + " failures; see G3Validation.txt.");
             if (stopPlay) EditorApplication.isPlaying = false;
         }
+        private static bool IsAttacking(GullBrain bird) => bird.State == GullState.DescendToDrop || bird.State == GullState.Telegraph || bird.State == GullState.Drop;
     }
 }
