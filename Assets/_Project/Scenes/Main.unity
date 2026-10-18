@@ -316,6 +316,7 @@ GameObject:
   m_Component:
   - component: {fileID: 23414679}
   - component: {fileID: 23414680}
+  - component: {fileID: 23414681}
   m_Layer: 0
   m_Name: FodSpawn_West_South30
   m_TagString: Untagged
@@ -353,6 +354,21 @@ MonoBehaviour:
   type: 4
   radius: 0.5
   group: GullFod
+--- !u!114 &23414681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 23414678}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 809356e66be1243df88f87c098aa006e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodSpawnPoint
+  prefab: {fileID: 2080245617982875802, guid: 82c9cfd60df4e479f8b55301c96aab55, type: 3}
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
 --- !u!1 &24300883
 GameObject:
   m_ObjectHideFlags: 0
@@ -543,6 +559,7 @@ GameObject:
   m_Component:
   - component: {fileID: 59304895}
   - component: {fileID: 59304896}
+  - component: {fileID: 59304897}
   m_Layer: 0
   m_Name: FodSpawn_East_South10
   m_TagString: Untagged
@@ -580,6 +597,21 @@ MonoBehaviour:
   type: 4
   radius: 0.5
   group: GullFod
+--- !u!114 &59304897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 59304894}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 809356e66be1243df88f87c098aa006e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodSpawnPoint
+  prefab: {fileID: 2080245617982875802, guid: 82c9cfd60df4e479f8b55301c96aab55, type: 3}
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
 --- !u!1 &86099908
 GameObject:
   m_ObjectHideFlags: 0
@@ -1070,6 +1102,51 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 184216344}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &185998989
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 185998990}
+  - component: {fileID: 185998991}
+  m_Layer: 0
+  m_Name: FodManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &185998990
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 185998989}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1457470182}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &185998991
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 185998989}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29044aefb5ba148afacacc6f337355bd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodManager
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
 --- !u!1 &198719503
 GameObject:
   m_ObjectHideFlags: 0
@@ -2807,7 +2884,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3c59cb9c9f48d41058d6d946ef0ffba9, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Greybox.GreyboxWalkthrough
   walkCamera: {fileID: 1770685088}
   overviewCamera: {fileID: 462900092}
@@ -5553,7 +5630,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
   m_UsePipelineSettings: 1
   m_AdditionalLightsShadowResolutionTier: 2
@@ -5639,6 +5716,7 @@ GameObject:
   m_Component:
   - component: {fileID: 836881925}
   - component: {fileID: 836881926}
+  - component: {fileID: 836881927}
   m_Layer: 0
   m_Name: FodSpawn_West_South10
   m_TagString: Untagged
@@ -5676,6 +5754,21 @@ MonoBehaviour:
   type: 4
   radius: 0.5
   group: GullFod
+--- !u!114 &836881927
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 836881924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 809356e66be1243df88f87c098aa006e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodSpawnPoint
+  prefab: {fileID: 2080245617982875802, guid: 82c9cfd60df4e479f8b55301c96aab55, type: 3}
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
 --- !u!1 &850414122
 GameObject:
   m_ObjectHideFlags: 0
@@ -7168,6 +7261,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1115523539}
   - component: {fileID: 1115523540}
+  - component: {fileID: 1115523541}
   m_Layer: 0
   m_Name: FodSpawn_East_North10
   m_TagString: Untagged
@@ -7205,6 +7299,21 @@ MonoBehaviour:
   type: 4
   radius: 0.5
   group: GullFod
+--- !u!114 &1115523541
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1115523538}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 809356e66be1243df88f87c098aa006e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodSpawnPoint
+  prefab: {fileID: 2080245617982875802, guid: 82c9cfd60df4e479f8b55301c96aab55, type: 3}
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
 --- !u!1 &1134447647
 GameObject:
   m_ObjectHideFlags: 0
@@ -9199,6 +9308,39 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1456243437}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1457470181
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1457470182}
+  m_Layer: 0
+  m_Name: GullRuntime_Main
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1457470182
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1457470181}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 185998990}
+  - {fileID: 1684537146}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1515192771
 GameObject:
   m_ObjectHideFlags: 0
@@ -9501,6 +9643,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1542270890}
   - component: {fileID: 1542270891}
+  - component: {fileID: 1542270892}
   m_Layer: 0
   m_Name: FodSpawn_West_North30
   m_TagString: Untagged
@@ -9538,6 +9681,21 @@ MonoBehaviour:
   type: 4
   radius: 0.5
   group: GullFod
+--- !u!114 &1542270892
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1542270889}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 809356e66be1243df88f87c098aa006e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodSpawnPoint
+  prefab: {fileID: 2080245617982875802, guid: 82c9cfd60df4e479f8b55301c96aab55, type: 3}
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
 --- !u!1 &1555008564
 GameObject:
   m_ObjectHideFlags: 0
@@ -10069,6 +10227,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1642713186}
   - component: {fileID: 1642713187}
+  - component: {fileID: 1642713188}
   m_Layer: 0
   m_Name: FodSpawn_East_North30
   m_TagString: Untagged
@@ -10106,6 +10265,21 @@ MonoBehaviour:
   type: 4
   radius: 0.5
   group: GullFod
+--- !u!114 &1642713188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1642713185}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 809356e66be1243df88f87c098aa006e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodSpawnPoint
+  prefab: {fileID: 2080245617982875802, guid: 82c9cfd60df4e479f8b55301c96aab55, type: 3}
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
 --- !u!1 &1646387595
 GameObject:
   m_ObjectHideFlags: 0
@@ -10230,6 +10404,52 @@ Transform:
   - {fileID: 1144602121}
   m_Father: {fileID: 97936748}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1684537145
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1684537146}
+  - component: {fileID: 1684537147}
+  m_Layer: 0
+  m_Name: GullKettle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1684537146
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1684537145}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1457470182}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1684537147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1684537145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b95b9b02e7014a4fabe197aad003e57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.GullKettle
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  dispatchEnabled: 1
 --- !u!1001 &1687308528
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11492,6 +11712,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1948816278}
   - component: {fileID: 1948816279}
+  - component: {fileID: 1948816280}
   m_Layer: 0
   m_Name: FodSpawn_East_South30
   m_TagString: Untagged
@@ -11529,6 +11750,21 @@ MonoBehaviour:
   type: 4
   radius: 0.5
   group: GullFod
+--- !u!114 &1948816280
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1948816277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 809356e66be1243df88f87c098aa006e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodSpawnPoint
+  prefab: {fileID: 2080245617982875802, guid: 82c9cfd60df4e479f8b55301c96aab55, type: 3}
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
 --- !u!1 &1956890177
 GameObject:
   m_ObjectHideFlags: 0
@@ -11741,6 +11977,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1978670624}
   - component: {fileID: 1978670625}
+  - component: {fileID: 1978670626}
   m_Layer: 0
   m_Name: FodSpawn_West_North10
   m_TagString: Untagged
@@ -11778,6 +12015,21 @@ MonoBehaviour:
   type: 4
   radius: 0.5
   group: GullFod
+--- !u!114 &1978670626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1978670623}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 809356e66be1243df88f87c098aa006e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Gull.FodSpawnPoint
+  prefab: {fileID: 2080245617982875802, guid: 82c9cfd60df4e479f8b55301c96aab55, type: 3}
+  config: {fileID: 11400000, guid: f5233328de6ac490f8d1c82c2311523d, type: 2}
+  species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
 --- !u!1001 &1979813524
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12803,3 +13055,4 @@ SceneRoots:
   - {fileID: 177432447}
   - {fileID: 804131563}
   - {fileID: 401348454}
+  - {fileID: 1457470182}
