@@ -271,12 +271,36 @@ All six releases followed a measured **0.61 s warning**, each damaging impact re
 Interpretation: the lead prediction can still hit a slowly moving player who continues straight; movement alone is not the intended counter. The existing G4 single sharp-turn example avoided damage after changing direction at the warning. Six attempts do not prove a true 100% hit probability, final fairness, or a reliable standing-versus-walking difference. No balance tuning was changed on this evidence. The earlier close-target braking and warning-time aim lock remain the documented tuning decisions.
 
 - The controlled G6 diagnostic's arranged 1-hit/1-miss result must never be presented as a 50% autonomous strategy hit rate.
-- The plan's **eight Gulls <0.5 ms of scripts/frame** target remains unverified. Profile a representative eight-Gull run in a development player, with labels/overlays and Deep Profile disabled, and record hardware/build settings plus typical/peak script costs. Do not substitute whole-frame FPS or this overlay's refresh rate for that measurement.
+- The plan's **eight Gulls <0.5 ms of scripts/frame** target needs a clearly scoped measurement. The Editor-only sampler below is preliminary evidence; a representative development-player capture is still needed before claiming build-wide or every-frame compliance. Do not substitute whole-frame FPS or this overlay's refresh rate for script timing.
 - Production Main wiring and end-to-end weapon/cover/wave checks remain separate integration work. No Main scene, other bird strategy, species balance or three-wave configuration was changed by this overlay milestone.
 
 Suggested G6a commit: `feat(ai-gull): add gull debug stats overlay`.
 Suggested sampler commit: `test(ai-gull): add bounded autonomous accuracy sampling`.
 Suggested evidence commit: `docs(ai-gull): record gull strategy design, formulas and playtest results`.
+
+### G6c — bounded eight-Gull Editor performance sample
+
+**Tools > IS > Gull > Measure Eight Gull Editor Performance** starts a fresh saved Gull sandbox with exactly eight actual prefab instances, each above one of the existing FOD supply points. They gather, form the kettle and attack naturally. The fixture hides labels/Gull statistics, requires Deep Profile to be off, and enables Unity CPU profiling temporarily. The normal controller is disabled and player HP is restored below 25% solely to keep the stationary fixture alive. No gun shots/distress stimulus is injected. Saved scenes, prefabs, tuning and teammates' movement/animation scripts are not edited.
+
+Warmup is at least 15 seconds and also waits for one actual FOD impact, so Unity has registered the collision-message marker. The subsequent capture is 15 seconds, with an overall 65-second safety limit. `ProfilerRecorder` reads Unity's existing script-message markers, sums repeated samples within a frame and restricts capture to the main thread. This measures the flock's combined work, not a per-Gull figure multiplied from FPS. Required markers cover GullBrain, GullKettle, FodManager, FodItem update/collision, FodSpawnPoint, BirdMotor physics updates and BirdAnimatorDriver update/late-update. Missing markers, full buffers, insufficient frames or brain samples without exactly eight calls make the outcome inconclusive.
+
+The report is `PerformanceSample.md`. Combined mean is the sum of the captured scopes' nanoseconds, converted to milliseconds and divided by the number of non-empty eight-call brain frames. Per-marker p95/peaks are reported separately. **Adding individual marker peaks gives a conservative bound, not the actual same-frame combined peak or p95.** Different marker peaks may occur in different frames; no invented combined percentile is reported.
+
+The scopes include synchronous work called inside those Unity callbacks. They exclude rendering/GPU, general physics-engine work, animation-system jobs, player/hub/debug scripts, and unlisted callbacks. Warmup also excludes initial spawn/first-use cost; distress/death spikes are not tested. State-transition logging remains enabled, so a debug-log cost can appear inside a recorded brain callback. This is one Editor sample, not full standalone-build certification.
+
+The initial marker lookup was inconclusive because this Unity version prefixes script names with `Assembly-CSharp.dll!namespace::`. Matching was corrected using actual engine metadata; missing scopes were never treated as zero cost. **Inspect Available Timing Markers** writes diagnostic metadata to the ignored `Logs/GullProfilerMarkers.txt` without modifying game assets. Profiler recording is restored to its prior enabled state and all recorders are disposed after success, failure or interruption.
+
+Suggested tooling commit: `test(ai-gull): add scoped eight-gull editor profiling`.
+Suggested evidence commit: `docs(ai-gull): record eight-gull editor performance sample`.
+
+Recorded capture on Unity 6000.6.4f1 / Apple M1 / macOS 15.7.7: **15.2419 s warmup**, **15.0003 s capture**, **2,517 eight-call brain frames** (20,136 brain updates). All required script markers were available, including actual FOD collision callbacks.
+
+| Recorded scope | Mean contribution per brain frame | Highest recorded marker sample |
+|---|---:|---:|
+| GullBrain, all eight birds combined | 0.0319 ms | 1.1237 ms |
+| All listed Gull/motor/animator scopes combined | 0.0574 ms | Same-frame combined peak not measured |
+
+The mean is below 0.5 ms, but the brain's **1.1237 ms** peak alone proves the strict every-frame 0.5 ms budget was **not maintained in this Editor capture**. The sum of marker peaks (2.0086 ms) is only an upper bound, not the actual combined peak. Do not claim a full G6 performance pass. Identifying that spike's cause requires a detailed trace; these aggregate samples cannot distinguish pathfinding, logging, first-use/native work or other causes. No runtime code, balance or teammate scripts were changed on this evidence. Retain the pending development-player/worst-case profiling task while proceeding with separately committed Main integration.
 
 ## Remaining phases / evidence
 
@@ -284,8 +308,8 @@ Suggested evidence commit: `docs(ai-gull): record gull strategy design, formulas
 - G3 formation/token implementation is delivered in the Gull sandbox and now drives G4 attacks.
 - G4 prediction, warning, real drop and fallback swoop are implemented in the Gull sandbox; final tuning/art/sound and wider balance checks remain integration work.
 - G5 damage-triggered distress reaction and cooldown are implemented in the Gull sandbox.
-- G6a debug metrics overlay is implemented and visually confirmed by the project owner. G6b includes six measured autonomous accuracy attempts; the eight-Gull performance target and final integration/viva evidence remain outstanding.
+- G6a debug metrics overlay is implemented and visually confirmed by the project owner. G6b includes six measured autonomous accuracy attempts. G6c records scoped eight-Gull Editor timings: low mean, but an over-budget brain peak. Detailed spike analysis, development-player confirmation and final integration/viva evidence remain outstanding.
 
-Do not present G1's timer cycle as completed intelligent behaviour. G4 and G6b provide small functional samples, not a statistically reliable hit rate; performance results are still outstanding. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
+Do not present G1's timer cycle as completed intelligent behaviour. G4 and G6b provide small functional samples, not a statistically reliable hit rate; the Editor performance sample does not establish a full performance pass. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
 
 Suggested G1 commit: `feat(ai-gull): add gull strategy config and state machine skeleton`.
