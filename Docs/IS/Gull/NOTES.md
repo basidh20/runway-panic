@@ -208,13 +208,68 @@ Suggested G5 commit: `feat(ai-gull): add distress call that triggers a group div
 
 Recorded G5 result: **11 checks passed, zero failures** on Unity 6000.6.4f1. Five nearby Gulls responded, a distant control did not, carried props survived interruption, token/membership cleared, a repeated hit did not restart the pass, and all five recovered within four active seconds with normal speed. This was one focused simulated-shot/damage run, not an end-to-end gun, roof, lethal-hit, cooldown-expiry or performance test.
 
+## G6a — debug statistics overlay
+
+References: `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` G6. `GullDebugStats` is a scene-local singleton, created by the first valid Gull. It is hidden initially. In Play, click Game and press **F4** (Fn+F4 if macOS uses the function key for a system action). F4 also toggles the existing Crow/Hawk overlays; the Gull panel is bottom-right to avoid their top panels. No saved scene/prefab wiring is required.
+
+Editor fallback: **Tools > IS > Gull > Preview or Toggle Stats Overlay** starts Play and shows the panel, or toggles it when already playing. **Stop Stats Preview** exits Play explicitly. These commands avoid relying on OS function-key handling.
+
+Counters collect while hidden. Debug instrumentation calls are compiled out of non-development players with conditional attributes; a manually placed component also disables itself in a release build. Text refreshes only while visible, at most four times per second. This is not a claim that the whole strategy meets its Profiler target.
+
+| Display | Exact meaning |
+|---|---|
+| Drops / pending | Real brain FOD releases / tracked releases awaiting their first non-bird impact. A despawned/cancelled piece leaves pending but does not become an impact. |
+| FOD HP hits / impacts | First impacts whose splash actually reduced player HP / all recorded first impacts. Shielded/invulnerable hits do not count as HP hits. Contact swoops/distress attacks are excluded. |
+| Hit percentage | HP-damaging FOD impacts divided by resolved impacts, not by all releases. An empty sample displays `--`. |
+| Avg impact-to-player | Mean horizontal distance from the piece's centre to the player's feet at first impact, in metres. Only samples with a bound player are included; the sample count is shown. This differs from G4's landing-to-committed-aim error. |
+| Ground FOD | Current manager `LandedCount`, not cumulative drops. |
+| Token hand-offs / minute | Grants to a different owner after the initial grant, divided by active-gameplay seconds since stats creation/reset, times 60. Initial and repeated same-owner grants are not hand-offs. This is a session average, not a rolling-minute window. |
+
+**Reset Gull stats** clears session counters and unsubscribes in-flight samples without changing real birds/debris. Impacts from pre-reset drops are deliberately excluded. New Play sessions/scenes start fresh; wave changes do not silently erase evidence. Drop resolution, despawn, disable and reset remove event subscriptions.
+
+`Tools > IS > Gull > Run Focused G6 Stats Check` exercises one real hit and one miss with controlled physical debris drops, plus diagnostic token-grant calls. It writes `G6Validation.txt` and stops Play. Those deliberately arranged drops verify the measuring tool, **not autonomous Gull accuracy**. The player hub is created at stats startup so its normal binding occurs before the first physical impact.
+
+Recorded counter-check result: **10 checks passed, zero failures** on Unity 6000.6.4f1 after correcting first-impact hub initialization. The diagnostic arranged one real HP-damaging impact and one miss; their mean impact-to-player distance was **4.00 m**. This validates measurement/counter semantics, not game balance or predictive-AI accuracy.
+
+**Visual verification outstanding:** the native-editor preview attempts did not produce a confirmed visible panel in this session. Do not mark F4/rendering acceptance complete from the counter check alone. Verify the panel manually using F4 or the explicit preview command before closing G6a. Unity was left outside Play; no scene was saved by these checks.
+
+### Current strategy flow (not the historical G1 label demo)
+
+```text
+GatherFod -> JoinKettle -> InKettle
+                            | bottom member takes token
+                      DescendToDrop -> Telegraph -> Drop / no-FOD swoop
+                                                        |
+                            ClimbToTop <----------------+
+                         (return token, move to top)
+                            |                 |
+                   carrying: InKettle    empty: GatherFod
+
+Any living eligible state + surviving hit/call
+    -> return token, leave kettle, retain FOD
+    -> DistressDive (one pass, <=4 s) -> JoinKettle
+Any state + death -> Dead (terminal until shared respawn lifecycle)
+```
+
+The ordinary drop token serializes bombing/swoop turns; the planned distress exception can dispatch several Gulls together. Aim prediction, warning-time locking, capped lead and close-target braking are documented in G4 above. The defaults remain unchanged by G6.
+
+### G6b — evidence still to collect
+
+- Existing G4 single samples are real functional results: standing lost 6 HP, straight walking lost 6 HP, warning-time direction change lost 0 HP. They are not a statistically meaningful standing/moving hit-rate comparison. Repeat comparable autonomous-bird runs, record sample counts/hits and reset stats between conditions. Include speed, player movement pattern and any cover/shield use; avoid mixing conditions in one percentage.
+- The controlled G6 diagnostic's arranged 1-hit/1-miss result must never be presented as a 50% autonomous strategy hit rate.
+- The plan's **eight Gulls <0.5 ms of scripts/frame** target remains unverified. Profile a representative eight-Gull run in a development player, with labels/overlays and Deep Profile disabled, and record hardware/build settings plus typical/peak script costs. Do not substitute whole-frame FPS or this overlay's refresh rate for that measurement.
+- Production Main wiring and end-to-end weapon/cover/wave checks remain separate integration work. No Main scene, other bird strategy, species balance or three-wave configuration was changed by this overlay milestone.
+
+Suggested G6a commit: `feat(ai-gull): add gull debug stats overlay`.
+Reserve `docs(ai-gull): record gull strategy design, formulas and playtest results` for the later measured evidence milestone.
+
 ## Remaining phases / evidence
 
 - G2 collection/item/manager implementation is delivered in the Gull sandbox. Production Main wiring is deferred until the remaining strategy phases are integrated.
 - G3 formation/token implementation is delivered in the Gull sandbox and now drives G4 attacks.
 - G4 prediction, warning, real drop and fallback swoop are implemented in the Gull sandbox; final tuning/art/sound and wider balance checks remain integration work.
 - G5 damage-triggered distress reaction and cooldown are implemented in the Gull sandbox.
-- G6: debug metrics, measured accuracy/performance and viva evidence.
+- G6a debug metrics overlay is implemented; G6b repeated accuracy/performance measurements and final viva evidence remain outstanding.
 
 Do not present G1's timer cycle as completed intelligent behaviour. G4 records single-sample miss distances, not a statistical hit rate; performance results are still outstanding. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
 

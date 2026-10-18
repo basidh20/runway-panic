@@ -74,6 +74,7 @@ namespace RunwayPanic.Agents.Gull
         {
             if (!HasToken(bird)) return false;
             tokenHolder = bird; tokenAge = 0f;
+            GullDebugStats.RecordTokenGrant(bird);
             return true;
         }
         public bool ReturnToken(GullBrain bird)

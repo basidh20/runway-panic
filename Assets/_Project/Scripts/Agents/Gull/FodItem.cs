@@ -218,6 +218,7 @@ namespace RunwayPanic.Agents.Gull
         public void Despawn()
         {
             if (despawning) return;
+            GullDebugStats.ForgetDrop(this);
             despawning = true;
             if (manager != null) manager.Untrack(this);
             itemCollider.enabled = false;
@@ -229,6 +230,7 @@ namespace RunwayPanic.Agents.Gull
 
         private void OnDisable()
         {
+            GullDebugStats.ForgetDrop(this);
             if (manager != null) manager.Untrack(this);
             if (itemCollider != null) itemCollider.enabled = false;
             if (obstacle != null) obstacle.enabled = false;

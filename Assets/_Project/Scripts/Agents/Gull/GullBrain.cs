@@ -67,6 +67,7 @@ namespace RunwayPanic.Agents.Gull
             }
             if (!Health.IsAlive) { OnBirdDied(); return; }
             started = true;
+            GullDebugStats.EnsureExists();
             OnEnter(state);
             if (!previewStateCycle) ChangeState(GullState.GatherFod);
         }
@@ -216,6 +217,7 @@ namespace RunwayPanic.Agents.Gull
                 var released = carriedFod;
                 carriedFod = null;
                 released.Release();
+                GullDebugStats.RecordDrop(released);
                 FodDropped?.Invoke(released, predictedPoint);
                 ChangeState(GullState.ClimbToTop);
             }
