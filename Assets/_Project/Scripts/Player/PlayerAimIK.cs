@@ -26,7 +26,7 @@ namespace RunwayPanic.Player
 
         [Tooltip("Most the torso may twist (degrees) to point the gun at the aim point.")]
         [SerializeField, Range(0f, 120f)] private float maxAimAngle = 70f;
-        [Tooltip("Distance of the aim point along the camera's view, in metres.")]
+        [Tooltip("Farthest aim point, in metres: the gun points at what the crosshair is on, up to this far.")]
         [SerializeField, Min(1f)] private float aimDistance = 40f;
         [Tooltip("How fast aiming and the support hand blend in and out (per second).")]
         [SerializeField, Min(0.1f)] private float blendSpeed = 8f;
@@ -47,6 +47,7 @@ namespace RunwayPanic.Player
         private PlayerWeaponHolder weaponHolder;
         private PlayerController playerController;
         private PlayerShooting shooting;
+        private PlayerCameraRig cameraRig;
         private Animator animator;
         private Transform spine, chest, leftUpperArm, leftLowerArm, leftHand;
         private float weight;
@@ -58,6 +59,7 @@ namespace RunwayPanic.Player
             weaponHolder = GetComponent<PlayerWeaponHolder>();
             playerController = GetComponent<PlayerController>();
             shooting = GetComponent<PlayerShooting>();
+            cameraRig = GetComponent<PlayerCameraRig>();
         }
 
         private void OnEnable()
@@ -129,7 +131,9 @@ namespace RunwayPanic.Player
                 return;
             }
 
-            playerController.SetAim(cam.transform.forward, Time.time - lastShotTime < shootingFacingTime);
+            // Squared up to the aim right after a shot and the whole time the player aims down the sights.
+            bool squared = Time.time - lastShotTime < shootingFacingTime || (cameraRig != null && cameraRig.IsAiming);
+            playerController.SetAim(cam.transform.forward, squared);
         }
 
         // While the hit flinch plays, aim correction dips and recovers (a sine over the clip), so the hit knocks
@@ -149,7 +153,10 @@ namespace RunwayPanic.Player
             if (cam == null || spine == null || chest == null || amount <= 0f)
                 return;
 
-            Vector3 aimPoint = cam.transform.position + cam.transform.forward * aimDistance;
+            // What the crosshair is really on (near or far), so the barrel lines up with where shots go.
+            Vector3 aimPoint = shooting != null
+                ? shooting.GetAimPoint(aimDistance)
+                : cam.transform.position + cam.transform.forward * aimDistance;
 
             spine.rotation = Quaternion.Slerp(Quaternion.identity, AimRotation(gun, aimPoint), 0.5f * amount) *
                              spine.rotation;

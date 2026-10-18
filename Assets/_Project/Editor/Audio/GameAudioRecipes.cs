@@ -180,9 +180,29 @@ namespace RunwayPanic.AudioTools
         private static readonly (float, float, float)[] VowelO = { (500f, 150f, 1f), (900f, 200f, 0.8f), (2500f, 400f, 0.3f) };
         private static readonly (float, float, float)[] VowelA = { (750f, 150f, 1f), (1150f, 200f, 0.8f), (2600f, 400f, 0.3f) };
 
-        private static Signal Hurt(int v) => new Signal(0.35f)
-            .Voice(0f, 0.28f, Glide(170f + v * 15f, 120f, 0.28f), Swell(0.01f, 0.15f, 0.28f), 1f, VowelO, 0.25f, 0.2f, 141 + v)
-            .Normalise().FadeOut(0.05f);
+        // A human hurt grunt — "uh!", "oof", "ah!" — not a buzz: a sharp breath as the hit lands, a short vowel with no
+        // flutter (rasp would turn it into a "prrr") whose pitch drops fast like a real grunt, a small body thump, then
+        // a breathy exhale.
+        private static readonly (float, float, float)[][] HurtVowels =
+        {
+            new[] { (640f, 120f, 1f), (1190f, 150f, 0.7f), (2390f, 250f, 0.25f) }, // "uh"
+            new[] { (450f, 110f, 1f), (800f, 140f, 0.6f), (2400f, 250f, 0.2f) },   // "oof"
+            new[] { (750f, 130f, 1f), (1220f, 160f, 0.7f), (2500f, 260f, 0.25f) }, // "ah"
+        };
+
+        private static Signal Hurt(int v)
+        {
+            float length = 0.17f + v * 0.03f;
+            float startPitch = 150f - v * 8f;
+            return new Signal(0.45f)
+                .Noise(0f, 0.06f, Swell(0.004f, 0.05f, 0.06f), 0.3f, 141 + v, 2600f, 300f)
+                .Voice(0.03f, length,
+                    t => Mathf.Lerp(startPitch, 105f, Mathf.Sqrt(t / length)) * (1f + 0.01f * Mathf.Sin(t * 37f)),
+                    Swell(0.008f, length * 0.45f, length), 1f, HurtVowels[v], 0f, 0.12f, 144 + v, 40)
+                .Noise(0.03f + length - 0.02f, 0.18f, Swell(0.01f, 0.15f, 0.18f), 0.12f, 147 + v, 1800f, 200f)
+                .Tone(0f, 0.08f, Glide(90f, 60f, 0.06f), Perc(0.002f, 0.03f), 0.2f)
+                .LowPass(3500f).Normalise(0.85f).FadeOut(0.04f);
+        }
 
         private static Signal Death() => new Signal(1f)
             .Voice(0f, 0.9f, Glide(150f, 85f, 0.9f), Swell(0.02f, 0.6f, 0.9f), 1f, VowelA, 0.4f, 0.3f, 151)

@@ -112,6 +112,7 @@ MonoBehaviour:
   funeralCawClip: {fileID: 8300000, guid: 17fb0bec30d92c74b8102000dac34d9a, type: 3}
   theftCallClip: {fileID: 8300000, guid: c3db0413df328c54cbdf0fe67670a96f, type: 3}
   rageCallClip: {fileID: 8300000, guid: efd3abd9cd1d4ab4b864cdb3a98de8a2, type: 3}
+  strikeClip: {fileID: 8300000, guid: bfd4f05e1198c0c4dbc37757f9114724, type: 3}
   callVolume: 0.8
   funeralCawsPerPattern: 3
   funeralCawSpacing: 0.4
