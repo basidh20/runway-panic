@@ -53,8 +53,8 @@ Species and wave order (team decision, 17 Oct): **Gull (wave 1) → Pigeon → C
 
     If you move a building, move its marker with it (or parent the marker to the building). The same list is in `Scripts/Agents/Hawk/Editor/HawkPerchSetup.cs`; its menu (`Tools > IS > Hawk > Place Sandbox Perches`) refuses to run on `Main` on purpose.
   - **`GreyboxPreview_TEMPORARY`:** its `CharacterController` blocks the birds' line-of-sight checks (in the hawk sandbox the hawk was blind at spawn until it was disabled), and its camera is a second one tagged `MainCamera`, so anything using `Camera.main` may get the wrong camera. The real player is `P_Player_Gameplay`.
-- **Action needed:** World Builder — add the 8 markers and delete (or at least disable) `GreyboxPreview_TEMPORARY` in `Main`, then tell me so I can test the hawk there.
-- **Status:** open
+- **Action needed:** Hawk owner — after the AI-level batch merges into develop, test live Hawk behaviour in Main. The eight exact handoff markers are placed as Perch points (group HawkVantage), the FlightGrid is installed, and `GreyboxPreview_TEMPORARY` stays disabled. See `Docs/WorldBuilder/HawkPerchIntegration.md`.
+- **Status:** scene setup implemented on `feature/world-ai-integration`, human commit/merge pending. Focused Edit-mode geometry/selector check passed; live Hawk flight not tested in this milestone.
 
 ## 2026-10-17 (evening) — to: Agent Controller + species owners — `BirdMotor.LandAt` can circle its landing point forever
 - **What:** `Scripts/Agents/Movement/BirdMotor.cs` — `LandAt` (and `HoldPosition`) via `SteerToTarget` / `SteerToPoint`.

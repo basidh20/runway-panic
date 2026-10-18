@@ -64,7 +64,7 @@ Use Tools > Runway Panic > Validate Aircraft Greyboxes after plane edits. `Aircr
 
 ## Next milestones
 
-Main now has the shared 3D FlightGrid/A* and typed spawn points; see `FlightIntegration.md`. Do not rebuild these from the older NavMesh-sampling proposal. Next are Hawk vantage markers, the supplied Crow setup prefab and Gull/Pigeon markers, then production waves (three waves with four species), movable cover/safe-room integration and final environment presentation. Bird movement/animation and Hawk/Crow brains already exist, but full Main gameplay still needs their deliberate integration.
+Main now has the shared 3D FlightGrid/A*, typed spawn points and eight Hawk vantage markers; see `FlightIntegration.md` and `HawkPerchIntegration.md`. Do not rebuild navigation from the older NavMesh-sampling proposal. Next are the supplied Crow setup prefab and Gull/Pigeon markers, then production waves (three waves with four species), movable cover/safe-room integration and final environment presentation. Bird movement/animation and Hawk/Crow brains already exist, but full Main gameplay still needs their deliberate integration.
 
 The builder menu creates Main only when it does not already exist; it deliberately refuses to overwrite a saved scene. Use normal scene editing for future work. The teammate's Sandbox_Basidh scene and existing render/input configuration are preserved. Main is added as the first build scene, with the existing sandbox entry retained.
 

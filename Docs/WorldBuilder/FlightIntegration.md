@@ -33,9 +33,10 @@ Recorded run: **24 checks passed, zero failures**. The grid had 1,336 blocked ce
 - Use `PathService.TryConsumeBudget()` before requests. If refused, retry next frame. Species brains already wrap this through their shared `RequestPath` helper.
 - Three-wave configuration and gun/economy timing are still pending; never use numeric species enum order as the wave order.
 
-## Remaining commit-sized milestones on this branch
+## Commit-sized milestones on this branch
 
-2. Eight Hawk vantage/perch markers.
+1. FlightGrid and original spawn markers — this milestone.
+2. Eight Hawk vantage/perch markers — implemented; see `HawkPerchIntegration.md` and its focused report.
 3. Install the supplied `P_CrowSetup_Main` at the origin (reuse its stashes/zones/exits rather than rebuilding them).
 4. Gull/Pigeon behaviour markers based on their current plans.
 
