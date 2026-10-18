@@ -2451,6 +2451,7 @@ GameObject:
   - component: {fileID: 1469449866959581917}
   - component: {fileID: 7941074328921870854}
   - component: {fileID: 4340944714069309349}
+  - component: {fileID: 7940523896769842129}
   m_Layer: 0
   m_Name: P_GameManager
   m_TagString: Untagged
@@ -2567,6 +2568,29 @@ MonoBehaviour:
   rushTime: 90
   pausedVolume: 0.5
   pausedCutoff: 900
+--- !u!114 &7940523896769842129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4713025986613049721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5b2138f9d84e104e88def4273811db1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Core.WaveManager
+  waves:
+  - {fileID: 11400000, guid: c8dd5c25cd8c04d47a0fd527bcca0f2c, type: 2}
+  - {fileID: 11400000, guid: 984bfeee288afbb4caee6213e5e2d281, type: 2}
+  - {fileID: 11400000, guid: 5ae5c302c9655fa42be36bad1fbda9ff, type: 2}
+  - {fileID: 11400000, guid: 6160920bd1d2beb4ea863585283027ab, type: 2}
+  firstCountdown: 6
+  nextCountdown: 4
+  endPause: 2.5
+  spawnGroup: AirportSpawn
+  minPlayerDistance: 15
+  clearance: 0.6
 --- !u!1 &5210612128980816385
 GameObject:
   m_ObjectHideFlags: 0
