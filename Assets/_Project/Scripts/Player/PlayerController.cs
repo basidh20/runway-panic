@@ -6,8 +6,8 @@ namespace RunwayPanic.Player
 {
     /// <summary>
     /// Camera-relative third-person movement with walking, sprinting, and jumping.
-    /// Camera control is intentionally handled by a separate feature. While a gun is held, <see cref="SetAim"/>
-    /// keeps the body turned towards the aim.
+    /// The camera is <see cref="PlayerCameraRig"/>. While a gun is held, <see cref="SetAim"/> keeps the body turned
+    /// towards the aim; while aiming down the sights, <see cref="SetAimMovement"/> slows it to a walk.
     /// </summary>
     [RequireComponent(typeof(CharacterController), typeof(PlayerInput))]
     public sealed class PlayerController : MonoBehaviour
@@ -70,6 +70,19 @@ namespace RunwayPanic.Player
             aimDirection = Vector3.zero;
         }
 
+        private float aimSpeedScale = 1f;
+        private bool aiming;
+
+        /// <summary>
+        /// While aiming down the sights (from <see cref="PlayerCameraRig"/>): movement is scaled by
+        /// <paramref name="speedScale"/> and sprinting is not possible.
+        /// </summary>
+        public void SetAimMovement(float speedScale, bool isAiming)
+        {
+            aimSpeedScale = Mathf.Clamp01(speedScale);
+            aiming = isAiming;
+        }
+
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
@@ -93,8 +106,8 @@ namespace RunwayPanic.Player
         private void Update()
         {
             MoveInput = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
-            IsSprinting = sprintAction.IsPressed() && MoveInput.sqrMagnitude > 0f;
-            CurrentSpeed = IsSprinting ? sprintSpeed : walkSpeed;
+            IsSprinting = sprintAction.IsPressed() && MoveInput.sqrMagnitude > 0f && !aiming;
+            CurrentSpeed = (IsSprinting ? sprintSpeed : walkSpeed) * aimSpeedScale;
 
             Vector3 moveDirection = GetMoveDirection(MoveInput);
             RotateTowards(moveDirection);
