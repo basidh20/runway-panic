@@ -43,7 +43,7 @@ runway-panic/
 - **Scenes:** only the World Builder edits `Main.unity`. Everyone else works in `Scenes/Sandbox/Sandbox_<Name>.unity` and delivers **prefabs**.
 - **Binary files** (`.blend`, `.fbx`, `.png`) have one owner each — they cannot be merged.
 - **Always commit the `.meta` file** together with its asset.
-- **Branches:** `feature/<role>-<task>` (e.g. `feature/core-gun-modular`), `fix/<task>`. Merge to `main` via Pull Request.
+- **Branches:** `feature/<role>-<task>` (e.g. `feature/core-gun-modular`), `fix/<task>`, always created **from `develop`**. Merge into `develop` via Pull Request (1 approval). `develop` is merged into `main` only at milestones (Week 13 prototype, `v0.9` feature freeze, `v1.0` submission). Never commit directly on `develop` or `main`.
 - **Commits:** Conventional Commits — `<type>(<area>): <message>`
   - types: `feat | fix | refactor | perf | docs | chore | art`
   - areas: `models | level | lighting | navmesh | physics | player | agents | ai | ui`

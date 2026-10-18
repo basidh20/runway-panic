@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2686fb11d8f19524aa701f2aa3c11695, type: 3}
+  m_Name: SC_Bullet_Impact
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.SoundCue
+  clips:
+  - {fileID: 8300000, guid: d299815a896c0d149a17e11b6d1ac479, type: 3}
+  - {fileID: 8300000, guid: 22b63b5393968f24ab51fc68e1ae5f68, type: 3}
+  - {fileID: 8300000, guid: ac7e4597cd5cce74db40793196ebc9aa, type: 3}
+  category: 2
+  volume: 0.5
+  pitchRange: {x: 0.9, y: 1.1}
+  spatial: 1
+  minDistance: 2
+  maxDistance: 35
+  maxInstances: 6

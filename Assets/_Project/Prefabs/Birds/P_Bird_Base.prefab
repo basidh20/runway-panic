@@ -1,0 +1,268 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5648174821525129418
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2713844080849973986}
+  - component: {fileID: 4804666714081088428}
+  - component: {fileID: 2586497654877685017}
+  - component: {fileID: 4679255953200266805}
+  - component: {fileID: 3036899872005584342}
+  - component: {fileID: 2959178820104805876}
+  - component: {fileID: 8159559861075530720}
+  - component: {fileID: 1781294890169113059}
+  - component: {fileID: 7672305979552561544}
+  m_Layer: 0
+  m_Name: P_Bird_Base
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2713844080849973986
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4705143989903784198}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &4804666714081088428
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.12
+  m_Height: 0.7016973
+  m_Direction: 2
+  m_Center: {x: 0, y: 0, z: -0.01954427}
+--- !u!54 &2586497654877685017
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 1
+  m_Constraints: 0
+  m_CollisionDetection: 3
+--- !u!114 &4679255953200266805
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f69ba4e4b9f23734384803f46ac3fea6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdHealth
+  species: {fileID: 0}
+  fallbackMaxHP: 30
+  cleanup: 0
+  removeDelay: 2
+  maxFallTime: 6
+  deathTumble: 120
+--- !u!114 &3036899872005584342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ea8066d181058c4a9db0123a749c8d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdContactAttack
+--- !u!114 &2959178820104805876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56489e9d648377542acee78e51ba74ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdStateLabel
+  heightOffset: 0.6
+  colour: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &8159559861075530720
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f0475770aa70b49a6215c9ba8aec67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdMotor
+  motionProfile: {fileID: 11400000, guid: 7857ae0ebb04264408398796d1a2f210, type: 2}
+  fallbackSpeed: 5
+  heightOffset: 0
+  minimumAltitude: 1
+  skipWaypointsWithin: 1
+  collinearTolerance: 2
+  sampleSpacing: 0.25
+  leadInTime: 0.25
+  arriveDistance: 0.6
+  landSnapDistance: 0.3
+  drawPathGizmos: 1
+--- !u!114 &1781294890169113059
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf7192c86a6b0eb4d85811b6869e5514, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.BirdAnimatorDriver
+  animator: {fileID: 1705785994923123580}
+  flapSpeedVariation: 0.1
+  parameterDampTime: 0.15
+  wingSpreadSpeed: 4
+--- !u!114 &7672305979552561544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648174821525129418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a2115cf87c5d214b97d440725cc5979, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.BirdSounds
+  flap: {fileID: 11400000, guid: a202fc42efab40c4cbfc91e80c2b5062, type: 2}
+  flapRate: {x: 2.5, y: 5}
+  dive: {fileID: 11400000, guid: 002c6441f0f5cb247b9cf2329e95d84b, type: 2}
+  diveSpeed: 6
+  hit: {fileID: 11400000, guid: d7987be28105cc64fad67e7f99dbf85c, type: 2}
+  death: {fileID: 11400000, guid: 2db1b46ba9f696d4abfdb50297b9fabb, type: 2}
+  gullCall: {fileID: 11400000, guid: eda85bf749fc8dc478ef0f2ea8f689fa, type: 2}
+  pigeonCall: {fileID: 11400000, guid: 85b5649f7121d3a4bb9dddbf8dea9e81, type: 2}
+  crowCall: {fileID: 11400000, guid: 2f9eb81db443bf946940e67fa686ee3a, type: 2}
+  callInterval: {x: 6, y: 14}
+--- !u!1001 &5099973612651814637
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2713844080849973986}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_Name
+      value: SK_Bird
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: f1630830b5b15fd448ad8e89178bee00, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+--- !u!95 &1705785994923123580 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+  m_PrefabInstance: {fileID: 5099973612651814637}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4705143989903784198 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b82b449a89cac2947b206d34d085e2dd, type: 3}
+  m_PrefabInstance: {fileID: 5099973612651814637}
+  m_PrefabAsset: {fileID: 0}

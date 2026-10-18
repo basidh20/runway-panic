@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2686fb11d8f19524aa701f2aa3c11695, type: 3}
+  m_Name: SC_Footstep_Run
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.SoundCue
+  clips:
+  - {fileID: 8300000, guid: 62a9fd5d4d394e04ca37a76f220a2b91, type: 3}
+  - {fileID: 8300000, guid: 86732bae57e3cf8408bdf9b391e29efa, type: 3}
+  - {fileID: 8300000, guid: 4ed30a25daa74804e97dc735b536576e, type: 3}
+  - {fileID: 8300000, guid: 2feb6cf73ded4b84b9dca254b1bf269f, type: 3}
+  category: 3
+  volume: 0.45
+  pitchRange: {x: 0.92, y: 1.08}
+  spatial: 1
+  minDistance: 5
+  maxDistance: 25
+  maxInstances: 3

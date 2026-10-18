@@ -1,0 +1,27 @@
+{
+  "asset": "SM_Gun_Tier1",
+  "source": "SourceArt/Blender/Weapons/Guns.blend",
+  "materials": [
+    {
+      "name": "M_Gun_Tier1_Atlas",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.0,
+      "emissionColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": true,
+      "baseMap": "T_Gun_Tier1_Atlas_Albedo",
+      "maskMap": "T_Gun_Tier1_Atlas_Mask"
+    }
+  ]
+}

@@ -1,0 +1,616 @@
+using System.Collections.Generic;
+using System.Linq;
+using RunwayPanic.Player;
+using UnityEditor;
+using UnityEditor.Animations;
+using UnityEngine;
+
+namespace RunwayPanic.PlayerTools
+{
+    /// <summary>
+    /// Tools > S2 > Build Player Animator: (re)builds <c>AC_Player.controller</c> from the clips in
+    /// <c>Art/Animations/Player/</c> and wires it onto <c>P_Player_Gameplay</c>. Re-runnable: the controller keeps its
+    /// asset (and GUID) and is rebuilt from scratch each time, so the result never depends on hand edits.
+    /// <para>
+    /// Base layer: <c>Locomotion</c> (idle → walk → run by <c>Speed</c>) and the jump states
+    /// <c>JumpStart → Fall → Land</c> (<c>Jump</c> trigger, <c>IsGrounded</c>, <c>VerticalSpeed</c>); walking off a
+    /// ledge goes straight to <c>Fall</c>. <c>UpperBody</c> layer (arms and fingers only, <c>AM_Player_UpperBody</c>):
+    /// pistol/rifle aim, fire, equip and reload (<c>WeaponType</c>, <c>Fire</c>, <c>Equip</c>, <c>Reload</c>,
+    /// <c>IsReloading</c>, <c>ReloadSpeed</c>) and actions with the gun lowered (<c>UseMedkit</c>, <c>UseShield</c>,
+    /// <c>Interact</c>, <c>IsPushing</c>). <c>Death</c> on the base layer (<c>Dead</c>), and an additive
+    /// <c>Reactions</c> layer (spine, head and arms, <c>AM_Player_Reactions</c>) for the <c>Hit</c> flinch.
+    /// </para>
+    /// <para>
+    /// Clips are found by name (<c>A_Player_Idle</c>, <c>_Walk</c>, <c>_Run</c>, <c>_JumpStart</c>, <c>_Fall</c>,
+    /// <c>_Land</c>). If any is missing, <see cref="PlayerClipGenerator"/> generates them from the officer's rig first.
+    /// A downloaded clip can replace a
+    /// generated one: <c>ArtModelPostprocessor</c> imports every FBX in <c>Art/Animations/Player/</c> as Humanoid and
+    /// names its clip after the file, so <c>A_Player_Run.fbx</c> gives the clip <c>A_Player_Run</c> (delete the
+    /// generated <c>.anim</c> of the same name).
+    /// </para>
+    /// </summary>
+    public static class PlayerAnimatorBuilder
+    {
+        private const string ClipsFolder = "Assets/_Project/Art/Animations/Player";
+        private const string ControllerPath = ClipsFolder + "/AC_Player.controller";
+        private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Player/P_Player_Gameplay.prefab";
+
+        private const string IdleClip = "A_Player_Idle";
+        private const string WalkClip = "A_Player_Walk";
+        private const string RunClip = "A_Player_Run";
+        private const string JumpStartClip = "A_Player_JumpStart";
+        private const string FallClip = "A_Player_Fall";
+        private const string LandClip = "A_Player_Land";
+        private const string PistolAimClip = "A_Player_PistolAim";
+        private const string PistolFireClip = "A_Player_PistolFire";
+        private const string PistolEquipClip = "A_Player_PistolEquip";
+        private const string RifleAimClip = "A_Player_RifleAim";
+        private const string RifleFireClip = "A_Player_RifleFire";
+        private const string RifleEquipClip = "A_Player_RifleEquip";
+        private const string PistolReloadClip = "A_Player_PistolReload";
+        private const string RifleReloadClip = "A_Player_RifleReload";
+        private const string StandClip = "A_Player_Stand";
+        private const string HitClip = "A_Player_Hit";
+        private const string DeathClip = "A_Player_Death";
+
+        private static readonly string[] RequiredClips =
+        {
+            IdleClip, WalkClip, RunClip, JumpStartClip, FallClip, LandClip,
+            PistolAimClip, PistolFireClip, PistolEquipClip, RifleAimClip, RifleFireClip, RifleEquipClip,
+            PistolReloadClip, RifleReloadClip, StandClip, HitClip, DeathClip,
+            "A_Player_PistolMedkit", "A_Player_RifleMedkit", "A_Player_PistolShield", "A_Player_RifleShield",
+            "A_Player_PistolInteract", "A_Player_RifleInteract", "A_Player_PistolPush", "A_Player_RiflePush",
+        };
+
+        // Actions on the upper-body layer: gun lowered, left hand busy. PlayerAimIK leaves these alone.
+        private const string ActionTag = "Action";
+        private const string UseMedkitParameter = "UseMedkit";
+        private const string UseShieldParameter = "UseShield";
+        private const string InteractParameter = "Interact";
+        private const string IsPushingParameter = "IsPushing";
+
+        private const string ReactionsMaskPath = ClipsFolder + "/AM_Player_Reactions.mask";
+        private const string ReactionsLayer = "Reactions";
+        private const string HitTag = "Hit"; // PlayerAimIK loosens the aim while this plays
+        private const string HitParameter = "Hit";
+        private const string DeadParameter = "Dead";
+
+        private const string MaskPath = ClipsFolder + "/AM_Player_UpperBody.mask";
+        private const string UpperBodyLayer = "UpperBody";
+        private const string ArmedTag = "Armed"; // PlayerAimIK aims and places the left hand only in these states
+        private const string EquipTag = "Equip";
+        private const string ReloadTag = "Reload";
+
+        private const string WeaponTypeParameter = "WeaponType"; // 0 none, 1 pistol, 2 rifle
+        private const string EquipParameter = "Equip";
+        private const string FireParameter = "Fire";
+        private const string ReloadParameter = "Reload";
+        private const string IsReloadingParameter = "IsReloading";
+        private const string ReloadSpeedParameter = "ReloadSpeed"; // clip length ÷ the gun's reload time
+        private const int PistolType = 1;
+        private const int RifleType = 2;
+
+        private const string SpeedParameter = "Speed";
+        private const string JumpParameter = "Jump";
+        private const string IsGroundedParameter = "IsGrounded";
+        private const string VerticalSpeedParameter = "VerticalSpeed";
+
+        // Walking off a ledge counts as falling once the player drops faster than this (m/s). Grounded, the
+        // controller holds -2 m/s, so stairs and small steps never trigger a fall.
+        private const float LedgeFallSpeed = -4f;
+
+        // Foot-slide matching: walk/run clips play faster so their planted foot moves at the player's real speed,
+        // but never faster than this (beyond it the stepping looks frantic; a little slide is the better trade).
+        private const string ModelPath = "Assets/_Project/Art/Models/Characters/SK_Player_Officer.fbx";
+        private const float MaxLocomotionTimeScale = 1.6f;
+        private const int GroundSpeedSamples = 120;
+
+        // Used only when the prefab's PlayerController can't be read.
+        private const float FallbackWalkSpeed = 4.5f;
+        private const float FallbackSprintSpeed = 7.5f;
+
+        [MenuItem("Tools/S2/Build Player Animator")]
+        public static void Build()
+        {
+            Dictionary<string, AnimationClip> clips = FindClips();
+            if (RequiredClips.Any(name => !clips.ContainsKey(name)))
+            {
+                // Clips missing (none downloaded): generate them from the officer's rig.
+                PlayerClipGenerator.GenerateAll();
+                clips = FindClips();
+            }
+
+            string[] missing = RequiredClips.Where(name => !clips.ContainsKey(name)).ToArray();
+            if (missing.Length > 0)
+            {
+                Debug.LogError($"[Player Animator] Missing clips in {ClipsFolder}: {string.Join(", ", missing)}.");
+                return;
+            }
+
+            ReadMoveSpeeds(out float walkSpeed, out float sprintSpeed);
+
+            AnimatorController controller = LoadOrCreateController();
+            ResetController(controller);
+            AnimatorState locomotion = BuildLocomotion(controller, clips[IdleClip], clips[WalkClip], clips[RunClip],
+                walkSpeed, sprintSpeed);
+            BuildJump(controller, locomotion, clips[JumpStartClip], clips[FallClip], clips[LandClip]);
+            BuildDeath(controller, locomotion, clips[DeathClip]);
+            BuildUpperBody(controller, LoadOrCreateUpperBodyMask(), clips);
+            BuildReactions(controller, LoadOrCreateReactionsMask(), clips[StandClip], clips[HitClip]);
+            EditorUtility.SetDirty(controller);
+            AssetDatabase.SaveAssets();
+
+            WirePlayerPrefab(controller);
+            Debug.Log($"[Player Animator] Built {ControllerPath} (walk {walkSpeed} m/s, run {sprintSpeed} m/s) " +
+                      $"and wired it onto {PlayerPrefabPath}.");
+        }
+
+        // ---- Clips ----
+
+        private static Dictionary<string, AnimationClip> FindClips()
+        {
+            var clips = new Dictionary<string, AnimationClip>();
+            foreach (string guid in AssetDatabase.FindAssets("t:AnimationClip", new[] { ClipsFolder }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                foreach (AnimationClip clip in AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>())
+                {
+                    if (!clip.name.StartsWith("__preview__") && !clips.ContainsKey(clip.name))
+                        clips.Add(clip.name, clip);
+                }
+            }
+
+            return clips;
+        }
+
+        // Blend thresholds = the speeds the player really moves at, so "walk" plays at walk speed.
+        private static void ReadMoveSpeeds(out float walkSpeed, out float sprintSpeed)
+        {
+            walkSpeed = FallbackWalkSpeed;
+            sprintSpeed = FallbackSprintSpeed;
+
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            PlayerController controller = prefab != null ? prefab.GetComponent<PlayerController>() : null;
+            if (controller == null)
+            {
+                Debug.LogWarning($"[Player Animator] No PlayerController on {PlayerPrefabPath}; using default speeds.");
+                return;
+            }
+
+            var serialized = new SerializedObject(controller);
+            walkSpeed = serialized.FindProperty("walkSpeed").floatValue;
+            sprintSpeed = Mathf.Max(walkSpeed + 0.01f, serialized.FindProperty("sprintSpeed").floatValue);
+        }
+
+        // ---- Controller ----
+
+        private static AnimatorController LoadOrCreateController()
+        {
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+            return controller != null ? controller : AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
+        }
+
+        // Empties the controller but keeps the asset, so its GUID (and every reference to it) survives a rebuild.
+        private static void ResetController(AnimatorController controller)
+        {
+            AnimatorControllerLayer baseLayer = controller.layers[0];
+            AnimatorStateMachine baseMachine = baseLayer.stateMachine;
+
+            // Delete every state, transition, blend tree and nested machine stored in the file (the base machine
+            // itself stays), so nothing from an older build is left behind as an orphan sub-asset.
+            foreach (Object sub in AssetDatabase.LoadAllAssetsAtPath(ControllerPath).ToArray())
+            {
+                if (sub is AnimatorState || sub is AnimatorStateTransition || sub is AnimatorTransition ||
+                    sub is BlendTree || (sub is AnimatorStateMachine machine && machine != baseMachine))
+                    Object.DestroyImmediate(sub, true);
+            }
+
+            baseMachine.states = new ChildAnimatorState[0];
+            baseMachine.stateMachines = new ChildAnimatorStateMachine[0];
+            baseMachine.anyStateTransitions = new AnimatorStateTransition[0];
+            baseMachine.entryTransitions = new AnimatorTransition[0];
+            controller.layers = new[] { baseLayer };
+            controller.parameters = new AnimatorControllerParameter[0];
+        }
+
+        private static AnimatorState BuildLocomotion(AnimatorController controller, AnimationClip idle, AnimationClip walk,
+            AnimationClip run, float walkSpeed, float sprintSpeed)
+        {
+            controller.AddParameter(SpeedParameter, AnimatorControllerParameterType.Float);
+
+            AnimatorState locomotion = controller.CreateBlendTreeInController("Locomotion", out BlendTree tree, 0);
+            tree.name = "Locomotion";
+            tree.blendType = BlendTreeType.Simple1D;
+            tree.blendParameter = SpeedParameter;
+            tree.useAutomaticThresholds = false;
+            tree.AddChild(idle, 0f);
+            tree.AddChild(walk, walkSpeed);
+            tree.AddChild(run, sprintSpeed);
+
+            // Against foot sliding: play walk and run at the speed where their feet keep pace with the ground.
+            ChildMotion[] children = tree.children;
+            children[1].timeScale = MatchTimeScale(walk, walkSpeed);
+            children[2].timeScale = MatchTimeScale(run, sprintSpeed);
+            tree.children = children;
+
+            controller.layers[0].stateMachine.defaultState = locomotion;
+            return locomotion;
+        }
+
+        private static float MatchTimeScale(AnimationClip clip, float moveSpeed)
+        {
+            float natural = MeasureGroundSpeed(clip);
+            if (natural <= 0.01f)
+                return 1f;
+
+            float scale = Mathf.Clamp(moveSpeed / natural, 1f, MaxLocomotionTimeScale);
+            float slide = 1f - natural * scale / moveSpeed;
+            Debug.Log($"[Player Animator] {clip.name}: feet cover {natural:F2} m/s at normal speed; played at ×{scale:F2} " +
+                      $"for {moveSpeed} m/s ({Mathf.Max(0f, slide) * 100f:F0}% foot slide left).");
+            return scale;
+        }
+
+        /// <summary>
+        /// The ground speed a locomotion clip shows at normal speed: how far the lower (planted) foot travels
+        /// backwards over one cycle, divided by the cycle's length. Sampled on the officer model.
+        /// </summary>
+        private static float MeasureGroundSpeed(AnimationClip clip)
+        {
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
+            if (model == null || clip.length <= 0f)
+                return 0f;
+
+            GameObject instance = Object.Instantiate(model);
+            instance.hideFlags = HideFlags.HideAndDontSave;
+            instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            try
+            {
+                Animator animator = instance.GetComponentInChildren<Animator>();
+                Transform left = animator != null ? animator.GetBoneTransform(HumanBodyBones.LeftFoot) : null;
+                Transform right = animator != null ? animator.GetBoneTransform(HumanBodyBones.RightFoot) : null;
+                if (left == null || right == null)
+                    return 0f;
+
+                Vector3 forward = instance.transform.forward;
+                Vector3 previousLeft = default, previousRight = default;
+                float travelled = 0f;
+
+                AnimationMode.StartAnimationMode();
+                for (int i = 0; i <= GroundSpeedSamples; i++)
+                {
+                    AnimationMode.BeginSampling();
+                    AnimationMode.SampleAnimationClip(instance, clip, clip.length * i / GroundSpeedSamples);
+                    AnimationMode.EndSampling();
+
+                    Vector3 l = left.position, r = right.position;
+                    if (i > 0)
+                    {
+                        Vector3 planted = l.y < r.y ? l - previousLeft : r - previousRight;
+                        travelled += Mathf.Max(0f, -Vector3.Dot(planted, forward));
+                    }
+
+                    previousLeft = l;
+                    previousRight = r;
+                }
+
+                return travelled / clip.length;
+            }
+            finally
+            {
+                AnimationMode.StopAnimationMode();
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        //   Locomotion ──Jump──► JumpStart ──(clip ends)──► Fall ──IsGrounded──► Land ──(clip ends)──► Locomotion
+        //   Locomotion ──off a ledge (not grounded, falling fast)──► Fall
+        //   Land ──Jump──► JumpStart (hop again) · Land ──moving──► Locomotion early (keep running)
+        private static void BuildJump(AnimatorController controller, AnimatorState locomotion,
+            AnimationClip jumpStartClip, AnimationClip fallClip, AnimationClip landClip)
+        {
+            controller.AddParameter(JumpParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(new AnimatorControllerParameter
+            {
+                name = IsGroundedParameter, type = AnimatorControllerParameterType.Bool, defaultBool = true,
+            });
+            controller.AddParameter(VerticalSpeedParameter, AnimatorControllerParameterType.Float);
+
+            AnimatorStateMachine machine = controller.layers[0].stateMachine;
+            AnimatorState jumpStart = machine.AddState("JumpStart");
+            jumpStart.motion = jumpStartClip;
+            AnimatorState fall = machine.AddState("Fall");
+            fall.motion = fallClip;
+            AnimatorState land = machine.AddState("Land");
+            land.motion = landClip;
+
+            AnimatorStateTransition t = Transition(locomotion, jumpStart, 0.05f);
+            t.AddCondition(AnimatorConditionMode.If, 0f, JumpParameter);
+
+            t = Transition(jumpStart, fall, 0.1f, exitTime: 0.95f);
+
+            t = Transition(locomotion, fall, 0.15f);
+            t.AddCondition(AnimatorConditionMode.IfNot, 0f, IsGroundedParameter);
+            t.AddCondition(AnimatorConditionMode.Less, LedgeFallSpeed, VerticalSpeedParameter);
+
+            t = Transition(fall, land, 0.05f);
+            t.AddCondition(AnimatorConditionMode.If, 0f, IsGroundedParameter);
+
+            t = Transition(land, jumpStart, 0.05f);
+            t.AddCondition(AnimatorConditionMode.If, 0f, JumpParameter);
+
+            t = Transition(land, locomotion, 0.1f, exitTime: 0.35f);
+            t.AddCondition(AnimatorConditionMode.Greater, 2f, SpeedParameter);
+
+            Transition(land, locomotion, 0.15f, exitTime: 0.8f);
+        }
+
+        // ---- Death (base layer) ----
+
+        //   Any ──Dead──► Death (holds the last frame, lying down) ──not Dead (respawned)──► Locomotion
+        private static void BuildDeath(AnimatorController controller, AnimatorState locomotion, AnimationClip deathClip)
+        {
+            controller.AddParameter(DeadParameter, AnimatorControllerParameterType.Bool);
+
+            AnimatorStateMachine machine = controller.layers[0].stateMachine;
+            AnimatorState death = machine.AddState("Death");
+            death.motion = deathClip;
+
+            AnimatorStateTransition die = machine.AddAnyStateTransition(death);
+            die.hasFixedDuration = true;
+            die.duration = 0.1f;
+            die.hasExitTime = false;
+            die.canTransitionToSelf = false;
+            die.AddCondition(AnimatorConditionMode.If, 0f, DeadParameter);
+
+            // Respawn has already moved the player: snap back to standing.
+            Transition(death, locomotion, 0.05f).AddCondition(AnimatorConditionMode.IfNot, 0f, DeadParameter);
+        }
+
+        // ---- Upper body (weapons) ----
+
+        // Arms and fingers only: the legs and spine keep playing locomotion and jumps underneath.
+        private static AvatarMask LoadOrCreateUpperBodyMask()
+        {
+            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(MaskPath);
+            if (mask == null)
+            {
+                mask = new AvatarMask();
+                AssetDatabase.CreateAsset(mask, MaskPath);
+            }
+
+            for (var part = AvatarMaskBodyPart.Root; part < AvatarMaskBodyPart.LastBodyPart; part++)
+            {
+                bool arms = part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.RightArm ||
+                            part == AvatarMaskBodyPart.LeftFingers || part == AvatarMaskBodyPart.RightFingers ||
+                            part == AvatarMaskBodyPart.LeftHandIK || part == AvatarMaskBodyPart.RightHandIK;
+                mask.SetHumanoidBodyPartActive(part, arms);
+            }
+
+            EditorUtility.SetDirty(mask);
+            return mask;
+        }
+
+        //   Any ──Equip──► PistolEquip / RifleEquip (by WeaponType) ──(clip ends)──► PistolAim / RifleAim
+        //   Any ──Fire──►  PistolFire / RifleFire (restarts on every shot) ──(clip ends)──► aim
+        //   PistolAim ◄──WeaponType──► RifleAim
+        //   Any ──Reload──► PistolReload / RifleReload (speed = ReloadSpeed) ──IsReloading off──► aim
+        // The layer's weight is set by PlayerAnimator: 0 with no gun, 1 while holding one.
+        private static void BuildUpperBody(AnimatorController controller, AvatarMask mask,
+            Dictionary<string, AnimationClip> clips)
+        {
+            controller.AddParameter(WeaponTypeParameter, AnimatorControllerParameterType.Int);
+            controller.AddParameter(EquipParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(FireParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(ReloadParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(IsReloadingParameter, AnimatorControllerParameterType.Bool);
+            controller.AddParameter(new AnimatorControllerParameter
+            {
+                name = ReloadSpeedParameter, type = AnimatorControllerParameterType.Float, defaultFloat = 1f,
+            });
+
+            controller.AddLayer(UpperBodyLayer);
+            AnimatorControllerLayer[] layers = controller.layers;
+            int layerIndex = layers.Length - 1;
+            layers[layerIndex].avatarMask = mask;
+            layers[layerIndex].blendingMode = AnimatorLayerBlendingMode.Override;
+            layers[layerIndex].defaultWeight = 0f;
+            controller.layers = layers;
+
+            AnimatorStateMachine machine = controller.layers[layerIndex].stateMachine;
+            AnimatorState pistolAim = State(machine, "PistolAim", clips[PistolAimClip], ArmedTag);
+            AnimatorState pistolFire = State(machine, "PistolFire", clips[PistolFireClip], ArmedTag);
+            AnimatorState pistolEquip = State(machine, "PistolEquip", clips[PistolEquipClip], EquipTag);
+            AnimatorState rifleAim = State(machine, "RifleAim", clips[RifleAimClip], ArmedTag);
+            AnimatorState rifleFire = State(machine, "RifleFire", clips[RifleFireClip], ArmedTag);
+            AnimatorState rifleEquip = State(machine, "RifleEquip", clips[RifleEquipClip], EquipTag);
+            AnimatorState pistolReload = State(machine, "PistolReload", clips[PistolReloadClip], ReloadTag);
+            AnimatorState rifleReload = State(machine, "RifleReload", clips[RifleReloadClip], ReloadTag);
+            machine.defaultState = pistolAim;
+
+            // Reloads last exactly as long as the gun's reload: PlayerAnimator sets ReloadSpeed per gun.
+            foreach (AnimatorState reload in new[] { pistolReload, rifleReload })
+            {
+                reload.speedParameterActive = true;
+                reload.speedParameter = ReloadSpeedParameter;
+            }
+
+            AnyTransition(machine, pistolEquip, EquipParameter, PistolType, 0.05f);
+            AnyTransition(machine, rifleEquip, EquipParameter, RifleType, 0.05f);
+            AnyTransition(machine, pistolFire, FireParameter, PistolType, 0.02f);
+            AnyTransition(machine, rifleFire, FireParameter, RifleType, 0.02f);
+            AnyTransition(machine, pistolReload, ReloadParameter, PistolType, 0.1f, canRestart: false);
+            AnyTransition(machine, rifleReload, ReloadParameter, RifleType, 0.1f, canRestart: false);
+
+            // Leave the moment the gun says the reload is over (or was cancelled by switching guns).
+            Transition(pistolReload, pistolAim, 0.15f).AddCondition(AnimatorConditionMode.IfNot, 0f, IsReloadingParameter);
+            Transition(rifleReload, rifleAim, 0.15f).AddCondition(AnimatorConditionMode.IfNot, 0f, IsReloadingParameter);
+
+            Transition(pistolEquip, pistolAim, 0.08f, exitTime: 0.95f);
+            Transition(rifleEquip, rifleAim, 0.08f, exitTime: 0.95f);
+            Transition(pistolFire, pistolAim, 0.05f, exitTime: 0.95f);
+            Transition(rifleFire, rifleAim, 0.05f, exitTime: 0.95f);
+
+            Transition(pistolAim, rifleAim, 0.15f).AddCondition(AnimatorConditionMode.Equals, RifleType, WeaponTypeParameter);
+            Transition(rifleAim, pistolAim, 0.15f).AddCondition(AnimatorConditionMode.Equals, PistolType, WeaponTypeParameter);
+
+            BuildActions(controller, machine, clips, pistolAim, rifleAim);
+        }
+
+        //   Any ──UseMedkit / UseShield / Interact──► <Pistol|Rifle><Action> ──(clip ends)──► aim
+        //   Any ──IsPushing (not reloading)──► <Pistol|Rifle>Push (loops) ──not pushing──► aim
+        private static void BuildActions(AnimatorController controller, AnimatorStateMachine machine,
+            Dictionary<string, AnimationClip> clips, AnimatorState pistolAim, AnimatorState rifleAim)
+        {
+            controller.AddParameter(UseMedkitParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(UseShieldParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(InteractParameter, AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(IsPushingParameter, AnimatorControllerParameterType.Bool);
+
+            foreach ((string hold, int type, AnimatorState aim) in new[] { ("Pistol", PistolType, pistolAim), ("Rifle", RifleType, rifleAim) })
+            {
+                foreach ((string action, string trigger) in new[]
+                         { ("Medkit", UseMedkitParameter), ("Shield", UseShieldParameter), ("Interact", InteractParameter) })
+                {
+                    AnimatorState state = State(machine, hold + action, clips["A_Player_" + hold + action], ActionTag);
+                    AnyTransition(machine, state, trigger, type, 0.08f, canRestart: false);
+                    Transition(state, aim, 0.12f, exitTime: 0.95f);
+                }
+
+                AnimatorState push = State(machine, hold + "Push", clips["A_Player_" + hold + "Push"], ActionTag);
+                AnimatorStateTransition startPush = AnyTransition(machine, push, null, type, 0.15f, canRestart: false);
+                startPush.AddCondition(AnimatorConditionMode.If, 0f, IsPushingParameter);
+                startPush.AddCondition(AnimatorConditionMode.IfNot, 0f, IsReloadingParameter);
+                Transition(push, aim, 0.15f).AddCondition(AnimatorConditionMode.IfNot, 0f, IsPushingParameter);
+            }
+        }
+
+        // ---- Reactions (additive) ----
+
+        // Spine, head and arms: a flinch shows on the upper body without disturbing the legs.
+        private static AvatarMask LoadOrCreateReactionsMask()
+        {
+            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(ReactionsMaskPath);
+            if (mask == null)
+            {
+                mask = new AvatarMask();
+                AssetDatabase.CreateAsset(mask, ReactionsMaskPath);
+            }
+
+            for (var part = AvatarMaskBodyPart.Root; part < AvatarMaskBodyPart.LastBodyPart; part++)
+            {
+                bool upper = part == AvatarMaskBodyPart.Body || part == AvatarMaskBodyPart.Head ||
+                             part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.RightArm;
+                mask.SetHumanoidBodyPartActive(part, upper);
+            }
+
+            EditorUtility.SetDirty(mask);
+            return mask;
+        }
+
+        //   Any ──Hit──► Hit (restarts on every hit) ──(clip ends)──► None
+        // Additive: only the change from each clip's first frame is added on top of the layers below. "None" plays a
+        // still stand, whose change from itself is zero — so it adds nothing.
+        private static void BuildReactions(AnimatorController controller, AvatarMask mask, AnimationClip standClip,
+            AnimationClip hitClip)
+        {
+            controller.AddParameter(HitParameter, AnimatorControllerParameterType.Trigger);
+
+            controller.AddLayer(ReactionsLayer);
+            AnimatorControllerLayer[] layers = controller.layers;
+            int layerIndex = layers.Length - 1;
+            layers[layerIndex].avatarMask = mask;
+            layers[layerIndex].blendingMode = AnimatorLayerBlendingMode.Additive;
+            layers[layerIndex].defaultWeight = 1f;
+            controller.layers = layers;
+
+            AnimatorStateMachine machine = controller.layers[layerIndex].stateMachine;
+            AnimatorState none = State(machine, "None", standClip, "");
+            AnimatorState hit = State(machine, "Hit", hitClip, HitTag);
+            machine.defaultState = none;
+
+            AnimatorStateTransition flinch = machine.AddAnyStateTransition(hit);
+            flinch.hasFixedDuration = true;
+            flinch.duration = 0.02f;
+            flinch.hasExitTime = false;
+            flinch.canTransitionToSelf = true;
+            flinch.AddCondition(AnimatorConditionMode.If, 0f, HitParameter);
+
+            Transition(hit, none, 0.1f, exitTime: 0.95f);
+        }
+
+        private static AnimatorState State(AnimatorStateMachine machine, string name, Motion motion, string tag)
+        {
+            AnimatorState state = machine.AddState(name);
+            state.motion = motion;
+            state.tag = tag;
+            return state;
+        }
+
+        // From any state on a trigger (or, with trigger null, on conditions the caller adds), for one weapon type.
+        // With canRestart it may restart itself (every shot re-kicks the recoil).
+        private static AnimatorStateTransition AnyTransition(AnimatorStateMachine machine, AnimatorState to,
+            string trigger, int weaponType, float duration, bool canRestart = true)
+        {
+            AnimatorStateTransition transition = machine.AddAnyStateTransition(to);
+            transition.hasFixedDuration = true;
+            transition.duration = duration;
+            transition.hasExitTime = false;
+            transition.canTransitionToSelf = canRestart;
+            if (trigger != null)
+                transition.AddCondition(AnimatorConditionMode.If, 0f, trigger);
+            transition.AddCondition(AnimatorConditionMode.Equals, weaponType, WeaponTypeParameter);
+            return transition;
+        }
+
+        // A transition with a fixed blend time in seconds; with exitTime set, it waits for that point of the clip.
+        private static AnimatorStateTransition Transition(AnimatorState from, AnimatorState to, float duration,
+            float? exitTime = null)
+        {
+            AnimatorStateTransition transition = from.AddTransition(to);
+            transition.hasFixedDuration = true;
+            transition.duration = duration;
+            transition.hasExitTime = exitTime.HasValue;
+            transition.exitTime = exitTime ?? 0f;
+            transition.interruptionSource = TransitionInterruptionSource.None;
+            return transition;
+        }
+
+        // ---- Prefab ----
+
+        // The Animator is on the officer model nested in P_Player_Gameplay; setting it here is an override on
+        // P_Player_Gameplay, so the Core Developer's P_Player_Officer prefab is not modified.
+        private static void WirePlayerPrefab(RuntimeAnimatorController controller)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(PlayerPrefabPath);
+            try
+            {
+                Animator animator = root.GetComponentInChildren<Animator>(true);
+                if (animator == null)
+                {
+                    Debug.LogError($"[Player Animator] No Animator found under {PlayerPrefabPath}. " +
+                                   "Check that the officer model is imported as Humanoid.");
+                    return;
+                }
+
+                animator.runtimeAnimatorController = controller;
+                animator.applyRootMotion = false;
+
+                if (!root.TryGetComponent(out PlayerAnimator playerAnimator))
+                    playerAnimator = root.AddComponent<PlayerAnimator>();
+
+                var serialized = new SerializedObject(playerAnimator);
+                serialized.FindProperty("animator").objectReferenceValue = animator;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+
+                if (!root.TryGetComponent(out PlayerAimIK _))
+                    root.AddComponent<PlayerAimIK>();
+
+                PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+    }
+}

@@ -1,0 +1,24 @@
+Main pickup integration — one focused Play-mode smoke check
+Unity: 6000.6.4f1
+Actual CharacterController trigger collection; real 25-second replacement delay, no timer overrides.
+Random pickup sample only, not exhaustive medkit/shield/inventory testing. Test wave event is Play-mode-only.
+PASS: Four original pickup markers retained
+PASS: Pickup_00 has floor support and clear pickup/approach space
+PASS: Pickup_01 has floor support and clear pickup/approach space
+PASS: Pickup_02 has floor support and clear pickup/approach space
+PASS: Pickup_03 has floor support and clear pickup/approach space
+PASS: Exactly two pickups spawn on scene start
+PASS: Pickups occupy distinct original markers, sit on solid floor and use non-blocking triggers
+SAMPLE: Approach Medkit at (12.00, 0.00, 20.00)
+PASS: Trigger collection applies a shared inventory/shield effect
+PASS: Collection frees exactly one occupied marker
+PASS: Replacement is delayed, not immediate
+PASS: Replacement respects the real 25-second delay (actual 25.0 s)
+PASS: Pickups occupy distinct original markers, sit on solid floor and use non-blocking triggers
+SAMPLE: Approach Medkit at (21.00, 0.05, -12.00)
+PASS: Trigger collection applies a shared inventory/shield effect
+PASS: Collection frees exactly one occupied marker
+PASS: Real GameManager WaveStarted event immediately refills the vacancy
+PASS: Wave refill leaves two live pickups, no immediate duplicate
+PASS: Pickups occupy distinct original markers, sit on solid floor and use non-blocking triggers
+Failures: 0

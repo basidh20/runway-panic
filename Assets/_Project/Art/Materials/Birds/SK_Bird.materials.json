@@ -1,0 +1,69 @@
+{
+  "asset": "SK_Bird",
+  "source": "SourceArt/Blender/Birds/SK_Bird.blend",
+  "materials": [
+    {
+      "name": "M_Bird_Atlas",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.0,
+      "emissionColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": true,
+      "baseMap": "T_Bird_Atlas_Albedo",
+      "maskMap": "T_Bird_Atlas_Mask"
+    },
+    {
+      "name": "M_Bird_Crow_Atlas",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.0,
+      "emissionColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": true,
+      "baseMap": "T_Bird_Crow_Atlas_Albedo",
+      "maskMap": "T_Bird_Crow_Atlas_Mask"
+    },
+    {
+      "name": "M_Bird_Pigeon_Atlas",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.0,
+      "emissionColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": true,
+      "baseMap": "T_Bird_Pigeon_Atlas_Albedo",
+      "maskMap": "T_Bird_Atlas_Mask"
+    }
+  ]
+}

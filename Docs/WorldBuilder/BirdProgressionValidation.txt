@@ -1,0 +1,45 @@
+Confirmed bird progression — focused saved-asset/reference/damage-rule check
+Unity: 6000.6.4f1
+PASS: Renamed Gull asset retains the original GUID
+PASS: No active Eagle enum member or species asset
+PASS: Gull name and stable serialized ID 3
+PASS: Gull species/prefab references resolve in both directions
+PASS: Gull baseline health/movement/attack/reward values saved
+PASS: Gull matches Pistol in both bird and weapon assets
+PASS: Gull / Pistol damage = 10
+PASS: Gull / Assault Rifle damage = 1.2
+PASS: Gull / Sniper damage = 6
+PASS: Gull / RPG damage = 15
+PASS: Gull intended full-health direct-hit count = 3
+PASS: Pigeon name and stable serialized ID 0
+PASS: Pigeon species/prefab references resolve in both directions
+PASS: Pigeon baseline health/movement/attack/reward values saved
+PASS: Pigeon matches Assault Rifle in both bird and weapon assets
+PASS: Pigeon / Pistol damage = 1
+PASS: Pigeon / Assault Rifle damage = 12
+PASS: Pigeon / Sniper damage = 6
+PASS: Pigeon / RPG damage = 15
+PASS: Pigeon intended full-health direct-hit count = 2
+PASS: Assault Rifle shop copy uses confirmed species
+PASS: Crow name and stable serialized ID 1
+PASS: Crow species/prefab references resolve in both directions
+PASS: Crow baseline health/movement/attack/reward values saved
+PASS: Crow matches Sniper in both bird and weapon assets
+PASS: Crow / Pistol damage = 1
+PASS: Crow / Assault Rifle damage = 1.2
+PASS: Crow / Sniper damage = 60
+PASS: Crow / RPG damage = 15
+PASS: Crow intended full-health direct-hit count = 1
+PASS: Sniper shop copy uses confirmed species
+PASS: Hawk name and stable serialized ID 2
+PASS: Hawk species/prefab references resolve in both directions
+PASS: Hawk baseline health/movement/attack/reward values saved
+PASS: Hawk matches RPG in both bird and weapon assets
+PASS: Hawk / Pistol damage = 1
+PASS: Hawk / Assault Rifle damage = 1.2
+PASS: Hawk / Sniper damage = 6
+PASS: Hawk / RPG damage = 150
+PASS: Hawk intended full-health direct-hit count = 2
+PASS: RPG shop copy uses confirmed species
+No full-game or AI behaviour tests. Rocket direct-hit damage only; splash/missed shots and timed-wave economy need later playtesting.
+Failures: 0

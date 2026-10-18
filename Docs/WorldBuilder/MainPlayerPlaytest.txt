@@ -1,0 +1,28 @@
+Main player integration — automated Editor Play-mode smoke checks
+Unity: 6000.6.4f1
+Movement uses a temporary paired Input System keyboard; shooting uses TryShoot, pause uses GameManager/UI APIs.
+No test devices, targets, teleports or runtime state are saved into Main.
+PASS: One active gameplay player after startup
+PASS: One active GameManager after startup
+PASS: One active camera; Camera.main resolves
+PASS: One active audio listener after startup
+PASS: Game begins in Playing, unpaused
+PASS: Player settles on airport ground
+PASS: Player starts with 100 HP and 3 lives
+PASS: Starting weapon equipped through the supplied prefab
+PASS: UI EventSystem created by supplied UI
+PASS: W input moves the actual player on the runway (5.96 m)
+PASS: Space input makes the grounded player jump
+PASS: Player lands again after jumping
+PASS: Shift+W runs faster than walking (7.50 m)
+PASS: TryShoot fires equipped weapon and consumes one round
+PASS: Integrated camera/muzzle raycasts damage a temporary target
+PASS: Pause freezes gameplay time
+PASS: Supplied pause screen becomes visible
+PASS: Supplied Resume button returns to Playing
+PASS: Actual gameplay CharacterController traverses Shelter_A open entrance (error 0.00 m)
+PASS: Actual gameplay CharacterController traverses Shelter_B open entrance (error 0.00 m)
+PASS: Actual gameplay CharacterController traverses Hangar main opening (error 0.00 m)
+PASS: Actual gameplay CharacterController traverses Hangar side exit (error 0.00 m)
+Not tested automatically: mouse-look feel/camera occlusion at every angle, manual mouse-click aim, bird combat, waves, shop, pickups and checkpoint activation.
+Failures: 0

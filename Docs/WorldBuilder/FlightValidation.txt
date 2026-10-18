@@ -1,0 +1,29 @@
+Main flight integration — one focused runtime grid/marker/path check
+Unity: 6000.6.4f1
+Uses the real PathService and shared A*. No enemies spawned, no full AI/stress test.
+PASS: One active shared grid built automatically on scene start
+PASS: Airport volume and 24,000-cell resolution
+PASS: Grid recognises both airport obstacles and free air
+PASS: PathService selects grid A*, not straight-line fallback; six searches/frame
+PASS: Eight original markers register as spawn points
+PASS: Old walkthrough rig remains disabled
+INFO: Blocked cells 1336; free-air regions 3
+PASS: BirdSpawn_01 typed spawn is in clear airport air at (40.00, 6.00, 0.00)
+PASS: BirdSpawn_01 has an A* route to open runway air
+PASS: BirdSpawn_02 typed spawn is in clear airport air at (28.28, 6.00, 21.92)
+PASS: BirdSpawn_02 has an A* route to open runway air
+PASS: BirdSpawn_03 typed spawn is in clear airport air at (0.00, 6.00, 31.00)
+PASS: BirdSpawn_03 has an A* route to open runway air
+PASS: BirdSpawn_04 typed spawn is in clear airport air at (-28.28, 6.00, 21.92)
+PASS: BirdSpawn_04 has an A* route to open runway air
+PASS: BirdSpawn_05 typed spawn is in clear airport air at (-47.00, 8.00, 0.00)
+PASS: BirdSpawn_05 has an A* route to open runway air
+PASS: BirdSpawn_06 typed spawn is in clear airport air at (-28.28, 6.00, -21.92)
+PASS: BirdSpawn_06 has an A* route to open runway air
+PASS: BirdSpawn_07 typed spawn is in clear airport air at (0.00, 6.00, -31.00)
+PASS: BirdSpawn_07 has an A* route to open runway air
+PASS: BirdSpawn_08 typed spawn is in clear airport air at (28.28, 6.00, -21.92)
+PASS: BirdSpawn_08 has an A* route to open runway air
+PASS: Shelter_A interior is not routed through the narrow doorway from outdoor air (not an invulnerability test)
+PASS: Shelter_B interior is not routed through the narrow doorway from outdoor air (not an invulnerability test)
+Failures: 0

@@ -1,0 +1,14 @@
+Gull G6 diagnostic fixture check — Unity 6000.6.4f1
+PASS: Exactly one scene stats component
+PASS: Empty session metrics are finite zero values
+PASS: Initial/repeated same-owner grants are not hand-offs
+PASS: Different-owner grant records one hand-off
+PASS: Two physical drops tracked once each
+PASS: One real HP hit plus one miss gives 1/2 resolved impacts
+PASS: Impact-to-player distance samples both real physics contacts
+FIXTURE ONLY: mean impact-to-player=4.00 m; hits=1/2
+PASS: Resolved drops unsubscribe and active-time hand-off rate is finite
+PASS: Despawning a pending drop removes tracking without fabricating an impact
+PASS: Reset clears evidence counters without deleting actual ground debris
+Controlled physical drops and diagnostic token-grant calls only. Not autonomous-Gull hit-rate or eight-Gull Profiler evidence. Keyboard/visual behaviour is separate from this counter fixture.
+Failures: 0

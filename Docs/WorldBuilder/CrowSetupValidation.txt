@@ -1,0 +1,23 @@
+Main Crow setup — focused Edit-mode placement/trigger-group/approach check
+Unity: 6000.6.4f1
+PASS: One connected shared setup at origin, identity rotation and unit scale
+PASS: Shared prefab supplies exactly two stashes and two exits
+PASS: Two shelter zones, no scene duplicates
+PASS: Existing pickup spawner retained, not duplicated
+PASS: Eight airport spawns and eight Hawk perches retained
+PASS: Stash_Hangar is on solid ground with human-sized local clearance at (-47.41, 0.00, -16.15)
+PASS: Stash_Hangar has a grid route to its actual Crow approach height
+PASS: Stash_Terminal is on solid ground with human-sized local clearance at (24.99, 0.00, 37.49)
+PASS: Stash_Terminal has a grid route to its actual Crow approach height
+PASS: ShelterA trigger matches the shelter's interior position, dimensions and rotation
+PASS: ShelterA has one matching ground-level exit in clear space
+PASS: ShelterA guard point is outside the fitted doorway and zone, not inside the room
+PASS: ShelterA exit has an outdoor flight approach route
+PASS: ShelterB trigger matches the shelter's interior position, dimensions and rotation
+PASS: ShelterB has one matching ground-level exit in clear space
+PASS: ShelterB guard point is outside the fitted doorway and zone, not inside the room
+PASS: ShelterB exit has an outdoor flight approach route
+PASS: Setup prefab adds no live Crow or test spawner
+Geometry/asset check only: no Crow spawned, no trigger entry/exit simulation or theft/vigil AI suite run.
+Shelter zones detect occupancy only; no invulnerability, stay timer or cooldown added.
+Failures: 0

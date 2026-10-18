@@ -1,0 +1,103 @@
+{
+  "asset": "SK_Player_Officer",
+  "source": "SourceArt/Blender/Characters/SK_Player_Officer.blend",
+  "materials": [
+    {
+      "name": "M_Player_Officer_Atlas",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.0,
+      "emissionColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": true,
+      "baseMap": "T_Player_Officer_Atlas_Albedo",
+      "maskMap": "T_Player_Officer_Atlas_Mask"
+    },
+    {
+      "name": "M_Player_Eye_Catch",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.1,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 1.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Badge_Clear",
+      "baseColor": {
+        "r": 0.92,
+        "g": 0.94,
+        "b": 0.95,
+        "a": 0.22
+      },
+      "metallic": 0.0,
+      "roughness": 0.06,
+      "emissionColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_LED_Green",
+      "baseColor": {
+        "r": 0.05,
+        "g": 0.9,
+        "b": 0.15,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.3,
+      "emissionColor": {
+        "r": 0.05,
+        "g": 0.9,
+        "b": 0.15,
+        "a": 1.0
+      },
+      "emissionStrength": 3.0,
+      "textured": false
+    },
+    {
+      "name": "M_Player_Vest_HiVis",
+      "baseColor": {
+        "r": 0.52,
+        "g": 0.82,
+        "b": 0.03,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.7,
+      "emissionColor": {
+        "r": 0.52,
+        "g": 0.82,
+        "b": 0.03,
+        "a": 1.0
+      },
+      "emissionStrength": 0.05,
+      "textured": false
+    }
+  ]
+}
