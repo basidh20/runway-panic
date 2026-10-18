@@ -304,11 +304,12 @@ The mean is below 0.5 ms, but the brain's **1.1237 ms** peak alone proves the st
 
 ## Remaining phases / evidence
 
-- G2 collection/item/manager implementation is delivered in the Gull sandbox. Production Main wiring is deferred until the remaining strategy phases are integrated.
+- G2 collection/item/manager implementation is delivered in the Gull sandbox and Main's eight supply markers/manager are connected. See `MainIntegration.md`; real automatic wave spawning is not implemented by the environment integration.
 - G3 formation/token implementation is delivered in the Gull sandbox and now drives G4 attacks.
 - G4 prediction, warning, real drop and fallback swoop are implemented in the Gull sandbox; final tuning/art/sound and wider balance checks remain integration work.
 - G5 damage-triggered distress reaction and cooldown are implemented in the Gull sandbox.
 - G6a debug metrics overlay is implemented and visually confirmed by the project owner. G6b includes six measured autonomous accuracy attempts. G6c records scoped eight-Gull Editor timings: low mean, but an over-budget brain peak. Detailed spike analysis, development-player confirmation and final integration/viva evidence remain outstanding.
+- Main now has one configured Gull kettle/manager and the shared species prefab is ready for spawning. The focused Main fixture tests explicit GameManager hooks, not an automatic wave loop. S1/World Builder co-owns the missing WaveManager/Spawner with S2; the final three-wave setup must be applied in that separate milestone. No B-key test spawner or live birds are saved in Main.
 
 Do not present G1's timer cycle as completed intelligent behaviour. G4 and G6b provide small functional samples, not a statistically reliable hit rate; the Editor performance sample does not establish a full performance pass. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
 

@@ -14,6 +14,12 @@ Template:
 
 ---
 
+## 2026-10-18 — to: S1/World Builder + S2 — Main Gull environment wiring and missing wave loop
+- **What:** Main's eight existing FOD markers now have real Gull supplies, plus one configured FodManager and GullKettle under `GullRuntime_Main`. The existing Gull species/prefab mapping is reused. See `Docs/IS/Gull/MainIntegration.md` and its validation reports.
+- **Details:** Level marker transforms/metadata, Pigeon roosts and Hawk/Crow/shared setup are retained. No sandbox spawner or live birds are saved into Main. The old marker validator accepts the intended FOD components. **8 Edit-mode checks + 10 focused Play checks passed, zero failures.** The Main check uses temporary birds and explicit GameManager hooks; it does not implement production waves.
+- **Action needed:** The checked-in runtime still has no WaveManager/Spawner. The role plan assigns that system to S1, co-owned with S2. Implement it separately using WaveData/species prefabs and existing Spawn markers. Apply **three waves / four species** consistently with GameManager total count (currently still four), shop progression and safe leftover-bird cleanup. Do not derive introduction order from enum IDs or claim that pressing Play alone starts this Gull integration.
+- **Status:** Environment connected on `feature/is-gull`; human commits/review/merge into **develop** required. Production wave spawning and the previously recorded performance spike remain open follow-ups.
+
 ## 2026-10-18 — to: Gull / Pigeon owners — Main behaviour markers prepared
 - **What:** Main's `GullPigeonBehaviourPoints`: one KettleCenter at (0,10,0), eight ground-level FodSpawn markers along the runway edges, and three Roost markers on the hangar roof, terminal roof and Plane A wing. See `Docs/WorldBuilder/GullPigeonMarkerIntegration.md` for positions/radii and runtime wiring still required.
 - **Details:** Existing shared `BirdPoint` only; no brains, FOD source components/prefabs or test spawners added. Existing eight Spawn points, Hawk perches and Crow setup retained. One focused Edit-mode surface/approach check passed, not live species testing.
