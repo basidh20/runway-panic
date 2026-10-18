@@ -28,7 +28,7 @@ stateDiagram-v2
         SelectVantage --> FlyToVantage : best vantage
         FlyToVantage --> Soaring : on the circle
         Soaring --> FlyToVantage : clearly better vantage (hysteresis)
-        Soaring --> ApproachStoop : meter full + window open, or 15 s
+        Soaring --> ApproachStoop : meter full + window open, or 20 s
         ApproachStoop --> Scream : at the sun-side start point
         Scream --> Feint : slow gun (60 %)
         Scream --> Stoop
@@ -94,13 +94,13 @@ weight(w) = clamp(1 + 0.15 · openCount[w] / max(1, average(openCount)), 1, 2)
 
 so a window this player opens more often than their others fills the meter faster. Capped at 2× so the hawk never becomes unbeatable.
 
-**Attack rule:** meter full **and** a window open now → attack. Never passive: after 15 s of soaring it attacks anyway.
+**Attack rule:** meter full **and** a window open now → attack. Never passive: after 20 s of soaring it attacks anyway (15 s before the 18 Oct tuning). While the player's health is low the meter rises 10/s (was 20).
 
 ## 4. Stoop and feint (H4)
 
 - **Sun-side start point:** `start = player − sunForward × 25 m`, at least 12 m above the player. The dive angle is capped at 28° (the motor pitches ≤ 30°). If a building blocks the dive line, the start is rotated around the player in steps until the line is clear.
-- **Tells (fairness):** the hawk's shadow is forced on (it sweeps towards the player), it hovers 0.5 s with wings tucked, and it screams (if a clip is set).
-- **Dive:** 2.5× speed, aimed at the chest plus 0.3 s of the player's velocity (a lead), through the player and 8 m beyond. *Turn first, then dive:* it speeds up only once it is within 30° of the player, because the turn circle grows with speed (r = v / ω).
+- **Tells (fairness):** the hawk's shadow is forced on (it sweeps towards the player), it hovers 0.9 s with wings tucked (0.5 s before the 18 Oct tuning), and it screams (if a clip is set).
+- **Dive:** 2.5× speed, aimed at the chest — where the player is now, no lead since the 18 Oct tuning (was 0.3 s of the player's velocity) — through the player and 8 m beyond. A hit deals 1.25× the species damage (was 1.5×). *Turn first, then dive:* it speeds up only once it is within 30° of the player, because the turn circle grows with speed (r = v / ω).
 - **Ground guard:** levelling out from angle θ drops r·(1 − cos θ). If that (× 1.5) would go below the player's feet + 1.5 m, the hawk only pulls up.
 - **Feint (slow guns only, fire interval ≥ 0.75 s, 60 % chance, once per engagement):** the fake dive aims 6 m above the chest, so it physically cannot come closer. Then the hawk circles out of reach for the gun's refire time and dives for real. The point: bait a shot, then hit while the gun reloads. Fast guns (pistol, AR) are never feinted — there is no refire gap to exploit.
 
@@ -126,7 +126,7 @@ On every hit that doesn't kill:
 - **When:** checked every 1 s while choosing or watching from a vantage: ≥ 3 other living birds (not hawks) → `Herd`; fewer → back to `Hunt`.
 - **Where:** `herdPoint = centroid + flat(centroid − player).normalized × 10 m`, 6 m above the flock — the far side of the flock from the player. It circles there (7 m radius) and re-plans its A\* path only when the herd point moves > 5 m.
 - **Fear field:** while herding, `HawkFearSource` (radius 12 m, strength 1.5) is registered in `FearRegistry`. Pigeons and crows read `FearRegistry.GetRepulsion` in their steering and `FearCostModifier` in their A\* searches, so they are pushed away from the hawk — towards the player. Neither side references the other's classes: the registry + `IFearSource` interface is the whole contract (loose coupling).
-- **Strike:** "Busy" becomes a window (the player is shooting at the flock). Meter full + window open (or 15 s) → straight into `Stoop` from where it is — no vantage, no sun approach; the flock is the cover.
+- **Strike:** "Busy" becomes a window (the player is shooting at the flock). Meter full + window open (or 20 s) → `Scream` (hover + scream), then `Stoop` from where it is — no vantage, no sun approach; the flock is the cover. Until the 18 Oct tuning it went straight into `Stoop` with no tell.
 - **Herd orbit radius 7 m, not the plan's 4 m:** the hawk's turn circle is v / ω = 8 m/s ÷ 90°/s ≈ 5.1 m, so it cannot fly a 4 m circle.
 - ⚠ **Status (17 Oct):** no pigeon or crow brain reads the fear field yet (the crow branch has only its config), so herding has **no visible effect on other birds** — only the hawk's side is done. Tuning to revisit then: with the herd point 10 m behind the flock and a 7 m orbit, the flock centre is 7–18 m from the hawk, so the 12 m field reaches it only on the near half of the circle.
 
@@ -143,6 +143,9 @@ On every hit that doesn't kill:
 | Every hit marks the perch and withdraws | Hits while already fleeing are ignored | Section 5 (fast guns poisoned every hiding spot) |
 | `herdOrbitRadius` 4 m | 7 m | Section 6 |
 | `HawkFearSource` component | Plain object owned by `HawkBrain` | No prefab change needed; others only see `FearRegistry` |
+| Herd strike dives straight in | Screams first, like every other dive | Section 8A: no-tell dives were the hardest to survive; the wave hint says "when it screams, look up" |
+| Stoop leads the player by 0.3 s | No lead (aims where the player is) | Section 8A: a sprint after the scream should be a real dodge |
+| Scream hover 0.5 s, stoop damage × 1.5, max watch 15 s, low-HP meter 20/s | 0.9 s, × 1.25, 20 s, 10/s | Section 8A: first real-shooting playtest, the hawk was too hard |
 
 ## 8. Measured (sandbox `Sandbox_IS_Hawk`, 17 Oct, final tuning)
 
@@ -174,6 +177,34 @@ From `Logs/Editor.log` (`[HawkFSM]` lines), 4 play sessions with the final motor
 | Not yet tested | hit during the dive (should finish first), hit during a feint, fear field on other birds (no consumer yet) |
 
 **Still to measure** (needs the player's aiming/shooting): feint bait rate and hit rate during the refire, how fast the learned weights climb (reload-only play), and the hawk's script time in the Profiler (target < 0.2 ms per frame; scoring runs every 2 s, not per frame). Each session ends with one `[HawkStats]` line in the log with all counters.
+
+## 8A. Difficulty tuning (18 Oct, first playtest with real shooting)
+
+**Problem:** the first wave-4 playtest in `Main` with real aiming/shooting felt too hard. The three `[HawkStats]` lines of that session:
+
+| Measure (3 hawks, `Main`, wave 4) | Before |
+|---|---|
+| Dives with a result | 10 — **8 hits (80 %)**, 30 damage each |
+| Of those, herd strikes (no tell) | 6 of 10 |
+| Feints / baited a shot | 2 / 1 |
+| Hits the player landed on hawks | 4 |
+
+**Target:** dive hit rate around **50 %** against a player who reacts to the scream (a player who stands still is still hit), and no attack without a tell.
+
+**Method:** only the hawk's own strategy numbers and brain were changed — not the species data (HP 300, damage 20, speed 8, cooldown: Systems Engineer), not the motion profile (`BirdMotion_Hawk`: Agent Controller), not the wave. One change per cause:
+
+| Cause seen in the log | Change | Effect expected |
+|---|---|---|
+| 6 of 10 dives were herd strikes with no scream | Herd strike → `Scream` → `Stoop` | Every dive is announced (sound + hover + shadow) |
+| Running sideways did not help (lead aim) | `stoopLeadTime` 0.3 → 0 | A sprint after the scream makes the dive miss; at 20 m/s the turn circle (~13 m) is too wide to correct late |
+| Too little time to find the hawk after the scream | `screamHoverTime` 0.5 → 0.9 s | Time to turn and aim; the hovering hawk is the RPG's best target |
+| One hit snowballed (low HP → meter fills → next dive) | `lowHpPerSecond` 20 → 10 | The low-health window still helps the hawk, but half as fast |
+| Three hawks attacking every ≤ 15 s | `maxWatchTime` 15 → 20 s | Fewer timeout attacks |
+| 30 damage per hit | `stoopDamageMultiplier` 1.5 → 1.25 (25) | One more dive survivable |
+
+The model was also scaled **1.0 → 1.3** (0.73 m long, 1.96 m wingspan; gull 1.66 m) so the boss reads as the biggest bird; its body collider (hitbox) grows with it (radius 0.12 → 0.156 m). No distance in the brain depends on the model size (all are world metres), and the contact range (2 m, pivot to the player's collider) is unchanged.
+
+**After:** _to measure — play wave 4 in `Main` and copy the `[HawkStats]` lines here._
 
 ## 9. Testing in the sandbox
 
