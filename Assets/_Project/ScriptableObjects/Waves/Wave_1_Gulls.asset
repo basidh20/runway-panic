@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebf04e28f741de04787cd31f5092a96b, type: 3}
+  m_Name: Wave_1_Gulls
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.WaveData
+  waveNumber: 1
+  title: Gulls
+  hint: The pistol works best on gulls.
+  duration: 90
+  spawnInterval: 3.5
+  firstSpawnDelay: 1.5
+  maxAlive: 4
+  clearBonus: 10
+  spawnGroups:
+  - species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
+    count: 9
