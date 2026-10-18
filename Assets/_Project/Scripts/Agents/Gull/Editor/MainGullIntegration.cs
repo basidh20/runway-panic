@@ -135,8 +135,8 @@ namespace RunwayPanic.Agents.Gull.EditorTools
             check(config != null && species != null && species.Prefab != null && species.Prefab.GetComponent<GullBrain>() != null && species.Prefab == AssetDatabase.LoadAssetAtPath<GameObject>(GullG1Setup.PrefabPath) &&
                 species.Prefab.GetComponent<GullBrain>()?.Config == config && !new SerializedObject(species.Prefab.GetComponent<GullBrain>()).FindProperty("previewStateCycle").boolValue,
                 "Shared Gull species resolves to the actual strategy prefab, not the G1 label preview");
-            lines.Add("Environment readiness only. A production WaveManager/Spawner is not present in the checked-in runtime scripts; automatic waves are NOT implemented by this integration.");
-            lines.Add("GameManager.TotalWaves remains " + InMain<GameManager>().Single().TotalWaves + "; the three-wave decision must be applied with the future wave-loop integration.");
+            lines.Add("Environment readiness only. S2's production WaveManager controls automatic waves separately; this check does not validate that wave loop.");
+            lines.Add("GameManager.TotalWaves=" + InMain<GameManager>().Single().TotalWaves + "; the current team decision is four waves.");
             lines.Add("Failures: " + failures);
             Directory.CreateDirectory("Docs/IS/Gull"); File.WriteAllLines("Docs/IS/Gull/MainEditValidation.txt", lines);
             if (failures != 0) throw new InvalidOperationException("Main Gull reference check failed; see MainEditValidation.txt.");

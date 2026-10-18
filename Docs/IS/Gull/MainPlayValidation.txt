@@ -1,7 +1,9 @@
 Main Gull — focused real-scene check, Unity 6000.6.4f1
-Temporary birds spawned from the shared species asset at real Spawn markers. Fixture calls BeginWave/CompleteWave explicitly; no automatic wave controller exists yet.
+Temporary birds use real Spawn markers. The production WaveManager is suspended for this controlled check; the fixture calls BeginWave/CompleteWave explicitly.
+PASS: Production WaveManager suspended before the test wave and countdown (phase=Waiting, enabled=False)
 PASS: Main exposes eight real spawn markers and eight ready FOD supplies
 PASS: Three real Gull prefab instances resolve through the shared species asset and registry
+PASS: After the normal six-second countdown, only the three fixture birds exist and automatic waves remain idle (phase=Waiting, birds=3)
 PASS: All three collect distinct actual FOD and form Main's kettle
 PASS: A natural token-controlled drop reaches Main scenery and becomes managed debris
 PASS: A surviving simulated-shot hit triggers nearby group distress in Main
@@ -10,6 +12,7 @@ PASS: An alerted token owner releases its bombing token
 PASS: Main distress responders recover within four active seconds and reset speed
 PASS: WaveCompleted clears carried/falling/landed FOD, kettle membership and token
 PASS: Supplies reset and existing between-wave shop state opens
-GameManager.TotalWaves=4. Three-wave setup and production bird spawn/cleanup still belong to the future WaveManager milestone.
-One focused Main run, not end-to-end weapon raycasts, all-species/door regressions, performance certification or a production three-wave playthrough. No Play-mode scene saved; fixture deactivates remaining birds as a future wave controller must.
+PASS: Wave isolation observed beyond the normal production countdown
+GameManager.TotalWaves=4. Production waves are present but were suspended for this fixture.
+One focused Main run, not end-to-end weapon raycasts, all-species/door regressions, performance certification or a production four-wave playthrough. No Play-mode scene saved; fixture deactivates its temporary birds.
 Failures: 0
