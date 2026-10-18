@@ -12,6 +12,8 @@ For every bird task consult the workspace's `BIRD_STRATEGIES.md`; for Gull also 
 
 The controlled **Tools > IS > Gull > Run Focused Main Gull Check** temporarily suspends the Main WaveManager during its own Play session, then restores its prior enabled state when Play exits, including interruptions. The check uses three temporary birds and explicit GameManager wave hooks. Existing reports below are historical and do not certify the latest combined build. The owner has since observed that Gull drops work in normal gameplay; that observation is not a new automated test result.
 
+For the current normal-Main Wave 1 observation and the owner's separate nonlethal-hit/distress-recovery check, see `MainWaveRegression.md`. Gull transition logging is now off by default; to investigate a particular Gull, enable **Log State Transitions** on its GullBrain in the Editor or a development build. F3 labels and F4 statistics remain separate opt-in diagnostics. Errors about missing required references remain visible.
+
 `00_SHARED_FOUNDATION.md`, referenced by the Gull plan, was not present in the workspace or Downloads during this implementation. The actual checked-in `BirdBrain`, motor/animator interfaces, health, markers, state label, test spawner and handoff notes were inspected instead. F1/F2 and the current F3/F4 components exist; Gull is already a valid species. No shared contract was reimplemented.
 
 ## G1 delivery
@@ -292,7 +294,7 @@ Warmup is at least 15 seconds and also waits for one actual FOD impact, so Unity
 
 The report is `PerformanceSample.md`. Combined mean is the sum of the captured scopes' nanoseconds, converted to milliseconds and divided by the number of non-empty eight-call brain frames. Per-marker p95/peaks are reported separately. **Adding individual marker peaks gives a conservative bound, not the actual same-frame combined peak or p95.** Different marker peaks may occur in different frames; no invented combined percentile is reported.
 
-The scopes include synchronous work called inside those Unity callbacks. They exclude rendering/GPU, general physics-engine work, animation-system jobs, player/hub/debug scripts, and unlisted callbacks. Warmup also excludes initial spawn/first-use cost; distress/death spikes are not tested. State-transition logging remains enabled, so a debug-log cost can appear inside a recorded brain callback. This is one Editor sample, not full standalone-build certification.
+The scopes include synchronous work called inside those Unity callbacks. They exclude rendering/GPU, general physics-engine work, animation-system jobs, player/hub/debug scripts, and unlisted callbacks. Warmup also excludes initial spawn/first-use cost; distress/death spikes are not tested. State-transition logging was enabled for this historical capture, so a debug-log cost can appear inside a recorded brain callback. Logging is now opt-in; no new performance measurement was made. This is one Editor sample, not full standalone-build certification.
 
 The initial marker lookup was inconclusive because this Unity version prefixes script names with `Assembly-CSharp.dll!namespace::`. Matching was corrected using actual engine metadata; missing scopes were never treated as zero cost. **Inspect Available Timing Markers** writes diagnostic metadata to the ignored `Logs/GullProfilerMarkers.txt` without modifying game assets. Profiler recording is restored to its prior enabled state and all recorders are disposed after success, failure or interruption.
 
