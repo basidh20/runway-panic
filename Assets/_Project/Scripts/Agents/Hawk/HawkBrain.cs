@@ -29,7 +29,7 @@ namespace RunwayPanic.Agents.Hawk
     /// the real Stoop lets the dive finish first; any other hit breaks off at once.</para>
     /// <para>Herd (H6): with enough other birds alive the hawk stops watching from vantage points and circles on the far
     /// side of the flock, projecting a fear field (<see cref="HawkFearSource"/>) that pushes pigeons and crows towards the
-    /// player. While the player is busy with them it dives straight in from there (the flock is its cover).</para>
+    /// player. While the player is busy with them it screams and dives in from there (the flock is its cover).</para>
     /// </summary>
     public sealed class HawkBrain : BirdBrain
     {
@@ -867,8 +867,9 @@ namespace RunwayPanic.Agents.Hawk
                 }
             }
 
-            // Strike while the player is busy with the flock: straight into the dive from here, no vantage or sun
-            // approach — the flock is the cover. Never passive: after maxWatchTime it strikes anyway.
+            // Strike while the player is busy with the flock: from here, no vantage or sun approach — the flock is the
+            // cover. Never passive: after maxWatchTime it strikes anyway. It still screams first (tuning 18 Oct): a
+            // dive with no tell was the hardest attack to survive, and the wave hint promises "when it screams, look up".
             bool ready = weakness.IsMeterFull && weakness.AnyWindowOpen;
             if (ready || modeTime >= config.MaxWatchTime)
             {
@@ -877,7 +878,8 @@ namespace RunwayPanic.Agents.Hawk
                     : $"max watch time {config.MaxWatchTime:0}s (meter {weakness.Meter:0})"));
                 weakness.ConsumeMeter();
                 stoopFromHerd = true;
-                ChangeMode(HawkMode.Hunt, HuntPhase.Stoop);
+                planFeint = false; // no feint from the herd circle (a plan left over from an earlier approach must not count)
+                ChangeMode(HawkMode.Hunt, HuntPhase.Scream);
                 return;
             }
 
@@ -1028,6 +1030,7 @@ namespace RunwayPanic.Agents.Hawk
                 case HawkMode.Withdraw:
                     stats.Withdrawals++;
                     pendingWithdraw = false;
+                    stoopFromHerd = false; // shot during a herd strike's scream: that strike never happened
                     feintedThisEngagement = false; // the engagement is over, hit or not
                     withdrawArrived = false;
                     withdrawHideTime = 0f;

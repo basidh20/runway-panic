@@ -67,8 +67,9 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0f)] private float shieldExpiredBonus = 30f;
         [Tooltip("Meter added per second while the player looks away from the hawk.")]
         [SerializeField, Min(0f)] private float lookAwayPerSecond = 25f;
-        [Tooltip("Meter added per second while the player's health is low.")]
-        [SerializeField, Min(0f)] private float lowHpPerSecond = 20f;
+        [Tooltip("Meter added per second while the player's health is low. 10, not 20 (tuning 18 Oct): at 20 the hawks " +
+                 "attacked a low-health player again within seconds, so one hit snowballed into a lost life.")]
+        [SerializeField, Min(0f)] private float lowHpPerSecond = 10f;
         [Tooltip("Meter added per second while the player is busy shooting other birds (Herd mode only).")]
         [SerializeField, Min(0f)] private float playerBusyPerSecond = 15f;
         [Tooltip("Meter removed per second while no weakness window is open.")]
@@ -85,9 +86,10 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0f)] private float interactWindowDuration = 1.2f;
         [Tooltip("Seconds the shield-expired window stays open.")]
         [SerializeField, Min(0f)] private float shieldWindowDuration = 2f;
-        [Tooltip("Longest the hawk soars over a vantage point before it attacks anyway, in seconds (so it is never passive).")]
+        [Tooltip("Longest the hawk soars over a vantage point (or circles the flock) before it attacks anyway, in seconds " +
+                 "(so it is never passive). 20, not 15 (tuning 18 Oct): with three hawks in wave 4 a dive came every few seconds.")]
         [FormerlySerializedAs("maxPerchTime")]
-        [SerializeField, Min(1f)] private float maxWatchTime = 15f;
+        [SerializeField, Min(1f)] private float maxWatchTime = 20f;
         [Tooltip("The player counts as busy while their last shot is younger than this, in seconds (Herd mode only).")]
         [SerializeField, Min(0f)] private float busyShotWindow = 2f;
         [Tooltip("Seconds between checks of whether any barricade is being pushed.")]
@@ -123,10 +125,12 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField, Min(0.1f)] private float stoopSpeedMultiplier = 2.5f;
         [Tooltip("Speed multiplier while flying to the stoop start point.")]
         [SerializeField, Min(0.1f)] private float approachSpeedMultiplier = 1.5f;
-        [Tooltip("Seconds the hawk hovers and screams at the top of the dive.")]
-        [SerializeField, Min(0f)] private float screamHoverTime = 0.5f;
-        [Tooltip("Damage multiplier of a stoop hit (times the species' attack damage).")]
-        [SerializeField, Min(0f)] private float stoopDamageMultiplier = 1.5f;
+        [Tooltip("Seconds the hawk hovers and screams at the top of the dive. 0.9, not 0.5 (tuning 18 Oct): the player needs " +
+                 "time to find the hawk and turn; the hover is also the counterplay (a nearly still target for the RPG).")]
+        [SerializeField, Min(0f)] private float screamHoverTime = 0.9f;
+        [Tooltip("Damage multiplier of a stoop hit (times the species' attack damage). 1.25, not 1.5 (tuning 18 Oct): " +
+                 "25 instead of 30 damage per hit, so a player survives one more dive.")]
+        [SerializeField, Min(0f)] private float stoopDamageMultiplier = 1.25f;
         [Tooltip("Height above the player the hawk climbs to after an attack, in metres.")]
         [SerializeField, Min(0f)] private float recoverClimbHeight = 15f;
         [Tooltip("Climb angle after an attack, in degrees. Keep it below the motor's max pitch (BirdMotion_Hawk: 30°).")]
@@ -140,8 +144,10 @@ namespace RunwayPanic.Agents.Hawk
                  "normal speed (tight turns); dive speed only once lined up. At dive speed its turn circle (~13 m) is too wide to " +
                  "turn in from the feint's circle (playtest 17 Oct: missed by ~5 m twice).")]
         [SerializeField, Range(5f, 90f)] private float stoopTurnInAngle = 30f;
-        [Tooltip("The dive aims at where the player will be this many seconds ahead (player velocity × lead time).")]
-        [SerializeField, Min(0f)] private float stoopLeadTime = 0.3f;
+        [Tooltip("The dive aims at where the player will be this many seconds ahead (player velocity × lead time). 0, not 0.3 " +
+                 "(tuning 18 Oct): with a lead, running sideways did not help (8 of 10 dives hit); aiming at where the player IS " +
+                 "makes a sprint after the scream a real dodge, while a player who stands still is still hit.")]
+        [SerializeField, Min(0f)] private float stoopLeadTime = 0f;
         [Tooltip("If the stoop start is inside geometry, search this far upward for a flyable point, in metres.")]
         [SerializeField, Min(0f)] private float stoopSnapSearchHeight = 5f;
         [Tooltip("Step of that upward search, in metres.")]
