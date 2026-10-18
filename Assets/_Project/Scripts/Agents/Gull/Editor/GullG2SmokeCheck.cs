@@ -146,7 +146,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
             if (manager != null) manager.ClearAll();
             if (capConfig != null) UnityEngine.Object.Destroy(capConfig);
             if (lifetimeConfig != null) UnityEngine.Object.Destroy(lifetimeConfig);
-            Report.Add("Sandbox/transient changes only; no shared config values changed. G3 formation/token and production waves remain future work.");
+            Report.Add("Sandbox/transient changes only; no shared config values changed. This collection check does not test formation/token or production waves.");
             Report.Add("Failures: " + failures);
             Directory.CreateDirectory("Docs/IS/Gull"); File.WriteAllLines("Docs/IS/Gull/G2bValidation.txt", Report);
             Debug.Log("[GullG2Check] Finished with " + failures + " failures; see G2bValidation.txt.");

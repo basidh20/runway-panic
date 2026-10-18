@@ -4,7 +4,13 @@ Branch: `feature/is-gull`, based on develop after PR #44 (airport AI marker prep
 
 ## References and scope
 
-For every bird task consult the workspace's `BIRD_STRATEGIES.md`; for Gull also consult `01_GULL_PLAN.md`. The team's **three waves / four species** decision overrides the older four-wave example. G1 does not configure waves.
+For every bird task consult the workspace's `BIRD_STRATEGIES.md`; for Gull also consult `01_GULL_PLAN.md`. The team's latest decision is **four waves / four species**. Earlier three-wave references below describe historical work and are superseded.
+
+## Current sandbox and Main wave isolation
+
+`Sandbox_IS_Gull` disables only its own inherited `WaveManager` through a scene prefab override. The shared GameManager prefab and Main remain enabled for production waves. Open the sandbox, press Play, click Game view and press **B once** for five test Gulls; **F3** toggles labels and **F4** shows the statistics panel. These are manual test birds, not the production wave spawner. Stop Play and open `Main` for normal automatic countdowns and waves.
+
+The controlled **Tools > IS > Gull > Run Focused Main Gull Check** temporarily suspends the Main WaveManager during its own Play session, then restores its prior enabled state when Play exits, including interruptions. The check uses three temporary birds and explicit GameManager wave hooks. Existing reports below are historical and do not certify the latest combined build. The owner has since observed that Gull drops work in normal gameplay; that observation is not a new automated test result.
 
 `00_SHARED_FOUNDATION.md`, referenced by the Gull plan, was not present in the workspace or Downloads during this implementation. The actual checked-in `BirdBrain`, motor/animator interfaces, health, markers, state label, test spawner and handoff notes were inspected instead. F1/F2 and the current F3/F4 components exist; Gull is already a valid species. No shared contract was reimplemented.
 
@@ -309,7 +315,7 @@ The mean is below 0.5 ms, but the brain's **1.1237 ms** peak alone proves the st
 - G4 prediction, warning, real drop and fallback swoop are implemented in the Gull sandbox; final tuning/art/sound and wider balance checks remain integration work.
 - G5 damage-triggered distress reaction and cooldown are implemented in the Gull sandbox.
 - G6a debug metrics overlay is implemented and visually confirmed by the project owner. G6b includes six measured autonomous accuracy attempts. G6c records scoped eight-Gull Editor timings: low mean, but an over-budget brain peak. Detailed spike analysis, development-player confirmation and final integration/viva evidence remain outstanding.
-- Main now has one configured Gull kettle/manager and the shared species prefab is ready for spawning. The focused Main fixture tests explicit GameManager hooks, not an automatic wave loop. S1/World Builder co-owns the missing WaveManager/Spawner with S2; the final three-wave setup must be applied in that separate milestone. No B-key test spawner or live birds are saved in Main.
+- Main now has one configured Gull kettle/manager and the shared species prefab is ready for spawning. S2's production WaveManager runs four waves. The focused Main fixture suspends that manager and tests explicit GameManager hooks; it is not a production-wave test. No B-key test spawner or live birds are saved in Main.
 
 Do not present G1's timer cycle as completed intelligent behaviour. G4 and G6b provide small functional samples, not a statistically reliable hit rate; the Editor performance sample does not establish a full performance pass. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
 

@@ -17,8 +17,9 @@ namespace RunwayPanic.Agents.Gull.EditorTools
     public static class MainGullSmokeCheck
     {
         private const string Key = "RunwayPanic.MainGullSmoke";
+        private const string OriginalWaveEnabledKey = "RunwayPanic.MainGullSmoke.WaveEnabled";
         private static readonly List<string> Report = new List<string>();
-        private static bool running, dropped, settled, controllerWasEnabled;
+        private static bool running, dropped, settled, controllerWasEnabled, isolationChecked;
         private static int stage, failures;
         private static double began;
         private static float distressTime;
@@ -26,28 +27,81 @@ namespace RunwayPanic.Agents.Gull.EditorTools
         private static GullKettle kettle;
         private static PlayerController controller;
         private static PlayerHealth player;
+        private static WaveManager pausedWaves;
 
-        static MainGullSmokeCheck() { EditorApplication.playModeStateChanged += OnPlayMode; }
+        static MainGullSmokeCheck()
+        {
+            EditorApplication.playModeStateChanged += OnPlayMode;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (!Application.isPlaying || !SessionState.GetBool(Key, false) || scene.path != MainGullIntegration.MainPath) return;
+            var waves = scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<WaveManager>(true)).ToArray();
+            if (waves.Length != 1) return; // EnteredPlayMode reports the missing/duplicate manager.
+            PauseWaves(waves[0]); // Scene-loaded callbacks run before Start/Update starts the countdown.
+        }
+
+        private static void PauseWaves(WaveManager waves)
+        {
+            if (pausedWaves != null) return;
+            pausedWaves = waves;
+            waves.enabled = false;
+        }
         [MenuItem("Tools/IS/Gull/Run Focused Main Gull Check")]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || SceneManager.GetActiveScene().path != MainGullIntegration.MainPath || SceneManager.GetActiveScene().isDirty)
                 throw new InvalidOperationException("Open/save connected Main outside Play first.");
+            var waves = MainGullIntegration.InMain<WaveManager>(true);
+            if (waves.Length != 1 || !waves[0].enabled)
+                throw new InvalidOperationException("Main needs exactly one enabled production WaveManager before this check.");
             MainGullIntegration.Validate(); SessionState.SetBool(Key, true); EditorApplication.isPlaying = true;
         }
         private static void OnPlayMode(PlayModeStateChange change)
         {
+            if (change == PlayModeStateChange.ExitingEditMode && SessionState.GetBool(Key, false))
+            {
+                // The project disables scene reload, so pause before the first Play update.
+                var waves = MainGullIntegration.InMain<WaveManager>(true).Single();
+                SessionState.SetBool(OriginalWaveEnabledKey, waves.enabled);
+                PauseWaves(waves);
+                return;
+            }
+            if (change == PlayModeStateChange.ExitingPlayMode)
+            {
+                if (running) { Check(false, "Interrupted"); Finish(false); }
+                return;
+            }
+            if (change == PlayModeStateChange.EnteredEditMode)
+            {
+                if (SessionState.GetBool(Key, false))
+                {
+                    var waves = MainGullIntegration.InMain<WaveManager>(true);
+                    if (waves.Length == 1) waves[0].enabled = SessionState.GetBool(OriginalWaveEnabledKey, true);
+                }
+                pausedWaves = null;
+                SessionState.SetBool(Key, false);
+                return;
+            }
             if (!SessionState.GetBool(Key, false)) return;
             if (change == PlayModeStateChange.EnteredPlayMode)
             {
-                running = true; stage = failures = 0; dropped = settled = false;
+                running = true; stage = failures = 0; dropped = settled = isolationChecked = false;
                 began = EditorApplication.timeSinceStartup; controller = null; birds = responders = null; Report.Clear();
                 Report.Add("Main Gull — focused real-scene check, Unity " + Application.unityVersion);
-                Report.Add("Temporary birds spawned from the shared species asset at real Spawn markers. Fixture calls BeginWave/CompleteWave explicitly; no automatic wave controller exists yet.");
+                Report.Add("Temporary birds use real Spawn markers. The production WaveManager is suspended for this controlled check; the fixture calls BeginWave/CompleteWave explicitly.");
+                try
+                {
+                    if (pausedWaves == null) PauseWaves(MainGullIntegration.InMain<WaveManager>(true).Single());
+                    bool ready = SessionState.GetBool(OriginalWaveEnabledKey, false) && !pausedWaves.enabled && pausedWaves.Phase == WaveManager.WavePhase.Waiting;
+                    Check(ready, "Production WaveManager suspended before the test wave and countdown (phase=" + pausedWaves.Phase + ", enabled=" + pausedWaves.enabled + ")");
+                    if (!ready) throw new InvalidOperationException("The production WaveManager was disabled or had already started; refusing to run the fixture.");
+                }
+                catch (Exception error) { Check(false, error.ToString()); Finish(true); return; }
                 EditorApplication.update += Tick;
             }
-            else if (change == PlayModeStateChange.ExitingPlayMode && running) { Check(false, "Interrupted"); Finish(false); }
-            else if (change == PlayModeStateChange.EnteredEditMode) SessionState.SetBool(Key, false);
         }
         private static void Tick()
         {
@@ -56,6 +110,14 @@ namespace RunwayPanic.Agents.Gull.EditorTools
             {
                 if (EditorApplication.timeSinceStartup - began > 70) throw new TimeoutException("Main check timed out at stage " + stage);
                 if (EditorApplication.timeSinceStartup - began < 1) return;
+                if (pausedWaves == null || pausedWaves.enabled) throw new InvalidOperationException("Production waves are not suspended; aborting controlled check.");
+                if (!isolationChecked && stage > 0 && EditorApplication.timeSinceStartup - began >= 7)
+                {
+                    isolationChecked = true;
+                    var health = MainGullIntegration.InMain<BirdHealth>();
+                    Check(pausedWaves.Phase == WaveManager.WavePhase.Waiting && health.Length == 3 && birds.All(b => health.Contains(b.GetComponent<BirdHealth>())),
+                        "After the normal six-second countdown, only the three fixture birds exist and automatic waves remain idle (phase=" + pausedWaves.Phase + ", birds=" + health.Length + ")");
+                }
                 var game = GameManager.Instance;
                 if (player != null && player.CurrentHP < player.MaxHP * .25f) player.ResetHealth();
                 if (stage == 0)
@@ -112,7 +174,8 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                         "WaveCompleted clears carried/falling/landed FOD, kettle membership and token");
                     Check(MainGullIntegration.InMain<FodSpawnPoint>().All(p => p.Claimant == null && p.CooldownRemaining == 0f) && game.CurrentState == GameState.Shopping,
                         "Supplies reset and existing between-wave shop state opens");
-                    Report.Add("GameManager.TotalWaves=" + game.TotalWaves + ". Three-wave setup and production bird spawn/cleanup still belong to the future WaveManager milestone.");
+                    Check(isolationChecked, "Wave isolation observed beyond the normal production countdown");
+                    Report.Add("GameManager.TotalWaves=" + game.TotalWaves + ". Production waves are present but were suspended for this fixture.");
                     Finish(true);
                 }
             }
@@ -121,14 +184,17 @@ namespace RunwayPanic.Agents.Gull.EditorTools
         private static void Check(bool ok, string message) { Report.Add((ok ? "PASS: " : "FAIL: ") + message); if (!ok) failures++; }
         private static void Finish(bool stopPlay)
         {
-            running = false; EditorApplication.update -= Tick; SessionState.SetBool(Key, false);
+            running = false; EditorApplication.update -= Tick;
             if (birds != null) foreach (var bird in birds) if (bird != null) bird.gameObject.SetActive(false);
             if (controller != null) controller.enabled = controllerWasEnabled;
-            Report.Add("One focused Main run, not end-to-end weapon raycasts, all-species/door regressions, performance certification or a production three-wave playthrough. No Play-mode scene saved; fixture deactivates remaining birds as a future wave controller must.");
+            Report.Add("One focused Main run, not end-to-end weapon raycasts, all-species/door regressions, performance certification or a production four-wave playthrough. No Play-mode scene saved; fixture deactivates its temporary birds.");
             Report.Add("Failures: " + failures);
-            Directory.CreateDirectory("Docs/IS/Gull"); File.WriteAllLines("Docs/IS/Gull/MainPlayValidation.txt", Report);
-            Debug.Log("[MainGullCheck] Finished with " + failures + " failures; see MainPlayValidation.txt.");
-            if (stopPlay) EditorApplication.isPlaying = false;
+            try
+            {
+                Directory.CreateDirectory("Docs/IS/Gull"); File.WriteAllLines("Docs/IS/Gull/MainPlayValidation.txt", Report);
+                Debug.Log("[MainGullCheck] Finished with " + failures + " failures; see MainPlayValidation.txt.");
+            }
+            finally { if (stopPlay) EditorApplication.isPlaying = false; }
         }
     }
 }

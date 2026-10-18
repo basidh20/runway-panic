@@ -6,7 +6,7 @@ References: workspace `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` integ
 
 ## Current status after integrating S2's develop changes
 
-S2's production WaveManager, wave HUD and four-wave assets are now present; reuse them rather than building another wave loop. The earlier environment-only results below are historical evidence from before this integration, not a merged production-wave test. Re-check Main and isolate Gull sandbox/focused fixtures from automatic waves before rerunning those controlled checks. The historical three-wave follow-up proposal below is superseded by the four-wave decision.
+S2's production WaveManager, wave HUD and four-wave assets are now present; reuse them rather than building another wave loop. The earlier environment-only results below are historical evidence from before this integration, not a merged production-wave test. The Gull sandbox now disables its own inherited WaveManager, and the focused Main fixture temporarily suspends Main's WaveManager until Play exits. Normal Main gameplay retains automatic waves. The owner reports seeing Gull drops work in normal gameplay. The historical three-wave follow-up proposal below is superseded by the four-wave decision.
 
 ## What is saved
 
@@ -27,15 +27,17 @@ The role plan assigns **WaveManager + Spawner to S1/World Builder, co-owned with
 
 After saving Main outside Play, choose **Tools > IS > Gull > Run Focused Main Gull Check**. It:
 
-1. Calls the existing `GameManager.BeginWave(1)` hook explicitly and spawns three temporary birds from `BirdSpecies_Gull.Prefab` at actual shared Spawn markers. The normal player controller is disabled transiently and the fixture keeps the stationary player alive.
+1. Suspends Main's production WaveManager for this Play session, calls `GameManager.BeginWave(1)` explicitly and spawns three temporary birds from `BirdSpecies_Gull.Prefab` at actual shared Spawn markers. The normal player controller is disabled transiently and the fixture keeps the stationary player alive.
 2. Waits for actual collection and kettle membership with dispatch temporarily disabled, then permits a real token-controlled drop to settle as managed Main debris.
 3. Records a simulated shot context through the existing player hub callback and applies a real surviving wrong-rarity health hit. It checks nearby distress response, carried-FOD retention, token release and bounded speed/state recovery. This is not a real weapon raycast test.
-4. Calls `CompleteWave()` explicitly, checking FOD/kettle/supply cleanup and the existing Shopping state. The fixture deactivates leftover birds; a future production wave controller must own leftover-bird cleanup too. GameManager alone does not remove them.
-5. Writes `MainPlayValidation.txt` and exits Play. No runtime fixture objects/player movement are saved.
+4. Calls `CompleteWave()` explicitly, checking FOD/kettle/supply cleanup and the existing Shopping state. The fixture deactivates its temporary birds; production cleanup is handled separately by S2's WaveManager.
+5. Writes `MainPlayValidation.txt` and exits Play, restoring the manager's previous enabled state. No runtime fixture objects/player movement are saved.
 
-This is not a complete three-wave playthrough, all-species/door regression suite, or performance certification. Eight-Gull Editor timings and their over-budget brain peak remain documented in `PerformanceSample.md`; do not claim that integration fixed the spike.
+This is not a complete four-wave playthrough, all-species/door regression suite, or performance certification. Eight-Gull Editor timings and their over-budget brain peak remain documented in `PerformanceSample.md`; do not claim that integration fixed the spike.
 
-Recorded result on Unity 6000.6.4f1: **8 Edit-mode reference checks passed and 10 Play-mode checks passed, zero failures**. Three actual Gulls collected distinct debris and formed the kettle, one naturally dropped piece settled in Main, nearby Gulls responded to the simulated-shot damage context, and the existing wave-completion hooks cleared FOD/kettle/supplies and entered Shopping. The saved scene diff contains only the eight added supply components and the new manager/kettle root; existing marker layout and other gameplay settings are unchanged.
+Latest isolation check on Unity 6000.6.4f1: **13 Play-mode checks passed, zero failures**. After the six-second countdown interval, the production manager was still idle and only the three fixture birds existed; a natural drop also settled. In a separate brief normal Main session immediately afterward, the Wave 1 countdown appeared and production Gulls spawned. This does not establish a full four-wave playthrough. The sandbox override was inspected in the scene data but was not separately playtested in this task.
+
+Historical result before S2's wave integration: **8 Edit-mode reference checks and 10 Play-mode checks passed**. Three actual Gulls collected distinct debris and formed the kettle, one naturally dropped piece settled in Main, nearby Gulls responded to a simulated-shot damage context, and wave-completion hooks cleared FOD/kettle/supplies and entered Shopping. This result describes the earlier environment-readiness scene changes, not the latest combined production system.
 
 ## Historical wave-loop proposal — superseded by S2's implementation
 
@@ -50,4 +52,4 @@ After human review/commits and merge into **develop**, start the separate wave f
 
 No Git changes are staged, committed, pushed or merged by the integration tools.
 
-This completes the Main **environment-readiness** delivery for review on the Gull branch. After the human commits and reviews the changes, merge into **develop**. The absence of production waves and the performance spike are documented follow-ups, not completed acceptance items. Do not describe the whole game or every G6 requirement as finished when merging this delivery.
+This completed the earlier Main **environment-readiness** delivery. S2's production waves are now present; the performance spike and wider combined-game verification remain follow-ups. Do not describe the whole game or every G6 requirement as finished based on this delivery.
