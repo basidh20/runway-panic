@@ -13,6 +13,20 @@ Template:
 
 ---
 
+## 2026-10-18 — to: all — main menu, settings, and Main Menu buttons in the game
+- **What:** `Scenes/MainMenu.unity` (new, first in the build), `Prefabs/UI/P_SettingsPanel.prefab`, `Prefabs/Core/P_GameManager.prefab` (screens updated); builder `Tools > S2 > Build Main Menu`.
+- **Details:**
+  - The game now starts at the main menu: **Play** (loading screen with tips, then `Main`), **How to Play** (goal, the right gun per bird, all controls for keyboard and gamepad), **Settings**, **Credits**, **Quit** (asks first). Calm menu music and airport ambience; animated dusk backdrop.
+  - **Settings** (saved between sessions): master / music / effects / ambience volume, look sensitivity, invert Y, fullscreen, V-Sync (graphics quality appears only if the project gets more than one quality level). The same panel opens from the **pause screen**.
+  - **Pause** now has Resume · Restart · Settings · Main Menu · Quit; **Game Over** and **Victory** have Try Again · Main Menu · Quit. Esc / B in Settings closes Settings without unpausing.
+  - Mouse, keyboard (arrows, Enter, Esc) and gamepad (stick / D-pad, A, B) all work; a button is always highlighted, and hovering selects it.
+  - `GameManager.ConsumePauseInput()` lets UI use an Esc press without also pausing / resuming.
+- **Action needed:**
+  - World Builder: nothing — `Main.unity` is unchanged. Keep `MainMenu` at index 0 and `Main` in the build list (`SceneFlow.GameScene` loads it by name).
+  - Anyone changing a key or the bird / gun pairing: update the How to Play text in `MainMenuBuilder.BuildHowToPlay` and re-run `Tools > S2 > Build Main Menu`.
+  - Credits list roles only; add names in `MainMenuBuilder` (credits text) if the team wants them, then re-run the builder.
+- **Status:** done
+
 ## 2026-10-17 — to: all — the player is fully animated (move, jump, guns, reload, hit, death)
 - **What:** `Prefabs/Player/P_Player_Gameplay` (already in `Main`); controller `Art/Animations/Player/AC_Player.controller`; tools `Tools > S2 > Build Player Animator` and `Tools > S2 > Generate Player Clips`.
 - **Details:**
