@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2686fb11d8f19524aa701f2aa3c11695, type: 3}
+  m_Name: SC_Shot_Pistol
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Audio.SoundCue
+  clips:
+  - {fileID: 8300000, guid: 9840a2bcf99ed5e4c9de46965d439c9e, type: 3}
+  - {fileID: 8300000, guid: f9956771bf006e741b291fc1d48dab43, type: 3}
+  category: 2
+  volume: 0.85
+  pitchRange: {x: 0.96, y: 1.04}
+  spatial: 1
+  minDistance: 4
+  maxDistance: 120
+  maxInstances: 4
