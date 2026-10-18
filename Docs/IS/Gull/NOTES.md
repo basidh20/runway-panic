@@ -37,9 +37,42 @@ Recorded G1 run: **eight checks passed, zero failures**. All nine living labels 
 
 The kettle marker is at `(0,10,0)`. The strategy's 6–14 m slot heights are **above runway ground**, using `KettleCenter.y - 10` as the reference. Do not add 6–14 to the marker's y=10 again. The G3 prose shorthand is ambiguous; implement the ground-relative interpretation consistent with the strategy table and prepared airport markers.
 
+## G2a — FOD item, carry/drop, splash and debris
+
+References: `BIRD_STRATEGIES.md` section 2 and `01_GULL_PLAN.md` G2. This is the first of G2's two proposed commits. The item is implemented independently of the future supply/manager code.
+
+`FodItem.cs` and `Prefabs/Birds/FOD/P_FOD_Debris.prefab` provide:
+
+- Four states: Lying, Carried, Falling and Landed. The temporary prop is 0.3 × 0.15 × 0.4 m, mass 2, with the existing greybox metal material, one BoxCollider and Rigidbody.
+- `AttachTo(carrier, localOffset)` keeps world dimensions on scaled bird roots, follows the carrier and disables item collisions. `Release()` detaches, enables gravity/continuous collision detection and starts with zero velocity. Repeated Release calls cannot restart a falling item's splash.
+- First non-bird contact applies one splash: radius from the Gull config, damage from **Gull species AttackDamage × fodDamageMultiplier** (currently 6 × 1). The existing PlayerHealth/shield rules handle the result. Multiple player colliders never multiply the hit. Bird contacts do not trigger the impact. The normal splash query uses a fixed buffer; an overflow uses a complete query so it cannot silently omit the player.
+- A direct player hit applies the splash once, then ignores that player's collision shapes so the item can reach scenery. It becomes fixed debris when it hits scenery, rather than freezing on the player's head. This refines the plan's single-contact shorthand. `Impacted(item, hitPlayer)` describes the first contact; `Settled(item)` separately describes its final debris state for the later manager.
+- Landed debris enables a correctly sized carving NavMeshObstacle and a shared FlightGrid manual block. The airport currently uses the flight grid; obstacle component setup is supplied for future ground navigation, with no new baked NavMesh in this step.
+- The 0.15 m-high ground prop lies below the flight volume's y=0.5 edge. The shared grid clamps its bounds to the bottom cell, intentionally obstructing a coarse low-altitude lane. This is a grid cell footprint, not a claim that the little prop fills that entire 2 m cell physically.
+- Despawn, disabling, pickup after landing and destruction release the **exact bounds/grid** registered earlier, once. Removal also refreshes that small region's geometry in case the grid was rebuilt while debris existed. Overlapping pieces retain their own block counts. Re-enabling a landed item restores its block.
+- For this standalone step, the item expires after the configured landed lifetime (40 active-gameplay seconds); a lost falling item expires after 15 active-gameplay seconds. The global 20-piece cap and WaveCompleted cleanup remain G2b manager work.
+
+`Configure(strategy, gullSpecies)` lets the next supply point assign references before pickup. The saved prefab already has the current Gull config/species assigned. Shared species/weapon data, Gull brain transitions, Main and the sandbox scene file are not edited by G2a.
+
+### Manual drop preview
+
+1. Outside Play, choose **Tools > IS > Gull > Open Gull Sandbox** (save any current scene edits first).
+2. Press Play. There is no need to spawn birds for this item preview.
+3. Choose **Tools > IS > Gull > Drop FOD Above Player (Play)** once. A small metal prop drops from 4 m above the player; staying still lets you check the hit, while stepping aside shows the miss/splash radius.
+4. Find the selected `P_FOD_Debris(Clone)` in Scene view (F to frame). It should reach the ground and remain there; the item Inspector exposes references, while the runtime State is available through the API/check report. `Debug Release` is also available from a FodItem component's context menu for a manually placed instance during Play.
+5. Stop Play afterwards. Menu-created drops are temporary and are not saved into the level.
+
+**Create FOD Debris Prefab** is a one-time tool that refuses to overwrite an existing prefab. Normal prefab editing is used afterwards. The shape is a prototype; final bolt/rubble/luggage-tag artwork can replace its visual child while retaining the root collision/lifecycle contract.
+
+**Run Focused FOD Item Check** runs only in the saved Gull sandbox. It checks a carry/drop using real physics and the real player, one splash, ground settling, overlapping grid blocks and cleanup, plus lifetime expiry using a transient config copy set to 0.25 s. The saved 40 s config is preserved. Results are in `G2aValidation.txt`; this does not exercise a baked ground NavMesh or a full AI suite.
+
+Recorded G2a result: **15 checks passed, zero failures**. The measured direct-hit HP loss was 6. The lifetime check uses a cell verified clear before dropping; cells next to existing barricades can remain blocked for valid geometry reasons after debris disappears.
+
+Suggested G2a commit: `feat(ai-gull): add FOD item with carry, splash damage and debris state`.
+
 ## Remaining phases / evidence
 
-- G2: actual FOD items, splash/debris lifecycle, cooldown/claims and gathering; add `FodSpawnPoint` next to sandbox markers when the component exists.
+- G2b: FodManager (global cap / wave cleanup), supply cooldown/claims and real gathering; add `FodSpawnPoint` next to sandbox markers when the component exists. G2a supplies the item and its standalone lifecycle.
 - G3: rotating kettle membership/slots and one attack token, including death/timeout release.
 - G4: lead prediction with telegraph and real drop/swoop.
 - G5: damage-triggered distress reaction and cooldown.
