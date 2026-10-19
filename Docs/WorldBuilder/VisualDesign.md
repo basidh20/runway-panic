@@ -39,3 +39,27 @@ With saved Main open outside Play mode, `Tools > Runway Panic > Capture Airport
 Surface Views` captures the same views to `/private/tmp/RunwayPanic-C1/` on this
 Mac; this temporary folder is not part of the repository. Lighting and a saved
 light bake are separate C3 and C4 tasks.
+
+## C2: grass and existing landmarks
+
+The existing flat ground has a repeatable grass-coloured texture, generated
+locally by `MainAirportDressing.cs` from periodic noise; it is not a downloaded
+texture. Short 3D grass blades are combined into a small set of mesh chunks,
+with no added colliders or cast shadows. Placement avoids the runway, aprons,
+building and aircraft footprints, and a clear strip around the runway-side
+Gull FOD points. The original ground collider and navigation geometry remain.
+There are no new cones, carts or other props in this pass.
+
+The runway, shelter and hangar remain recognizable landmarks with their existing
+signs, doors and C1 materials. A slim, non-colliding yellow frame accents the
+hangar's main entrance without changing its walls or opening. The enterable hangar is still the Unity-built
+placeholder, not a downloaded model. The modeller's final terminal and aircraft
+are pending; retain the placeholders until they are delivered. When replacing
+them, review their footprints, colliders and matching Hawk/Pigeon marker surfaces
+before the final lighting bake. Bird behaviour and wave settings are unchanged.
+
+The initial grass look was reviewed in an editor-camera image from
+(-10, 5, -27) facing (-20, 0.5, 4); the checker-like ground pattern was replaced
+with softer noise. This is not a gameplay walk-through or a performance test.
+The player should check the approaches, shelter doors, hangar entrances and
+visibility of objects in Play mode.
