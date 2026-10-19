@@ -60,10 +60,15 @@ There are no new cones, carts or other props in this pass.
 The runway, shelter and hangar remain recognizable landmarks with their existing
 signs, doors and C1 materials. A slim, non-colliding yellow frame accents the
 hangar's main entrance without changing its walls or opening. The enterable hangar is still the Unity-built
-placeholder, not a downloaded model. The modeller's final terminal and aircraft
-are pending; retain the placeholders until they are delivered. When replacing
-them, review their footprints, colliders and matching Hawk/Pigeon marker surfaces
-before the final lighting bake. Bird behaviour and wave settings are unchanged.
+placeholder, not a downloaded model. The modeller's final terminal is pending.
+All four aircraft now use the modeller's parked-aircraft prefab. Plane A uses
+the grey/teal model at 1.12 scale to match the former wingspan; the other three
+use the modeller's placed variants. Plane A's wing roost and tail perch were
+aligned to the new collision surfaces. The focused aircraft clearance check
+passed after excluding the stationary gameplay player from its simulated walk;
+an actual bird landing and gameplay walk still need checking. Review ground
+navigation after the collision change and before the final lighting bake. Bird
+behaviour and wave settings are unchanged.
 
 The initial grass look was reviewed in an editor-camera image from
 (-10, 5, -27) facing (-20, 0.5, 4). This is not a gameplay walk-through or a performance test.
