@@ -87,6 +87,9 @@ another in the hangar showed the walls, floor and shelter door clearly, so no
 additional lights or changes to the existing prefabs were added. Recreate the
 temporary views with `Tools > Runway Panic > Capture Interior Lighting Views`;
 they are written outside the repository to `/private/tmp/RunwayPanic-C3/`.
+The shared shelter prefab subsequently received a small, non-colliding bulb
+and cable at its existing light, giving both shelters a visible fixture without
+adding another light source.
 Shelter B, pickup visibility, closed/open door operation and the interiors in
 normal gameplay still require a player check. The Shelter A preview also shows
 reversed text visible through the wall; check whether this appears in gameplay
