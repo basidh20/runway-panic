@@ -78,3 +78,16 @@ lifted to soften dark sides while retaining a warm daylight palette. Hawk AI
 still refers to the same sun. No fog, post-processing or baked lighting was
 added in this step. The outdoor editor-camera preview was inspected; gameplay
 aiming, bird shadows and interior visibility still need a player review.
+
+### Interior lighting review
+
+Both shelter instances already have one enabled, shadow-free point light;
+the hangar has two. An editor-camera view from player height in Shelter A and
+another in the hangar showed the walls, floor and shelter door clearly, so no
+additional lights or changes to the existing prefabs were added. Recreate the
+temporary views with `Tools > Runway Panic > Capture Interior Lighting Views`;
+they are written outside the repository to `/private/tmp/RunwayPanic-C3/`.
+Shelter B, pickup visibility, closed/open door operation and the interiors in
+normal gameplay still require a player check. The Shelter A preview also shows
+reversed text visible through the wall; check whether this appears in gameplay
+before making a separate signage/UI fix.
