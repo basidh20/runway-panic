@@ -141,6 +141,13 @@ These are scene-instance overrides, not changes to the source prefabs. Doors,
 fixtures, signs and movable objects were not marked. The current realtime lights
 remain unchanged; a preview bake is still needed to assess seams and leaks.
 
+Main now has one `Airport_LightProbes` group with 244 positions: a sparse
+outdoor grid at player and flying-bird heights, plus denser samples inside and
+near the entrances of both shelters and the hangar. Placement skips points
+intersecting colliders and near-duplicates. These are initial positions only:
+they have not been baked or visually validated, and interior/exterior light
+leakage and dynamic actor appearance must be checked in the preview bake.
+
 To repeat the audit, open saved Main outside Play mode and choose
 `Tools > Runway Panic > Audit Main Lighting Bake Readiness`. The detailed report
 is written to `/private/tmp/RunwayPanic-C4/lighting-audit.txt` on this Mac and

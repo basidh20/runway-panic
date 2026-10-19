@@ -14,6 +14,64 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Add Airport Light Probes")]
+        private static void AddAirportLightProbes()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            if (UnityEngine.Object.FindObjectsByType<LightProbeGroup>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Any(group => group.gameObject.scene == scene))
+                throw new InvalidOperationException("Main already contains a light probe group; review it before adding another.");
+            var lighting = GameObject.Find("Lighting");
+            var shelters = new[] { "Environment/Buildings/Shelter_A", "Environment/Buildings/Shelter_B" }
+                .Select(path => GameObject.Find(path) ?? throw new InvalidOperationException("Missing " + path)).ToArray();
+            var hangar = GameObject.Find("Environment/Buildings/Hangar_Greybox/P_Greybox_Hangar");
+            if (lighting == null || hangar == null) throw new InvalidOperationException("Main lighting or hangar is missing.");
+
+            Physics.SyncTransforms();
+            var worldPoints = new List<Vector3>();
+            void AddPoint(Vector3 point)
+            {
+                if (!Physics.CheckSphere(point, .15f, ~0, QueryTriggerInteraction.Ignore) &&
+                    !worldPoints.Any(existing => (existing - point).sqrMagnitude < .01f))
+                    worldPoints.Add(point);
+            }
+            // Cover the playable footprint and flight-grid height without making the
+            // grass or moving actors static. Higher points support airborne birds.
+            foreach (float x in new[] { -48f, -32f, -16f, 0f, 16f, 32f, 48f })
+                foreach (float z in new[] { -36f, -24f, -12f, 0f, 12f, 24f, 36f })
+                    foreach (float y in new[] { 1.3f, 5f, 12f, 24f })
+                        AddPoint(new Vector3(x, y, z));
+            // More samples inside and just outside rooms help with transitions;
+            // a later bake/visual check must still assess leakage through walls.
+            foreach (var shelter in shelters)
+                foreach (float x in new[] { -1f, 1f })
+                    foreach (float z in new[] { -2f, 0f, 2f })
+                        foreach (float y in new[] { 1.3f, 2.8f })
+                            AddPoint(shelter.transform.TransformPoint(x, y, z));
+            foreach (var shelter in shelters)
+                foreach (float y in new[] { 1.3f, 2.8f })
+                    AddPoint(shelter.transform.TransformPoint(0f, y, -4.7f));
+            foreach (float x in new[] { -4f, 0f, 4f })
+                foreach (float z in new[] { -8f, 0f, 8f })
+                    foreach (float y in new[] { 1.3f, 3.5f })
+                        AddPoint(hangar.transform.TransformPoint(x, y, z));
+            foreach (float z in new[] { -3f, 0f, 3f })
+                foreach (float y in new[] { 1.3f, 3.5f })
+                    AddPoint(hangar.transform.TransformPoint(7.8f, y, z));
+            if (worldPoints.Count < 50) throw new InvalidOperationException("Too few valid probe positions; no changes made.");
+
+            var root = new GameObject("Airport_LightProbes");
+            Undo.RegisterCreatedObjectUndo(root, "Add airport light probes");
+            root.transform.SetParent(lighting.transform, false);
+            var probeGroup = root.AddComponent<LightProbeGroup>();
+            probeGroup.probePositions = worldPoints.Select(root.transform.InverseTransformPoint).ToArray();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Could not save Main light probes.");
+            Debug.Log($"[AirportC4] Added {worldPoints.Count} light probe positions; a lighting bake is still required.");
+        }
+
         [MenuItem("Tools/Runway Panic/Prepare Fixed Buildings for Lighting Bake")]
         private static void PrepareFixedBuildingsForBake()
         {
