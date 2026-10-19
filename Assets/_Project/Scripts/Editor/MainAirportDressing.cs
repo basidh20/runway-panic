@@ -37,11 +37,7 @@ namespace RunwayPanic.EditorTools
             if (ground == null || apronA == null || apronB == null) throw new InvalidOperationException("Expected ground and apron renderers.");
             if (!AssetDatabase.IsValidFolder(Textures) || !AssetDatabase.IsValidFolder(Materials)) throw new InvalidOperationException("C1 surface folders are missing.");
 
-            var excluded = new List<Bounds>();
-            AddBounds(excluded, apronA, .6f); AddBounds(excluded, apronB, .6f);
-            foreach (Transform item in buildings.transform) AddCombinedBounds(excluded, item, .8f);
-            foreach (Transform item in aircraft.transform) AddCombinedBounds(excluded, item, .8f);
-            AddCombinedBounds(excluded, terminal.transform, .8f); AddCombinedBounds(excluded, tower.transform, .8f);
+            var excluded = GrassExclusions(buildings.transform, aircraft.transform, terminal.transform, tower.transform, apronA, apronB);
 
             AssetDatabase.CreateFolder("Assets/_Project/Art/Models/Environment", "C2Dressing");
             Texture2D grassTexture = CreateGrassTexture();
@@ -117,7 +113,7 @@ namespace RunwayPanic.EditorTools
 
         private static bool Clear(float x, float z, List<Bounds> excluded)
         {
-            if (Mathf.Abs(x) < 9.8f) return false; // runway, markings and nearby Gull FOD points
+            if (Mathf.Abs(x) < 7.25f) return false; // keep the 14 m-wide runway clear
             foreach (var b in excluded)
                 if (x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z) return false;
             foreach (var hit in Physics.OverlapSphere(new Vector3(x, .12f, z), .18f, ~0, QueryTriggerInteraction.Ignore))
@@ -128,36 +124,122 @@ namespace RunwayPanic.EditorTools
         private static void MakeGrass(Transform parent, Material material, List<Bounds> excluded)
         {
             var root = new GameObject("Grass_Patches").transform; root.SetParent(parent, false);
+            BuildGrass(excluded, (name, mesh) =>
+            {
+                AssetDatabase.CreateAsset(mesh, Models + "/" + name + ".asset");
+                AddMesh(root, name, mesh, material, Vector3.zero, Vector3.one, false);
+            });
+        }
+
+        private static List<Bounds> GrassExclusions(Transform buildings, Transform aircraft, Transform terminal, Transform tower, MeshRenderer apronA, MeshRenderer apronB)
+        {
+            var excluded = new List<Bounds>();
+            AddBounds(excluded, apronA, .6f); AddBounds(excluded, apronB, .6f);
+            foreach (Transform item in buildings) AddCombinedBounds(excluded, item, .8f);
+            foreach (Transform item in aircraft) AddCombinedBounds(excluded, item, .8f);
+            AddCombinedBounds(excluded, terminal, .8f); AddCombinedBounds(excluded, tower, .8f);
+            return excluded;
+        }
+
+        [MenuItem("Tools/Runway Panic/Refresh Airport Grass")]
+        private static void RefreshGrass()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            var apronA = Require("Environment/Runway/Apron_A").GetComponent<MeshRenderer>();
+            var apronB = Require("Environment/Runway/Apron_B").GetComponent<MeshRenderer>();
+            if (apronA == null || apronB == null) throw new InvalidOperationException("Expected apron renderers.");
+            var excluded = GrassExclusions(Require("Environment/Buildings").transform, Require("Environment/Aircraft").transform,
+                Require("Environment/Background/Terminal_Placeholder").transform, Require("Environment/Background/ControlTower_Placeholder").transform, apronA, apronB);
+            var existing = new Dictionary<string, Mesh>();
+            for (int cx = 0; cx < 4; cx++) for (int cz = 0; cz < 4; cz++)
+            {
+                string name = "GrassChunk_" + cx + "_" + cz;
+                var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(Models + "/" + name + ".asset");
+                if (mesh == null) throw new InvalidOperationException("Missing existing grass mesh: " + name);
+                existing.Add(name, mesh);
+            }
+            var groundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(Textures + "/T_AnimeNature_GrassGround.png");
+            var grassTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(Textures + "/T_TerrainGrass_Billboard.png");
+            var ground = Require("Environment/Ground_100x80").GetComponent<MeshRenderer>();
+            var grassRoot = Require("Environment/" + RootName + "/Grass_Patches");
+            if (groundTexture == null || grassTexture == null || ground == null)
+                throw new InvalidOperationException("Downloaded grass textures or ground renderer are missing.");
+            var groundMaterial = AssetDatabase.LoadAssetAtPath<Material>(Materials + "/M_C2_AnimeGrassGround.mat");
+            if (groundMaterial == null) groundMaterial = CreateMaterial("M_C2_AnimeGrassGround", new Color(.36f, .42f, .25f), groundTexture, new Vector2(25, 20), false);
+            var grassMaterial = AssetDatabase.LoadAssetAtPath<Material>(Materials + "/M_C2_TerrainGrassCards.mat");
+            if (grassMaterial == null)
+            {
+                grassMaterial = CreateMaterial("M_C2_TerrainGrassCards", new Color(.42f, .55f, .25f), grassTexture, Vector2.one, true);
+                grassMaterial.SetFloat("_AlphaClip", 1);
+                grassMaterial.SetFloat("_Cutoff", .35f);
+                grassMaterial.EnableKeyword("_ALPHATEST_ON");
+                grassMaterial.SetOverrideTag("RenderType", "TransparentCutout");
+                grassMaterial.renderQueue = (int)RenderQueue.AlphaTest;
+                EditorUtility.SetDirty(grassMaterial);
+            }
+            BuildGrass(excluded, (name, replacement) =>
+            {
+                var mesh = existing[name];
+                Undo.RecordObject(mesh, "Refresh airport grass");
+                mesh.Clear();
+                mesh.vertices = replacement.vertices;
+                mesh.triangles = replacement.triangles;
+                mesh.normals = replacement.normals;
+                mesh.uv = replacement.uv;
+                mesh.RecalculateBounds();
+                EditorUtility.SetDirty(mesh);
+                UnityEngine.Object.DestroyImmediate(replacement);
+            });
+            Undo.RecordObject(ground, "Apply imported grass ground");
+            ground.sharedMaterial = groundMaterial;
+            foreach (var renderer in grassRoot.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                Undo.RecordObject(renderer, "Apply imported grass cards");
+                renderer.sharedMaterial = grassMaterial;
+            }
+            EditorSceneManager.MarkSceneDirty(scene);
+            AssetDatabase.SaveAssets();
+            if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Could not save Main scene.");
+            try { CapturePreview(); } catch (Exception e) { Debug.LogWarning("[AirportC2] Preview failed: " + e.Message); }
+            Debug.Log("[AirportC2] Refreshed airport grass with imported textures.");
+        }
+
+        private static void BuildGrass(List<Bounds> excluded, Action<string, Mesh> save)
+        {
             var random = new System.Random(48162);
             for (int cx = 0; cx < 4; cx++) for (int cz = 0; cz < 4; cz++)
             {
-                var vertices = new List<Vector3>(); var triangles = new List<int>(); var normals = new List<Vector3>();
+                var vertices = new List<Vector3>(); var triangles = new List<int>(); var normals = new List<Vector3>(); var uvs = new List<Vector2>();
                 float xmin = -49 + cx * 24.5f, zmin = -39 + cz * 19.5f;
-                for (int x = 0; x < 19; x++) for (int z = 0; z < 15; z++)
+                // Overlapping cards form a continuous field rather than isolated tufts.
+                for (int x = 0; x < 68; x++) for (int z = 0; z < 54; z++)
                 {
-                    float px = xmin + (x + (float)random.NextDouble()) * 1.28f;
-                    float pz = zmin + (z + (float)random.NextDouble()) * 1.28f;
+                    float px = xmin + (x + .3f + (float)random.NextDouble() * .4f) * (24.5f / 68f);
+                    float pz = zmin + (z + .3f + (float)random.NextDouble() * .4f) * (19.5f / 54f);
                     if (!Clear(px, pz, excluded)) continue;
-                    float height = .11f + (float)random.NextDouble() * .12f;
-                    float half = .035f + (float)random.NextDouble() * .025f;
+                    float height = .26f + (float)random.NextDouble() * .1f;
+                    float half = .24f + (float)random.NextDouble() * .03f;
                     float angle = (float)random.NextDouble() * Mathf.PI;
-                    for (int a = 0; a < 3; a++)
+                    for (int a = 0; a < 2; a++)
                     {
-                        float theta = angle + a * Mathf.PI / 3;
+                        float theta = angle + a * Mathf.PI / 2;
                         var right = new Vector3(Mathf.Cos(theta), 0, Mathf.Sin(theta)) * half;
                         var centre = new Vector3(px, .008f, pz); int first = vertices.Count;
-                        var tip = centre + Vector3.up * (height * (1f - a * .12f)) + right * .35f;
-                        vertices.Add(centre - right); vertices.Add(centre + right); vertices.Add(tip);
-                        normals.Add(Vector3.up); normals.Add(Vector3.up); normals.Add(Vector3.up);
-                        triangles.Add(first); triangles.Add(first + 1); triangles.Add(first + 2);
+                        vertices.Add(centre - right); vertices.Add(centre + right);
+                        vertices.Add(centre - right + Vector3.up * height); vertices.Add(centre + right + Vector3.up * height);
+                        for (int i = 0; i < 4; i++) normals.Add(Vector3.up);
+                        uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(1, 0)); uvs.Add(new Vector2(0, 1)); uvs.Add(new Vector2(1, 1));
+                        triangles.Add(first); triangles.Add(first + 2); triangles.Add(first + 1);
+                        triangles.Add(first + 1); triangles.Add(first + 2); triangles.Add(first + 3);
                     }
                 }
                 if (vertices.Count == 0) continue;
                 string meshName = "GrassChunk_" + cx + "_" + cz;
                 var mesh = new Mesh { name = meshName };
-                mesh.SetVertices(vertices); mesh.SetTriangles(triangles, 0); mesh.SetNormals(normals); mesh.RecalculateBounds();
-                AssetDatabase.CreateAsset(mesh, Models + "/" + mesh.name + ".asset");
-                AddMesh(root, mesh.name, mesh, material, Vector3.zero, Vector3.one, false);
+                mesh.SetVertices(vertices); mesh.SetTriangles(triangles, 0); mesh.SetNormals(normals); mesh.SetUVs(0, uvs); mesh.RecalculateBounds();
+                save(meshName, mesh);
             }
         }
 
@@ -216,6 +298,7 @@ namespace RunwayPanic.EditorTools
             return go.transform;
         }
 
+        [MenuItem("Tools/Runway Panic/Capture Airport Grass Preview")]
         private static void CapturePreview()
         {
             const string folder = "/private/tmp/RunwayPanic-C2"; Directory.CreateDirectory(folder);

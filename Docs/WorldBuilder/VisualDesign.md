@@ -42,12 +42,19 @@ light bake are separate C3 and C4 tasks.
 
 ## C2: grass and existing landmarks
 
-The existing flat ground has a repeatable grass-coloured texture, generated
-locally by `MainAirportDressing.cs` from periodic noise; it is not a downloaded
-texture. Short 3D grass blades are combined into a small set of mesh chunks,
-with no added colliders or cast shadows. Placement avoids the runway, aprons,
-building and aircraft footprints, and a clear strip around the runway-side
-Gull FOD points. The original ground collider and navigation geometry remain.
+The ground uses the grass texture from Hipernt's [Anime Nature](https://assetstore.unity.com/packages/3d/environments/anime-nature-276931)
+(`Assets/Anime Trees/Textures/Grass.png` in the downloaded package). Grass
+tufts use the alpha-cutout billboard texture from FlipGameDev's [Terrain & Grass Pack](https://assetstore.unity.com/packages/3d/environments/terrain-grass-pack-379910)
+(`Assets/FlipGameDev/Terrain&GrassPack/Art/Textures/Grass_Billboard/Grass_1_Billboard.png`).
+Only these two textures were brought into the project; no other pack contents
+or scripts are needed. They are third-party assets and their Unity Asset Store
+licence terms should be checked when distributing the project. Grass cards are
+combined into mesh chunks with no added colliders or cast shadows. Overlapping
+cards give the open ground denser, more continuous coverage. Placement avoids the
+runway, aprons, building and aircraft footprints. The grass now extends toward
+the runway-side Gull FOD points; its ability to conceal pickup spawning depends
+on viewing angle and needs a gameplay check. The original ground collider and
+navigation geometry remain.
 There are no new cones, carts or other props in this pass.
 
 The runway, shelter and hangar remain recognizable landmarks with their existing
@@ -59,7 +66,6 @@ them, review their footprints, colliders and matching Hawk/Pigeon marker surface
 before the final lighting bake. Bird behaviour and wave settings are unchanged.
 
 The initial grass look was reviewed in an editor-camera image from
-(-10, 5, -27) facing (-20, 0.5, 4); the checker-like ground pattern was replaced
-with softer noise. This is not a gameplay walk-through or a performance test.
+(-10, 5, -27) facing (-20, 0.5, 4). This is not a gameplay walk-through or a performance test.
 The player should check the approaches, shelter doors, hangar entrances and
 visibility of objects in Play mode.
