@@ -9,6 +9,7 @@ namespace RunwayPanic.Player
     /// The camera is <see cref="PlayerCameraRig"/>. While a gun is held, <see cref="SetAim"/> keeps the body turned
     /// towards the aim; while aiming down the sights, <see cref="SetAimMovement"/> slows it to a walk.
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(CharacterController), typeof(PlayerInput))]
     public sealed class PlayerController : MonoBehaviour
     {
@@ -21,6 +22,16 @@ namespace RunwayPanic.Player
         [SerializeField, Min(0f)] private float sprintSpeed = 7.5f;
         [SerializeField, Min(0f)] private float rotationSpeed = 12f;
         [SerializeField] private Transform movementReference;
+
+        [Header("Locomotion smoothing")]
+        [SerializeField, Min(0.1f)] private float acceleration = 22f;
+        [SerializeField, Min(0.1f)] private float deceleration = 30f;
+        [Tooltip("Seconds to reach the requested speed when starting from idle. Other speed changes use acceleration.")]
+        [SerializeField, Min(0.01f)] private float startAccelerationTime = 0.06f;
+        [SerializeField, Range(0f, 0.5f)] private float inputDeadZone = 0.1f;
+        [SerializeField, Range(0f, 1f)] private float airControl = 0.35f;
+        [SerializeField, Min(0f)] private float coyoteTime = 0.1f;
+        [SerializeField, Min(0f)] private float jumpBufferTime = 0.12f;
 
         [Header("Facing the aim (while holding a gun)")]
         [Tooltip("Most the body may face away from the aim, in degrees. The torso twists the rest of the way.")]
@@ -38,6 +49,12 @@ namespace RunwayPanic.Player
         private InputAction sprintAction;
         private InputAction jumpAction;
         private float verticalVelocity;
+        private Vector3 planarVelocity;
+        private PlayerCameraRig cameraRig;
+        private float lastGroundedTime = float.NegativeInfinity;
+        private float lastJumpPressedTime = float.NegativeInfinity;
+        private bool jumpConsumed;
+        private float startAccelerationRemaining;
 
         public Vector2 MoveInput { get; private set; }
         public bool IsSprinting { get; private set; }
@@ -86,6 +103,7 @@ namespace RunwayPanic.Player
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
+            cameraRig = GetComponent<PlayerCameraRig>();
 
             PlayerInput playerInput = GetComponent<PlayerInput>();
             moveAction = playerInput.actions?.FindAction(MoveActionName, false);
@@ -105,24 +123,51 @@ namespace RunwayPanic.Player
 
         private void Update()
         {
+            if (!characterController.enabled || Time.deltaTime <= 0f)
+                return;
+
+            bool hadMoveInput = MoveInput.sqrMagnitude > 0f;
             MoveInput = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
+            if (MoveInput.magnitude < inputDeadZone)
+                MoveInput = Vector2.zero;
+            if (!hadMoveInput && MoveInput.sqrMagnitude > 0f && planarVelocity.sqrMagnitude < 0.01f)
+                startAccelerationRemaining = startAccelerationTime;
+            if (MoveInput == Vector2.zero)
+                startAccelerationRemaining = 0f;
             IsSprinting = sprintAction.IsPressed() && MoveInput.sqrMagnitude > 0f && !aiming;
-            CurrentSpeed = (IsSprinting ? sprintSpeed : walkSpeed) * aimSpeedScale;
+            float targetSpeed = (IsSprinting ? sprintSpeed : walkSpeed) * aimSpeedScale;
 
             Vector3 moveDirection = GetMoveDirection(MoveInput);
             RotateTowards(moveDirection);
             ApplyVerticalMovement();
 
-            Vector3 velocity = moveDirection * (CurrentSpeed * MoveInput.magnitude);
+            Vector3 targetVelocity = moveDirection * targetSpeed;
+            float rate = targetVelocity.sqrMagnitude < planarVelocity.sqrMagnitude ? deceleration : acceleration;
+            if (IsGrounded && startAccelerationRemaining > 0f)
+                rate = Mathf.Max(rate, targetVelocity.magnitude / Mathf.Max(0.01f, startAccelerationTime));
+            startAccelerationRemaining = Mathf.Max(0f, startAccelerationRemaining - Time.deltaTime);
+            planarVelocity = Vector3.MoveTowards(planarVelocity, targetVelocity,
+                rate * (IsGrounded ? 1f : airControl) * Time.deltaTime);
+            Vector3 velocity = planarVelocity;
             velocity.y = verticalVelocity;
             CollisionFlags collisionFlags = characterController.Move(velocity * Time.deltaTime);
-            IsGrounded = characterController.isGrounded ||
-                (collisionFlags & CollisionFlags.Below) != 0;
+            IsGrounded = verticalVelocity <= 0f && (characterController.isGrounded ||
+                (collisionFlags & CollisionFlags.Below) != 0);
+            if ((collisionFlags & CollisionFlags.Above) != 0 && verticalVelocity > 0f)
+                verticalVelocity = 0f;
+            Vector3 actualVelocity = characterController.velocity;
+            actualVelocity.y = 0f;
+            CurrentSpeed = actualVelocity.magnitude;
+            // Remove velocity blocked by walls, avoiding stored momentum when the obstacle is cleared.
+            planarVelocity = Vector3.ClampMagnitude(actualVelocity, planarVelocity.magnitude);
         }
 
         private Vector3 GetMoveDirection(Vector2 input)
         {
             Transform reference = movementReference;
+            if (cameraRig != null && cameraRig.isActiveAndEnabled &&
+                (reference == null || reference.TryGetComponent<Camera>(out _)))
+                return cameraRig.MovementRotation * new Vector3(input.x, 0f, input.y);
             if (reference == null && Camera.main != null)
                 reference = Camera.main.transform;
 
@@ -163,24 +208,49 @@ namespace RunwayPanic.Player
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRotation,
-                rotationSpeed * Time.deltaTime);
+                1f - Mathf.Exp(-rotationSpeed * Time.deltaTime));
         }
 
         private void ApplyVerticalMovement()
         {
             IsGrounded = characterController.isGrounded;
 
+            if (jumpAction.WasPressedThisFrame())
+                lastJumpPressedTime = Time.time;
+
+            if (IsGrounded && verticalVelocity <= 0f)
+            {
+                lastGroundedTime = Time.time;
+                jumpConsumed = false;
+            }
+
             if (IsGrounded && verticalVelocity < 0f)
                 verticalVelocity = groundedVelocity;
 
-            if (IsGrounded && jumpAction.WasPressedThisFrame())
+            if (!jumpConsumed && Time.time - lastGroundedTime <= coyoteTime &&
+                Time.time - lastJumpPressedTime <= jumpBufferTime)
             {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
                 IsGrounded = false;
+                jumpConsumed = true;
+                lastJumpPressedTime = float.NegativeInfinity;
                 Jumped?.Invoke();
             }
 
             verticalVelocity += gravity * Time.deltaTime;
+        }
+
+        private void OnDisable()
+        {
+            planarVelocity = Vector3.zero;
+            verticalVelocity = 0f;
+            CurrentSpeed = 0f;
+            MoveInput = Vector2.zero;
+            IsSprinting = false;
+            IsGrounded = false;
+            startAccelerationRemaining = 0f;
+            jumpConsumed = false;
+            lastGroundedTime = lastJumpPressedTime = float.NegativeInfinity;
         }
 
         private void OnValidate()
@@ -191,6 +261,11 @@ namespace RunwayPanic.Player
             jumpHeight = Mathf.Max(0f, jumpHeight);
             gravity = Mathf.Min(-0.01f, gravity);
             groundedVelocity = Mathf.Min(0f, groundedVelocity);
+            acceleration = Mathf.Max(0.1f, acceleration);
+            deceleration = Mathf.Max(0.1f, deceleration);
+            startAccelerationTime = Mathf.Max(0.01f, startAccelerationTime);
+            coyoteTime = Mathf.Max(0f, coyoteTime);
+            jumpBufferTime = Mathf.Max(0f, jumpBufferTime);
         }
     }
 }
