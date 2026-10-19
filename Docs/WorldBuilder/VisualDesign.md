@@ -62,12 +62,13 @@ signs, doors and C1 materials. A slim, non-colliding yellow frame accents the
 hangar's main entrance without changing its walls or opening. The enterable hangar is still the Unity-built
 placeholder, not a downloaded model. The modeller's final terminal is pending.
 All four aircraft now use the modeller's parked-aircraft prefab. Plane A uses
-the grey/teal model at 1.12 scale to match the former wingspan; the other three
-use the modeller's placed variants. Plane A's wing roost and tail perch were
+the grey/teal model at 1.35 scale, about 21% larger than its first replacement;
+the other three use the modeller's placed variants. Plane A's wing roost and tail perch were
 aligned to the new collision surfaces. The focused aircraft clearance check
 passed after excluding the stationary gameplay player from its simulated walk;
-an actual bird landing and gameplay walk still need checking. Review ground
-navigation after the collision change and before the final lighting bake. Bird
+an actual bird landing and gameplay walk still need checking. Check grass around
+the enlarged aircraft in gameplay. Review ground navigation after the collision
+change and before the final lighting bake. Bird
 behaviour and wave settings are unchanged.
 
 The initial grass look was reviewed in an editor-camera image from

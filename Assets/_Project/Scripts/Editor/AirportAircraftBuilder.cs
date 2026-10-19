@@ -208,7 +208,7 @@ namespace RunwayPanic.EditorTools
                 Action<Vector3, int> move = (d, n) => { for (int i = 0; i < n; i++) cc.Move(d); };
                 foreach (var root in roots)
                 {
-                    float span = root == roots[0] ? 9 : 8;
+                    float span = root == roots[0] ? 11 : 8;
                     reset(root.transform.TransformPoint(new Vector3(span * 0.5f + 1, 0.12f, 0)));
                     move(root.transform.TransformDirection(new Vector3(-0.1f, -0.02f, 0)), 120);
                     check(root.transform.InverseTransformPoint(test.transform.position).x > 0, root.name + " wing blocks the human-sized player");

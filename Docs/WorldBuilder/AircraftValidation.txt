@@ -15,7 +15,7 @@ PASS: Plane_A_Greybox solid collision: Tailplane
 PASS: Plane_A_Greybox solid collision: Main_Gear
 PASS: Plane_A_Greybox solid collision: Nose_Gear
 PASS: Plane_A_Greybox is clear of other aircraft, buildings, and cover
-Plane_A_Greybox origin=(-20.00, 0.00, -25.00) yaw=325.0 world bounds=(8.26, 3.45, 8.53)
+Plane_A_Greybox origin=(-20.00, 0.00, -25.00) yaw=325.0 world bounds=(9.95, 4.16, 10.28)
 PASS: Plane_B_Greybox fits inside the perimeter
 PASS: Plane_B_Greybox leaves runway clear
 PASS: Plane_B_Greybox wheels rest on the ground
