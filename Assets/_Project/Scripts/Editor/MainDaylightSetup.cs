@@ -14,6 +14,35 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Prepare Ground and Runway for Lighting Bake")]
+        private static void PrepareGroundAndRunwayForBake()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+
+            var paths = new[] { "Environment/Ground_100x80", "Environment/Runway/Runway_75x14" };
+            var surfaces = paths.Select(GameObject.Find).ToArray();
+            foreach (var surface in surfaces)
+            {
+                var filter = surface != null ? surface.GetComponent<MeshFilter>() : null;
+                if (surface == null || surface.GetComponent<MeshRenderer>() == null || filter == null ||
+                    filter.sharedMesh == null || !filter.sharedMesh.HasVertexAttribute(VertexAttribute.TexCoord1))
+                    throw new InvalidOperationException("Expected ground/runway mesh with lightmap UVs is missing.");
+            }
+
+            foreach (var surface in surfaces)
+            {
+                Undo.RecordObject(surface, "Prepare airport surface for baked lighting");
+                GameObjectUtility.SetStaticEditorFlags(surface,
+                    GameObjectUtility.GetStaticEditorFlags(surface) | StaticEditorFlags.ContributeGI);
+            }
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene))
+                throw new InvalidOperationException("Could not save Main after setting lighting flags.");
+            Debug.Log("[AirportC4] Ground and runway prepared for a later lighting bake; no lighting was baked.");
+        }
+
         [MenuItem("Tools/Runway Panic/Audit Main Lighting Bake Readiness")]
         private static void AuditBakeReadiness()
         {

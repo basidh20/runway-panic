@@ -129,6 +129,12 @@ before deciding how to bake interior lights. Verify the project's URP settings
 and actual preview results; this is not a completed bake. The final terminal
 may require another bake once integrated.
 
+The ground and runway base are now marked Contribute GI as the first small
+preparation step. Their built-in cube meshes have a second UV channel. No
+other objects, lights or lighting settings were changed, and this does not yet
+create a bake. Continue by checking the remaining fixed geometry and setting up
+preview lighting and probes; the terminal is still pending.
+
 To repeat the audit, open saved Main outside Play mode and choose
 `Tools > Runway Panic > Audit Main Lighting Bake Readiness`. The detailed report
 is written to `/private/tmp/RunwayPanic-C4/lighting-audit.txt` on this Mac and
