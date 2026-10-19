@@ -135,6 +135,12 @@ other objects, lights or lighting settings were changed, and this does not yet
 create a bake. Continue by checking the remaining fixed geometry and setting up
 preview lighting and probes; the terminal is still pending.
 
+The two shelter instances and the hangar now also have Contribute GI enabled
+on 28 selected fixed floors, walls, roofs and doorway framing pieces in Main.
+These are scene-instance overrides, not changes to the source prefabs. Doors,
+fixtures, signs and movable objects were not marked. The current realtime lights
+remain unchanged; a preview bake is still needed to assess seams and leaks.
+
 To repeat the audit, open saved Main outside Play mode and choose
 `Tools > Runway Panic > Audit Main Lighting Bake Readiness`. The detailed report
 is written to `/private/tmp/RunwayPanic-C4/lighting-audit.txt` on this Mac and

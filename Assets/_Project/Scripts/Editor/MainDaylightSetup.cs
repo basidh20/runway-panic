@@ -14,6 +14,43 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Prepare Fixed Buildings for Lighting Bake")]
+        private static void PrepareFixedBuildingsForBake()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+
+            var shelterParts = new[] { "Floor", "Roof", "Wall_Back", "Wall_Left", "Wall_Right",
+                "Front_Left", "Front_Right", "Door_Lintel", "EntranceCanopy" };
+            var hangarParts = new[] { "Floor", "Roof", "Wall_South", "Wall_West", "Front_Jamb_North",
+                "Front_Jamb_South", "Front_Lintel", "Side_Exit_Jamb_West", "Side_Exit_Jamb_East", "Side_Exit_Lintel" };
+            var paths = shelterParts.SelectMany(part => new[] {
+                "Environment/Buildings/Shelter_A/" + part, "Environment/Buildings/Shelter_B/" + part })
+                .Concat(hangarParts.Select(part => "Environment/Buildings/Hangar_Greybox/P_Greybox_Hangar/" + part));
+            var surfaces = paths.Select(path => GameObject.Find(path) ??
+                throw new InvalidOperationException("Missing fixed building surface: " + path)).ToArray();
+            foreach (var surface in surfaces)
+            {
+                var filter = surface.GetComponent<MeshFilter>();
+                if (surface.GetComponent<MeshRenderer>() == null || filter == null || filter.sharedMesh == null ||
+                    !filter.sharedMesh.HasVertexAttribute(VertexAttribute.TexCoord1))
+                    throw new InvalidOperationException("Missing lightmap UVs or renderer: " + surface.name);
+            }
+
+            foreach (var surface in surfaces)
+            {
+                Undo.RecordObject(surface, "Prepare fixed building surface for baked lighting");
+                GameObjectUtility.SetStaticEditorFlags(surface,
+                    GameObjectUtility.GetStaticEditorFlags(surface) | StaticEditorFlags.ContributeGI);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(surface);
+            }
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene))
+                throw new InvalidOperationException("Could not save Main after setting building lighting flags.");
+            Debug.Log($"[AirportC4] Prepared {surfaces.Length} fixed shelter and hangar surfaces; no lighting was baked.");
+        }
+
         [MenuItem("Tools/Runway Panic/Prepare Ground and Runway for Lighting Bake")]
         private static void PrepareGroundAndRunwayForBake()
         {
