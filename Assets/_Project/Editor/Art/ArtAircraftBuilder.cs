@@ -76,6 +76,99 @@ namespace RunwayPanic.ArtTools
         const float FuselageRadius = 0.64f;
         const float FuselageLength = 7.21f;
 
+        [MenuItem("Tools/Runway Panic/Enlarge Plane A")]
+        public static void EnlargePlaneA()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainScenePath || scene.isDirty)
+            {
+                Debug.LogWarning("[Art] Open saved Main outside Play mode before enlarging Plane A.");
+                return;
+            }
+            var root = GameObject.Find("Plane_A_Greybox");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BasePrefabPath);
+            var roost = GameObject.Find("Roost_PlaneA_Wing");
+            var perch = GameObject.Find("Perch_PlaneA_Tail");
+            if (root == null || prefab == null || roost == null || perch == null || root.transform.childCount != 1 ||
+                PrefabUtility.GetCorrespondingObjectFromSource(root.transform.GetChild(0).gameObject) != prefab)
+            {
+                Debug.LogWarning("[Art] Expected Plane A model or bird points missing; no changes made.");
+                return;
+            }
+
+            var model = root.transform.GetChild(0);
+            var wing = model.Find("Colliders/Wings")?.GetComponent<Collider>();
+            var tail = model.Find("Colliders/Tailplane")?.GetComponent<Collider>();
+            if (wing == null || tail == null) { Debug.LogWarning("[Art] Plane A colliders are missing."); return; }
+            Vector3 oldScale = model.localScale;
+            Undo.RecordObject(model, "Enlarge Plane A");
+            model.localScale = Vector3.one * 1.35f;
+            Physics.SyncTransforms();
+            Vector3 wingStart = model.TransformPoint(new Vector3(2.8f, 6f, 0.03f));
+            Vector3 tailStart = model.TransformPoint(new Vector3(0f, 6f, -3.89f));
+            if (!wing.Raycast(new Ray(wingStart, Vector3.down), out var wingHit, 12f) ||
+                !tail.Raycast(new Ray(tailStart, Vector3.down), out var tailHit, 12f))
+            {
+                model.localScale = oldScale;
+                Physics.SyncTransforms();
+                Debug.LogWarning("[Art] Could not align bird points; Plane A scale was restored.");
+                return;
+            }
+            Undo.RecordObject(roost.transform, "Align Plane A bird points");
+            Undo.RecordObject(perch.transform, "Align Plane A bird points");
+            roost.transform.position = wingHit.point + Vector3.up * .02f;
+            perch.transform.position = tailHit.point + Vector3.up * .02f;
+            EditorSceneManager.MarkSceneDirty(scene);
+            Debug.Log("[Art] Plane A enlarged to 1.35 scale; check and save Main.");
+        }
+
+        [MenuItem("Tools/Runway Panic/Replace Plane A With Model")]
+        public static void ReplacePlaneA()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainScenePath || scene.isDirty)
+            {
+                Debug.LogWarning("[Art] Open saved Main outside Play mode before replacing Plane A.");
+                return;
+            }
+
+            var root = GameObject.Find("Plane_A_Greybox");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BasePrefabPath);
+            var previous = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Environment/Greybox/P_Greybox_UtilityAircraft.prefab");
+            var roost = GameObject.Find("Roost_PlaneA_Wing");
+            var perch = GameObject.Find("Perch_PlaneA_Tail");
+            if (root == null || prefab == null || previous == null || roost == null || perch == null ||
+                root.transform.childCount != 1 || PrefabUtility.GetCorrespondingObjectFromSource(root.transform.GetChild(0).gameObject) != previous)
+            {
+                Debug.LogWarning("[Art] Plane A, its expected greybox, model or bird points were not found; no changes made.");
+                return;
+            }
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, root.transform);
+            Undo.RegisterCreatedObjectUndo(instance, "Replace Plane A");
+            instance.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            instance.transform.localScale = Vector3.one * 1.12f; // 8.97 m span, close to the 9 m greybox.
+            Physics.SyncTransforms();
+            var wing = instance.transform.Find("Colliders/Wings")?.GetComponent<Collider>();
+            var tail = instance.transform.Find("Colliders/Tailplane")?.GetComponent<Collider>();
+            Vector3 wingStart = root.transform.TransformPoint(new Vector3(3.1f, 6f, 0.03f));
+            Vector3 tailStart = root.transform.TransformPoint(new Vector3(0f, 6f, -4.36f));
+            if (wing == null || tail == null || !wing.Raycast(new Ray(wingStart, Vector3.down), out var wingHit, 10f) ||
+                !tail.Raycast(new Ray(tailStart, Vector3.down), out var tailHit, 10f))
+            {
+                Undo.DestroyObjectImmediate(instance);
+                Debug.LogWarning("[Art] Could not align Plane A bird points; kept the greybox unchanged.");
+                return;
+            }
+            Undo.RecordObject(roost.transform, "Align Plane A bird points");
+            Undo.RecordObject(perch.transform, "Align Plane A bird points");
+            roost.transform.position = wingHit.point + Vector3.up * .02f;
+            perch.transform.position = tailHit.point + Vector3.up * .02f;
+            Undo.DestroyObjectImmediate(root.transform.GetChild(0).gameObject);
+            EditorSceneManager.MarkSceneDirty(scene);
+            Debug.Log("[Art] Plane A now uses the scaled blue/teal aircraft; check and save Main.");
+        }
+
         [MenuItem("Tools/S3/Build Aircraft Prefabs")]
         public static void BuildPrefabs()
         {

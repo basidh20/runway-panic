@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -12,6 +14,171 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Add Airport Light Probes")]
+        private static void AddAirportLightProbes()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            if (UnityEngine.Object.FindObjectsByType<LightProbeGroup>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Any(group => group.gameObject.scene == scene))
+                throw new InvalidOperationException("Main already contains a light probe group; review it before adding another.");
+            var lighting = GameObject.Find("Lighting");
+            var shelters = new[] { "Environment/Buildings/Shelter_A", "Environment/Buildings/Shelter_B" }
+                .Select(path => GameObject.Find(path) ?? throw new InvalidOperationException("Missing " + path)).ToArray();
+            var hangar = GameObject.Find("Environment/Buildings/Hangar_Greybox/P_Greybox_Hangar");
+            if (lighting == null || hangar == null) throw new InvalidOperationException("Main lighting or hangar is missing.");
+
+            Physics.SyncTransforms();
+            var worldPoints = new List<Vector3>();
+            void AddPoint(Vector3 point)
+            {
+                if (!Physics.CheckSphere(point, .15f, ~0, QueryTriggerInteraction.Ignore) &&
+                    !worldPoints.Any(existing => (existing - point).sqrMagnitude < .01f))
+                    worldPoints.Add(point);
+            }
+            // Cover the playable footprint and flight-grid height without making the
+            // grass or moving actors static. Higher points support airborne birds.
+            foreach (float x in new[] { -48f, -32f, -16f, 0f, 16f, 32f, 48f })
+                foreach (float z in new[] { -36f, -24f, -12f, 0f, 12f, 24f, 36f })
+                    foreach (float y in new[] { 1.3f, 5f, 12f, 24f })
+                        AddPoint(new Vector3(x, y, z));
+            // More samples inside and just outside rooms help with transitions;
+            // a later bake/visual check must still assess leakage through walls.
+            foreach (var shelter in shelters)
+                foreach (float x in new[] { -1f, 1f })
+                    foreach (float z in new[] { -2f, 0f, 2f })
+                        foreach (float y in new[] { 1.3f, 2.8f })
+                            AddPoint(shelter.transform.TransformPoint(x, y, z));
+            foreach (var shelter in shelters)
+                foreach (float y in new[] { 1.3f, 2.8f })
+                    AddPoint(shelter.transform.TransformPoint(0f, y, -4.7f));
+            foreach (float x in new[] { -4f, 0f, 4f })
+                foreach (float z in new[] { -8f, 0f, 8f })
+                    foreach (float y in new[] { 1.3f, 3.5f })
+                        AddPoint(hangar.transform.TransformPoint(x, y, z));
+            foreach (float z in new[] { -3f, 0f, 3f })
+                foreach (float y in new[] { 1.3f, 3.5f })
+                    AddPoint(hangar.transform.TransformPoint(7.8f, y, z));
+            if (worldPoints.Count < 50) throw new InvalidOperationException("Too few valid probe positions; no changes made.");
+
+            var root = new GameObject("Airport_LightProbes");
+            Undo.RegisterCreatedObjectUndo(root, "Add airport light probes");
+            root.transform.SetParent(lighting.transform, false);
+            var probeGroup = root.AddComponent<LightProbeGroup>();
+            probeGroup.probePositions = worldPoints.Select(root.transform.InverseTransformPoint).ToArray();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Could not save Main light probes.");
+            Debug.Log($"[AirportC4] Added {worldPoints.Count} light probe positions; a lighting bake is still required.");
+        }
+
+        [MenuItem("Tools/Runway Panic/Prepare Fixed Buildings for Lighting Bake")]
+        private static void PrepareFixedBuildingsForBake()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+
+            var shelterParts = new[] { "Floor", "Roof", "Wall_Back", "Wall_Left", "Wall_Right",
+                "Front_Left", "Front_Right", "Door_Lintel", "EntranceCanopy" };
+            var hangarParts = new[] { "Floor", "Roof", "Wall_South", "Wall_West", "Front_Jamb_North",
+                "Front_Jamb_South", "Front_Lintel", "Side_Exit_Jamb_West", "Side_Exit_Jamb_East", "Side_Exit_Lintel" };
+            var paths = shelterParts.SelectMany(part => new[] {
+                "Environment/Buildings/Shelter_A/" + part, "Environment/Buildings/Shelter_B/" + part })
+                .Concat(hangarParts.Select(part => "Environment/Buildings/Hangar_Greybox/P_Greybox_Hangar/" + part));
+            var surfaces = paths.Select(path => GameObject.Find(path) ??
+                throw new InvalidOperationException("Missing fixed building surface: " + path)).ToArray();
+            foreach (var surface in surfaces)
+            {
+                var filter = surface.GetComponent<MeshFilter>();
+                if (surface.GetComponent<MeshRenderer>() == null || filter == null || filter.sharedMesh == null ||
+                    !filter.sharedMesh.HasVertexAttribute(VertexAttribute.TexCoord1))
+                    throw new InvalidOperationException("Missing lightmap UVs or renderer: " + surface.name);
+            }
+
+            foreach (var surface in surfaces)
+            {
+                Undo.RecordObject(surface, "Prepare fixed building surface for baked lighting");
+                GameObjectUtility.SetStaticEditorFlags(surface,
+                    GameObjectUtility.GetStaticEditorFlags(surface) | StaticEditorFlags.ContributeGI);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(surface);
+            }
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene))
+                throw new InvalidOperationException("Could not save Main after setting building lighting flags.");
+            Debug.Log($"[AirportC4] Prepared {surfaces.Length} fixed shelter and hangar surfaces; no lighting was baked.");
+        }
+
+        [MenuItem("Tools/Runway Panic/Prepare Ground and Runway for Lighting Bake")]
+        private static void PrepareGroundAndRunwayForBake()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+
+            var paths = new[] { "Environment/Ground_100x80", "Environment/Runway/Runway_75x14" };
+            var surfaces = paths.Select(GameObject.Find).ToArray();
+            foreach (var surface in surfaces)
+            {
+                var filter = surface != null ? surface.GetComponent<MeshFilter>() : null;
+                if (surface == null || surface.GetComponent<MeshRenderer>() == null || filter == null ||
+                    filter.sharedMesh == null || !filter.sharedMesh.HasVertexAttribute(VertexAttribute.TexCoord1))
+                    throw new InvalidOperationException("Expected ground/runway mesh with lightmap UVs is missing.");
+            }
+
+            foreach (var surface in surfaces)
+            {
+                Undo.RecordObject(surface, "Prepare airport surface for baked lighting");
+                GameObjectUtility.SetStaticEditorFlags(surface,
+                    GameObjectUtility.GetStaticEditorFlags(surface) | StaticEditorFlags.ContributeGI);
+            }
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene))
+                throw new InvalidOperationException("Could not save Main after setting lighting flags.");
+            Debug.Log("[AirportC4] Ground and runway prepared for a later lighting bake; no lighting was baked.");
+        }
+
+        [MenuItem("Tools/Runway Panic/Audit Main Lighting Bake Readiness")]
+        private static void AuditBakeReadiness()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            var environment = GameObject.Find("Environment");
+            if (environment == null) throw new InvalidOperationException("Main environment is missing.");
+
+            var lines = new List<string> { "Main lighting bake readiness", "Unity: " + Application.unityVersion,
+                "Read-only audit; UV2 presence does not establish a valid non-overlapping lightmap unwrap.", "" };
+            var renderers = environment.GetComponentsInChildren<MeshRenderer>(false).Where(r => r.enabled).ToArray();
+            int staticCount = renderers.Count(r => (GameObjectUtility.GetStaticEditorFlags(r.gameObject) & StaticEditorFlags.ContributeGI) != 0);
+            lines.Add($"Active environment mesh renderers: {renderers.Length}; Contribute GI: {staticCount}");
+            foreach (var group in renderers.GroupBy(r =>
+            {
+                var filter = r.GetComponent<MeshFilter>();
+                var mesh = filter != null ? filter.sharedMesh : null;
+                if (mesh == null) return "No MeshFilter mesh: " + r.name;
+                string path = AssetDatabase.GetAssetPath(mesh);
+                bool uv2 = mesh.HasVertexAttribute(VertexAttribute.TexCoord1);
+                return $"{(string.IsNullOrEmpty(path) ? "built-in" : path)} | {mesh.name} | UV2 present: {uv2}";
+            }).OrderBy(g => g.Key))
+                lines.Add($"{group.Count()} renderer(s): {group.Key}");
+
+            lines.Add("");
+            foreach (var light in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                         .Where(l => l.gameObject.scene == scene && l.enabled))
+                lines.Add($"Light: {light.name} | {light.type} | {light.lightmapBakeType} | Shadows: {light.shadows}");
+            int probes = UnityEngine.Object.FindObjectsByType<LightProbeGroup>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                .Count(p => p.gameObject.scene == scene && p.enabled);
+            int reflections = UnityEngine.Object.FindObjectsByType<ReflectionProbe>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                .Count(p => p.gameObject.scene == scene && p.enabled);
+            lines.Add($"Active Light Probe Groups: {probes}; Reflection Probes: {reflections}");
+            lines.Add($"Lightmaps currently loaded: {LightmapSettings.lightmaps.Length}");
+            const string folder = "/private/tmp/RunwayPanic-C4";
+            Directory.CreateDirectory(folder);
+            File.WriteAllLines(folder + "/lighting-audit.txt", lines);
+            Debug.Log("[AirportC4] Read-only lighting audit written to " + folder + "/lighting-audit.txt");
+        }
+
         [MenuItem("Tools/Runway Panic/Add Hangar Light Fixtures")]
         private static void AddHangarFixtures()
         {
