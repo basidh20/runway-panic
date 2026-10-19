@@ -1,0 +1,14 @@
+{
+  "asset": "SM_Prop_Aircraft",
+  "materialPrefix": "M_Aircraft_",
+  "note": "Liveries of the parked aircraft. The base (the .blend's own colours) is grey body + teal tail, used on the two side planes (Plane_B, Plane_D). Each variant below recolours the listed parts (sRGB hex per material, name without M_Aircraft_) on the same UVs; parts not listed keep the base colour (windows, tyres, dark trim, engine interior). export_fbx.py bakes one T_Prop_Aircraft_<Variant>_Atlas_Albedo per variant; ArtAircraftBuilder.cs puts it on the prefab variant.",
+  "variants": {
+    "WhiteRed": {
+      "colours": {
+        "Body": "#F2F4F5",
+        "Accent": "#C8322B",
+        "PanelLine": "#B9C0C6"
+      }
+    }
+  }
+}

@@ -42,6 +42,7 @@ ATLAS = {
     "SK_Bird_Hawk": dict(size=256),
     "SK_Player": dict(size=512),   # pack margin 0.002 -> gap 0.004 x 512 = 2.05 px
     "SM_Gun": dict(size=128),
+    "SM_Prop_Aircraft": dict(size=256, variants="aircraft_liveries.json"),   # margin 0.004, like the birds
 }
 
 EPS = 1e-6               # texels; a triangle that only touches a texel's border does not count as touching it

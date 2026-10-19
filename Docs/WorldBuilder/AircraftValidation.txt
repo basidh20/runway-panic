@@ -26,58 +26,43 @@ PASS: Plane_B_Greybox leaves runway clear
 PASS: Plane_B_Greybox wheels rest on the ground
 PASS: Plane_B_Greybox uses a reusable prefab
 PASS: Plane_B_Greybox solid collision: Fuselage
-PASS: Plane_B_Greybox solid collision: Cockpit
-PASS: Plane_B_Greybox solid collision: Main_Wings
-PASS: Plane_B_Greybox solid collision: Tailplane
+PASS: Plane_B_Greybox solid collision: Wings
+PASS: Plane_B_Greybox solid collision: Engine_L
+PASS: Plane_B_Greybox solid collision: Engine_R
 PASS: Plane_B_Greybox solid collision: Tail_Fin
-PASS: Plane_B_Greybox solid collision: Main_Wheel
-PASS: Plane_B_Greybox solid collision: Main_Gear_Strut
-PASS: Plane_B_Greybox solid collision: Main_Wheel
-PASS: Plane_B_Greybox solid collision: Main_Gear_Strut
-PASS: Plane_B_Greybox solid collision: Nose_Wheel
-PASS: Plane_B_Greybox solid collision: Nose_Gear_Strut
-PASS: Plane_B_Greybox solid collision: Engine_Nacelle
-PASS: Plane_B_Greybox solid collision: Engine_Nacelle
+PASS: Plane_B_Greybox solid collision: Tailplane
+PASS: Plane_B_Greybox solid collision: Main_Gear
+PASS: Plane_B_Greybox solid collision: Nose_Gear
 PASS: Plane_B_Greybox is clear of other aircraft, buildings, and cover
-Plane_B_Greybox origin=(33.30, 0.00, -1.00) yaw=270.0 world bounds=(9.00, 3.30, 8.00)
+Plane_B_Greybox origin=(33.30, 0.00, -1.00) yaw=270.0 world bounds=(7.73, 3.08, 8.01)
 PASS: Plane_C_Greybox fits inside the perimeter
 PASS: Plane_C_Greybox leaves runway clear
 PASS: Plane_C_Greybox wheels rest on the ground
 PASS: Plane_C_Greybox uses a reusable prefab
 PASS: Plane_C_Greybox solid collision: Fuselage
-PASS: Plane_C_Greybox solid collision: Cockpit
-PASS: Plane_C_Greybox solid collision: Main_Wings
-PASS: Plane_C_Greybox solid collision: Tailplane
+PASS: Plane_C_Greybox solid collision: Wings
+PASS: Plane_C_Greybox solid collision: Engine_L
+PASS: Plane_C_Greybox solid collision: Engine_R
 PASS: Plane_C_Greybox solid collision: Tail_Fin
-PASS: Plane_C_Greybox solid collision: Main_Wheel
-PASS: Plane_C_Greybox solid collision: Main_Gear_Strut
-PASS: Plane_C_Greybox solid collision: Main_Wheel
-PASS: Plane_C_Greybox solid collision: Main_Gear_Strut
-PASS: Plane_C_Greybox solid collision: Nose_Wheel
-PASS: Plane_C_Greybox solid collision: Nose_Gear_Strut
-PASS: Plane_C_Greybox solid collision: Engine_Nacelle
-PASS: Plane_C_Greybox solid collision: Engine_Nacelle
+PASS: Plane_C_Greybox solid collision: Tailplane
+PASS: Plane_C_Greybox solid collision: Main_Gear
+PASS: Plane_C_Greybox solid collision: Nose_Gear
 PASS: Plane_C_Greybox is clear of other aircraft, buildings, and cover
-Plane_C_Greybox origin=(33.30, 0.00, 11.00) yaw=270.0 world bounds=(9.00, 3.30, 8.00)
+Plane_C_Greybox origin=(33.30, 0.00, 11.00) yaw=270.0 world bounds=(7.73, 3.08, 8.01)
 PASS: Plane_D_Greybox fits inside the perimeter
 PASS: Plane_D_Greybox leaves runway clear
 PASS: Plane_D_Greybox wheels rest on the ground
 PASS: Plane_D_Greybox uses a reusable prefab
 PASS: Plane_D_Greybox solid collision: Fuselage
-PASS: Plane_D_Greybox solid collision: Cockpit
-PASS: Plane_D_Greybox solid collision: Main_Wings
-PASS: Plane_D_Greybox solid collision: Tailplane
+PASS: Plane_D_Greybox solid collision: Wings
+PASS: Plane_D_Greybox solid collision: Engine_L
+PASS: Plane_D_Greybox solid collision: Engine_R
 PASS: Plane_D_Greybox solid collision: Tail_Fin
-PASS: Plane_D_Greybox solid collision: Main_Wheel
-PASS: Plane_D_Greybox solid collision: Main_Gear_Strut
-PASS: Plane_D_Greybox solid collision: Main_Wheel
-PASS: Plane_D_Greybox solid collision: Main_Gear_Strut
-PASS: Plane_D_Greybox solid collision: Nose_Wheel
-PASS: Plane_D_Greybox solid collision: Nose_Gear_Strut
-PASS: Plane_D_Greybox solid collision: Engine_Nacelle
-PASS: Plane_D_Greybox solid collision: Engine_Nacelle
+PASS: Plane_D_Greybox solid collision: Tailplane
+PASS: Plane_D_Greybox solid collision: Main_Gear
+PASS: Plane_D_Greybox solid collision: Nose_Gear
 PASS: Plane_D_Greybox is clear of other aircraft, buildings, and cover
-Plane_D_Greybox origin=(38.00, 0.00, 23.00) yaw=270.0 world bounds=(9.00, 3.30, 8.00)
+Plane_D_Greybox origin=(38.00, 0.00, 23.00) yaw=270.0 world bounds=(7.73, 3.08, 8.01)
 PASS: Plane_A_Greybox wing blocks the human-sized player
 PASS: Plane_A_Greybox can be walked around at the nose
 PASS: Plane_B_Greybox wing blocks the human-sized player
