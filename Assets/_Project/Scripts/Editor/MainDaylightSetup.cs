@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -12,6 +14,47 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Audit Main Lighting Bake Readiness")]
+        private static void AuditBakeReadiness()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            var environment = GameObject.Find("Environment");
+            if (environment == null) throw new InvalidOperationException("Main environment is missing.");
+
+            var lines = new List<string> { "Main lighting bake readiness", "Unity: " + Application.unityVersion,
+                "Read-only audit; UV2 presence does not establish a valid non-overlapping lightmap unwrap.", "" };
+            var renderers = environment.GetComponentsInChildren<MeshRenderer>(false).Where(r => r.enabled).ToArray();
+            int staticCount = renderers.Count(r => (GameObjectUtility.GetStaticEditorFlags(r.gameObject) & StaticEditorFlags.ContributeGI) != 0);
+            lines.Add($"Active environment mesh renderers: {renderers.Length}; Contribute GI: {staticCount}");
+            foreach (var group in renderers.GroupBy(r =>
+            {
+                var filter = r.GetComponent<MeshFilter>();
+                var mesh = filter != null ? filter.sharedMesh : null;
+                if (mesh == null) return "No MeshFilter mesh: " + r.name;
+                string path = AssetDatabase.GetAssetPath(mesh);
+                bool uv2 = mesh.HasVertexAttribute(VertexAttribute.TexCoord1);
+                return $"{(string.IsNullOrEmpty(path) ? "built-in" : path)} | {mesh.name} | UV2 present: {uv2}";
+            }).OrderBy(g => g.Key))
+                lines.Add($"{group.Count()} renderer(s): {group.Key}");
+
+            lines.Add("");
+            foreach (var light in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                         .Where(l => l.gameObject.scene == scene && l.enabled))
+                lines.Add($"Light: {light.name} | {light.type} | {light.lightmapBakeType} | Shadows: {light.shadows}");
+            int probes = UnityEngine.Object.FindObjectsByType<LightProbeGroup>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                .Count(p => p.gameObject.scene == scene && p.enabled);
+            int reflections = UnityEngine.Object.FindObjectsByType<ReflectionProbe>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                .Count(p => p.gameObject.scene == scene && p.enabled);
+            lines.Add($"Active Light Probe Groups: {probes}; Reflection Probes: {reflections}");
+            lines.Add($"Lightmaps currently loaded: {LightmapSettings.lightmaps.Length}");
+            const string folder = "/private/tmp/RunwayPanic-C4";
+            Directory.CreateDirectory(folder);
+            File.WriteAllLines(folder + "/lighting-audit.txt", lines);
+            Debug.Log("[AirportC4] Read-only lighting audit written to " + folder + "/lighting-audit.txt");
+        }
+
         [MenuItem("Tools/Runway Panic/Add Hangar Light Fixtures")]
         private static void AddHangarFixtures()
         {

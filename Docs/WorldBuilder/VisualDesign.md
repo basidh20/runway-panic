@@ -104,3 +104,32 @@ Shelter B, pickup visibility, closed/open door operation and the interiors in
 normal gameplay still require a player check. The Shelter A preview also shows
 reversed text visible through the wall; check whether this appears in gameplay
 before making a separate signage/UI fix.
+
+## C4: lighting bake readiness (19 October 2026)
+
+A read-only audit of saved Main in Unity 6000.6.4f1 found 212 active environment
+mesh renderers, none marked Contribute GI, and no loaded lightmaps. There are no
+active Light Probe Groups or Reflection Probes. The directional sun and all
+four interior point lights are realtime. There is no scene-assigned Lighting
+Settings asset. No bake or lighting configuration change was made in this step.
+
+The aircraft meshes and built-in cubes have a second UV channel; this confirms
+presence only, not that the unwrap is suitable or non-overlapping. Grass chunks
+and the built-in fixture spheres and cylinders lack that channel. Eight sign and
+runway-text renderers have no MeshFilter mesh available to this audit, so they
+need separate review, not an assumption that their visible text is broken.
+The aircraft FBX importer already has Generate Lightmap UVs enabled; no import
+setting was changed.
+
+Proposed preview: choose only stable, non-moving environment renderers with
+suitable UVs to contribute GI, keep grass, doors, movable cover, player and
+birds dynamic, and place light probes for dynamic objects. Investigate a mixed
+sun so dynamic shadows remain visible, and compare a small low-quality preview
+before deciding how to bake interior lights. Verify the project's URP settings
+and actual preview results; this is not a completed bake. The final terminal
+may require another bake once integrated.
+
+To repeat the audit, open saved Main outside Play mode and choose
+`Tools > Runway Panic > Audit Main Lighting Bake Readiness`. The detailed report
+is written to `/private/tmp/RunwayPanic-C4/lighting-audit.txt` on this Mac and
+is not a project asset.
