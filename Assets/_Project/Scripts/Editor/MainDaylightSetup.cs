@@ -12,6 +12,53 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Add Hangar Light Fixtures")]
+        private static void AddHangarFixtures()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            const string prefabPath = "Assets/_Project/Prefabs/Environment/Greybox/P_Greybox_Hangar.prefab";
+            var bulb = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/Materials/WorldSurfaces/M_C3_ShelterBulb.mat");
+            var metal = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/Materials/Greybox/M_Greybox_Metal.mat");
+            var sphere = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+            var cylinder = Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
+            if (bulb == null || metal == null || sphere == null || cylinder == null)
+                throw new InvalidOperationException("Expected fixture meshes or materials are missing.");
+            var root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try
+            {
+                var lights = Array.FindAll(root.GetComponentsInChildren<Light>(true),
+                    light => light.name == "Interior_Preview_Light" && light.type == LightType.Point);
+                if (lights.Length != 2) throw new InvalidOperationException("Expected two hangar interior point lights.");
+                foreach (var light in lights)
+                {
+                    var fixture = light.transform.Find("Ceiling_Bulb_Fixture");
+                    if (fixture == null)
+                    {
+                        fixture = new GameObject("Ceiling_Bulb_Fixture").transform;
+                        fixture.SetParent(light.transform, false);
+                        FixturePart(fixture, "Bulb", sphere, bulb, Vector3.zero, new Vector3(.22f, .22f, .22f));
+                        FixturePart(fixture, "Cable", cylinder, metal, new Vector3(0, .45f, 0), new Vector3(.025f, .35f, .025f));
+                    }
+                    var visibleBulb = fixture.Find("Bulb");
+                    var cable = fixture.Find("Cable");
+                    if (visibleBulb == null || cable == null || visibleBulb.localPosition != Vector3.zero || fixture.localPosition != Vector3.zero)
+                        throw new InvalidOperationException("A hangar bulb is not aligned with its point light.");
+                    var position = light.transform.localPosition;
+                    light.transform.localPosition = new Vector3(position.x, 4.9f, position.z);
+                    cable.localPosition = new Vector3(0, .45f, 0);
+                    cable.localScale = new Vector3(.025f, .35f, .025f);
+                    light.color = new Color(1f, .88f, .72f);
+                }
+                if (PrefabUtility.SaveAsPrefabAsset(root, prefabPath) == null)
+                    throw new InvalidOperationException("Could not save hangar fixtures.");
+                AssetDatabase.SaveAssets();
+                Debug.Log("[AirportC3] Added visible fixtures at the two existing hangar lights.");
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+
         [MenuItem("Tools/Runway Panic/Add Shelter Light Fixture")]
         private static void AddShelterFixture()
         {
@@ -94,6 +141,7 @@ namespace RunwayPanic.EditorTools
             Capture(shelter.transform, new Vector3(0, 1.6f, 1.6f), new Vector3(0, 1.5f, -3.5f), folder + "/shelter.png");
             Capture(shelter.transform, new Vector3(1.2f, 1.6f, 1.8f), new Vector3(0, 3.2f, 0), folder + "/bulb.png");
             Capture(hangar.transform, new Vector3(0, 1.6f, 0), new Vector3(-5, 1.5f, -9), folder + "/hangar.png");
+            Capture(hangar.transform, new Vector3(2, 1.6f, -5), new Vector3(0, 4.9f, -7), folder + "/hangar-bulb.png");
             Debug.Log("[AirportC3] Captured interior lighting previews to " + folder);
         }
 

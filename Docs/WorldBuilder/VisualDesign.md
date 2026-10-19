@@ -92,6 +92,8 @@ and cable at its existing light, giving both shelters a visible fixture without
 adding another light source. The bulb uses a bright unlit material, while the
 warm point light at the bulb's centre lights the room. The fixture hangs below
 the ceiling to reduce the concentrated bright patch above it.
+The hangar similarly has two non-colliding hanging bulbs, aligned with its
+existing point lights; those lights retain their original intensity and range.
 Shelter B, pickup visibility, closed/open door operation and the interiors in
 normal gameplay still require a player check. The Shelter A preview also shows
 reversed text visible through the wall; check whether this appears in gameplay
