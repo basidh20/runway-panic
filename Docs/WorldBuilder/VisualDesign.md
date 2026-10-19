@@ -69,3 +69,12 @@ The initial grass look was reviewed in an editor-camera image from
 (-10, 5, -27) facing (-20, 0.5, 4). This is not a gameplay walk-through or a performance test.
 The player should check the approaches, shelter doors, hangar entrances and
 visibility of objects in Play mode.
+
+## C3: outdoor daylight
+
+Main keeps its existing directional sun, skybox, sun rotation and shadow
+settings. The sun intensity is 1.25 and the three ambient colours are gently
+lifted to soften dark sides while retaining a warm daylight palette. Hawk AI
+still refers to the same sun. No fog, post-processing or baked lighting was
+added in this step. The outdoor editor-camera preview was inspected; gameplay
+aiming, bird shadows and interior visibility still need a player review.
