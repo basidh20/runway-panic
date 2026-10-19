@@ -89,7 +89,9 @@ temporary views with `Tools > Runway Panic > Capture Interior Lighting Views`;
 they are written outside the repository to `/private/tmp/RunwayPanic-C3/`.
 The shared shelter prefab subsequently received a small, non-colliding bulb
 and cable at its existing light, giving both shelters a visible fixture without
-adding another light source.
+adding another light source. The bulb uses a bright unlit material, while the
+warm point light at the bulb's centre lights the room. The fixture hangs below
+the ceiling to reduce the concentrated bright patch above it.
 Shelter B, pickup visibility, closed/open door operation and the interiors in
 normal gameplay still require a player check. The Shelter A preview also shows
 reversed text visible through the wall; check whether this appears in gameplay

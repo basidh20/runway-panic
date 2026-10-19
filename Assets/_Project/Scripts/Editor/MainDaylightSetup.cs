@@ -30,7 +30,7 @@ namespace RunwayPanic.EditorTools
                 var sphere = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
                 var cylinder = Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
                 var metal = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/Materials/Greybox/M_Greybox_Metal.mat");
-                var shader = Shader.Find("Universal Render Pipeline/Lit");
+                var shader = Shader.Find("Universal Render Pipeline/Unlit");
                 if (sphere == null || cylinder == null || metal == null || shader == null)
                     throw new InvalidOperationException("Fixture meshes, material or URP shader are missing.");
                 var bulb = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
@@ -39,10 +39,11 @@ namespace RunwayPanic.EditorTools
                     bulb = new Material(shader) { name = "M_C3_ShelterBulb" };
                     AssetDatabase.CreateAsset(bulb, materialPath);
                 }
-                bulb.SetColor("_BaseColor", new Color(1f, .93f, .75f));
-                bulb.SetColor("_EmissionColor", new Color(2f, 1.45f, .8f));
+                // The visible bulb stays bright independently of its own point light. The
+                // point light, not the unlit material, illuminates the shelter surfaces.
+                bulb.shader = shader;
+                bulb.SetColor("_BaseColor", new Color(1f, .95f, .82f));
                 bulb.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-                bulb.EnableKeyword("_EMISSION");
                 EditorUtility.SetDirty(bulb);
                 var fixture = lamp.Find("Ceiling_Bulb_Fixture");
                 if (fixture == null)
@@ -50,12 +51,16 @@ namespace RunwayPanic.EditorTools
                     fixture = new GameObject("Ceiling_Bulb_Fixture").transform;
                     fixture.SetParent(lamp, false);
                     FixturePart(fixture, "Bulb", sphere, bulb, Vector3.zero, new Vector3(.22f, .22f, .22f));
-                    FixturePart(fixture, "Cable", cylinder, metal, new Vector3(0, .35f, 0), new Vector3(.025f, .25f, .025f));
+                    FixturePart(fixture, "Cable", cylinder, metal, new Vector3(0, .45f, 0), new Vector3(.025f, .35f, .025f));
                 }
                 var visibleBulb = fixture.Find("Bulb");
-                if (visibleBulb == null || visibleBulb.localPosition != Vector3.zero || fixture.localPosition != Vector3.zero)
+                var cable = fixture.Find("Cable");
+                if (visibleBulb == null || cable == null || visibleBulb.localPosition != Vector3.zero || fixture.localPosition != Vector3.zero)
                     throw new InvalidOperationException("The shelter bulb is not aligned with its point light.");
                 var pointLight = lamp.GetComponent<Light>();
+                lamp.localPosition = new Vector3(0, 3.2f, 0);
+                cable.localPosition = new Vector3(0, .45f, 0);
+                cable.localScale = new Vector3(.025f, .35f, .025f);
                 pointLight.color = new Color(1f, .88f, .72f);
                 pointLight.intensity = 2.4f;
                 if (PrefabUtility.SaveAsPrefabAsset(root, prefabPath) == null)
@@ -87,7 +92,7 @@ namespace RunwayPanic.EditorTools
             const string folder = "/private/tmp/RunwayPanic-C3";
             Directory.CreateDirectory(folder);
             Capture(shelter.transform, new Vector3(0, 1.6f, 1.6f), new Vector3(0, 1.5f, -3.5f), folder + "/shelter.png");
-            Capture(shelter.transform, new Vector3(1.2f, 1.6f, 1.8f), new Vector3(0, 3.4f, 0), folder + "/bulb.png");
+            Capture(shelter.transform, new Vector3(1.2f, 1.6f, 1.8f), new Vector3(0, 3.2f, 0), folder + "/bulb.png");
             Capture(hangar.transform, new Vector3(0, 1.6f, 0), new Vector3(-5, 1.5f, -9), folder + "/hangar.png");
             Debug.Log("[AirportC3] Captured interior lighting previews to " + folder);
         }
