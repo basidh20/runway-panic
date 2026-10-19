@@ -14,7 +14,8 @@ namespace RunwayPanic.Weapons
     /// distance — no parallax, so a bird in open sky is hit exactly where the crosshair is — and it is as wide as the
     /// gun's hit radius, so small fast birds don't need pixel-perfect aim. Cover between the gun's muzzle and the impact
     /// still blocks the shot. Damages anything implementing <see cref="IDamageable"/> and kicks the camera with the
-    /// gun's recoil.
+    /// gun's recoil. A gun with a projectile (the RPG) launches a <see cref="Rocket"/> at that point instead, which
+    /// does the damage when it goes off.
     /// </summary>
     [RequireComponent(typeof(PlayerInput), typeof(PlayerWeaponHolder))]
     public sealed class PlayerShooting : MonoBehaviour
@@ -149,14 +150,26 @@ namespace RunwayPanic.Weapons
 
             Debug.DrawLine(origin, endPoint, target != null ? Color.red : Color.yellow, 0.2f);
 
-            // Announce the shot BEFORE applying damage: a bird that dies from this hit reads the shot's
-            // origin (via PlayerEventHub) to know where the shooter stood.
-            ShotFired?.Invoke(origin, endPoint, target);
-
-            if (target != null && target.IsAlive)
+            if (data != null && data.IsProjectile)
             {
-                target.TakeDamage(weapon.Damage, weapon.Rarity);
-                HitConfirmed?.Invoke(target, !target.IsAlive);
+                // A rocket flies there and does its own damage when it goes off; nothing is hit yet.
+                ShotFired?.Invoke(origin, endPoint, null);
+                Vector3 direction = toEnd.sqrMagnitude > 0.01f ? toEnd.normalized : aimRay.direction;
+                GameObject projectile = Instantiate(data.ProjectilePrefab, origin, Quaternion.LookRotation(direction));
+                if (projectile.TryGetComponent(out Rocket rocket))
+                    rocket.Launch(this, weapon, direction);
+            }
+            else
+            {
+                // Announce the shot BEFORE applying damage: a bird that dies from this hit reads the shot's
+                // origin (via PlayerEventHub) to know where the shooter stood.
+                ShotFired?.Invoke(origin, endPoint, target);
+
+                if (target != null && target.IsAlive)
+                {
+                    target.TakeDamage(weapon.Damage, weapon.Rarity);
+                    HitConfirmed?.Invoke(target, !target.IsAlive);
+                }
             }
 
             // 4. Feel: the spread blooms and the view kicks (less while aiming).
@@ -170,6 +183,9 @@ namespace RunwayPanic.Weapons
 
             return true;
         }
+
+        /// <summary>Reports a hit done later by one of this shooter's projectiles (raises <see cref="HitConfirmed"/>).</summary>
+        public void ReportHit(IDamageable target, bool killed) => HitConfirmed?.Invoke(target, killed);
 
         /// <summary>
         /// The point under the crosshair (no spread), up to <paramref name="maxDistance"/>: what the gun should point
