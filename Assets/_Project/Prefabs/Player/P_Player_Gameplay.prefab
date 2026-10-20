@@ -4764,6 +4764,9 @@ MonoBehaviour:
   cameraTarget: {fileID: 3386629020464124480}
   virtualCamera: {fileID: 5642992599831062774}
   follow: {fileID: 2715827489516730697}
+  playerVisual: {fileID: 6361540436942018660}
+  firstPerson: 1
+  firstPersonFieldOfView: 75
   mouseDegreesPerPixel: 0.08
   stickDegreesPerSecond: {x: 220, y: 150}
   pitchLimits: {x: -75, y: 70}

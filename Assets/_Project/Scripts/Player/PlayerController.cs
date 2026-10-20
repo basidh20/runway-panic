@@ -185,11 +185,17 @@ namespace RunwayPanic.Player
         private void RotateTowards(Vector3 moveDirection)
         {
             bool moving = moveDirection.sqrMagnitude >= 0.0001f;
-            Vector3 facing = moving ? moveDirection : transform.forward;
+            Vector3 facing = cameraRig != null && cameraRig.isActiveAndEnabled && cameraRig.IsFirstPerson
+                ? cameraRig.MovementRotation * Vector3.forward
+                : moving ? moveDirection : transform.forward;
             facing.y = 0f;
 
             // Holding a gun: face where we walk, but never further from the aim than the limit allows.
-            if (aimDirection != Vector3.zero)
+            if (cameraRig != null && cameraRig.isActiveAndEnabled && cameraRig.IsFirstPerson)
+            {
+                // The hidden body follows view yaw while the input still supplies full strafing and backwards movement.
+            }
+            else if (aimDirection != Vector3.zero)
             {
                 float limit = aimShooting ? maxAimAngleWhileShooting : maxAimAngle;
                 float angle = Vector3.SignedAngle(aimDirection, facing, Vector3.up);
