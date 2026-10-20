@@ -105,6 +105,9 @@ namespace RunwayPanic.Weapons
         private void HandleShotFired(Vector3 muzzle, Vector3 end, IDamageable target)
         {
             WeaponBase weapon = weaponHolder != null ? weaponHolder.CurrentWeapon : null;
+            if (weapon != null && weapon.Data != null && weapon.Data.IsProjectile)
+                return; // a rocket brings its own launch flash, trail and explosion
+
             Vector3 toEnd = end - muzzle;
             Vector3 barrel = weapon != null ? weapon.Muzzle.forward : toEnd.normalized;
 

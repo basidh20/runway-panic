@@ -20,8 +20,10 @@ namespace RunwayPanic.Player
     /// <item><b>Scope</b> (aiming with a scoped gun): the camera goes to the eyes, the character is hidden (its shadow
     /// stays) and the view sways gently with breathing; <c>ScopeOverlayUI</c> draws the scope.</item>
     /// <item><b>Recoil</b>: <see cref="AddRecoil"/> kicks the view up; most of the kick settles back by itself.</item>
+    /// <item><b>Shake</b>: <see cref="AddShake"/> jolts the view (RPG launch, explosions nearby) and dies away.</item>
     /// </list>
     /// </summary>
+    [DefaultExecutionOrder(-200)]
     [RequireComponent(typeof(PlayerInput))]
     public sealed class PlayerCameraRig : MonoBehaviour
     {
@@ -40,7 +42,7 @@ namespace RunwayPanic.Player
         [Tooltip("Gamepad stick turn speed at full tilt (degrees/s): horizontal, vertical.")]
         [SerializeField] private Vector2 stickDegreesPerSecond = new Vector2(220f, 150f);
         [Tooltip("Lowest (looking up) and highest (looking down) pitch, in degrees.")]
-        [SerializeField] private Vector2 pitchLimits = new Vector2(-60f, 70f);
+        [SerializeField] private Vector2 pitchLimits = new Vector2(-75f, 70f);
 
         [Header("Hip (not aiming)")]
         [SerializeField, Range(30f, 90f)] private float hipFieldOfView = 60f;
@@ -71,6 +73,11 @@ namespace RunwayPanic.Player
         [Tooltip("How fast the kick settles back (per second).")]
         [SerializeField, Min(0.1f)] private float recoilRecovery = 9f;
 
+        [Header("Shake")]
+        [Tooltip("How fast a shake dies away (per second) and how fast it jitters.")]
+        [SerializeField, Min(0.1f)] private float shakeRecovery = 4f;
+        [SerializeField, Min(1f)] private float shakeFrequency = 22f;
+
         private InputAction lookAction;
         private InputAction aimAction;
         private PlayerWeaponHolder weapons;
@@ -81,6 +88,11 @@ namespace RunwayPanic.Player
         private float pitch = 8f;
         private float recoilToReturn;
         private float swayTime;
+        private float shake;
+        private Quaternion targetRotation;
+
+        /// <summary>Stable horizontal input basis, independent of body turning, recoil and camera collision.</summary>
+        public Quaternion MovementRotation => Quaternion.Euler(0f, yaw, 0f);
 
         /// <summary>True while the aim button is held with a gun (not while reloading).</summary>
         public bool IsAiming { get; private set; }
@@ -109,6 +121,15 @@ namespace RunwayPanic.Player
         private void Start()
         {
             yaw = transform.eulerAngles.y;
+            targetRotation = Quaternion.Euler(pitch, yaw, 0f);
+            // CharacterController and look both move on render frames. Do not let SmartUpdate
+            // infer a physics clock from the parented camera target during straight running.
+            CinemachineBrain brain = GetComponentInChildren<CinemachineBrain>();
+            if (brain != null)
+            {
+                brain.UpdateMethod = CinemachineBrain.UpdateMethods.LateUpdate;
+                brain.BlendUpdateMethod = CinemachineBrain.BrainUpdateMethods.LateUpdate;
+            }
             ApplyCamera(null);
         }
 
@@ -134,9 +155,10 @@ namespace RunwayPanic.Player
                 Look(data);
             RecoverRecoil();
 
-            Vector2 sway = Sway();
+            Vector2 sway = Sway() + Shake();
+            targetRotation = Quaternion.Euler(pitch + sway.y, yaw + sway.x, 0f);
             if (cameraTarget != null)
-                cameraTarget.rotation = Quaternion.Euler(pitch + sway.y, yaw + sway.x, 0f);
+                cameraTarget.rotation = targetRotation;
 
             ApplyCamera(data);
             ShowBody(ScopeBlend < 0.5f);
@@ -144,11 +166,25 @@ namespace RunwayPanic.Player
                 controller.SetAimMovement(Mathf.Lerp(1f, aimMoveSpeed, AimBlend), IsAiming);
         }
 
+        private void LateUpdate()
+        {
+            // The player rotates in Update. Restore world orientation after that parent rotation,
+            // before Cinemachine samples the target in LateUpdate.
+            if (cameraTarget != null)
+                cameraTarget.rotation = targetRotation;
+        }
+
         /// <summary>Kicks the view up by <paramref name="degrees"/>; most of it settles back over a moment.</summary>
         public void AddRecoil(float degrees)
         {
             pitch = Mathf.Clamp(pitch - degrees, pitchLimits.x, pitchLimits.y);
             recoilToReturn += degrees * recoilReturn;
+        }
+
+        /// <summary>Shakes the view by up to <paramref name="degrees"/> (an RPG launch, a blast nearby); dies away.</summary>
+        public void AddShake(float degrees)
+        {
+            shake = Mathf.Max(shake, degrees);
         }
 
         private void Look(WeaponData data)
@@ -185,6 +221,18 @@ namespace RunwayPanic.Player
                 return Vector2.zero;
             swayTime += Time.deltaTime * scopeSwaySpeed * 2f * Mathf.PI;
             return new Vector2(Mathf.Sin(swayTime), Mathf.Sin(swayTime * 2f) * 0.5f) * (scopeSway * ScopeBlend);
+        }
+
+        // A rough jitter that dies away quickly; it moves the view, not the aim's settled pitch and yaw.
+        private Vector2 Shake()
+        {
+            if (shake <= 0f)
+                return Vector2.zero;
+            shake *= Mathf.Exp(-shakeRecovery * Time.deltaTime);
+            if (shake < 0.01f)
+                shake = 0f;
+            float t = Time.time * shakeFrequency;
+            return new Vector2(Mathf.PerlinNoise(t, 0.3f) - 0.5f, Mathf.PerlinNoise(0.7f, t) - 0.5f) * (2f * shake);
         }
 
         private void ApplyCamera(WeaponData data)

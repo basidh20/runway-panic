@@ -1,0 +1,14 @@
+Gull G5 focused check — Unity 6000.6.4f1
+PASS: Bottom Gull owns bombing token before damage
+PASS: Surviving wrong-rarity hit records the simulated shooter origin
+PASS: All five nearby Gulls respond immediately
+PASS: Distant Gull ignores the call
+PASS: Distress returns token and removes formation membership
+PASS: All five retain their original carried FOD
+PASS: Distress speed multiplier applied
+PASS: Repeated surviving hit does not restart the dive during cooldown
+PASS: All five finish their one pass within four active seconds
+PASS: Normal movement speed restored
+PASS: Debris is still carried while reforming
+Simulated shot callback + actual BirdHealth damage/motors. Not an end-to-end gun, roof, lethal-hit, cooldown-expiry or performance test.
+Failures: 0

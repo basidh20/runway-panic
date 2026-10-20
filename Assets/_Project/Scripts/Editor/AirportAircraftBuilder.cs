@@ -197,14 +197,18 @@ namespace RunwayPanic.EditorTools
             cc.height = 1.8f; cc.radius = 0.35f; cc.center = new Vector3(0, 0.9f, 0); cc.stepOffset = 0.25f; cc.skinWidth = 0.035f;
             var preview = GameObject.Find("Player_Preview")?.GetComponent<CharacterController>();
             bool previewEnabled = preview != null && preview.enabled;
+            // The parked gameplay player otherwise blocks the simulated runway walk.
+            var player = GameObject.Find("P_Player_Gameplay")?.GetComponent<CharacterController>();
+            bool playerEnabled = player != null && player.enabled;
             if (preview != null) preview.enabled = false;
+            if (player != null) player.enabled = false;
             try
             {
                 Action<Vector3> reset = p => { cc.enabled = false; test.transform.position = p; cc.enabled = true; Physics.SyncTransforms(); };
                 Action<Vector3, int> move = (d, n) => { for (int i = 0; i < n; i++) cc.Move(d); };
                 foreach (var root in roots)
                 {
-                    float span = root == roots[0] ? 9 : 8;
+                    float span = root == roots[0] ? 11 : 8;
                     reset(root.transform.TransformPoint(new Vector3(span * 0.5f + 1, 0.12f, 0)));
                     move(root.transform.TransformDirection(new Vector3(-0.1f, -0.02f, 0)), 120);
                     check(root.transform.InverseTransformPoint(test.transform.position).x > 0, root.name + " wing blocks the human-sized player");
@@ -220,8 +224,16 @@ namespace RunwayPanic.EditorTools
                 }
                 reset(new Vector3(0, 0.12f, -35)); move(new Vector3(0, -0.02f, 0.1f), 700);
                 check(test.transform.position.z > 34.5f, "Runway remains traversable end to end");
+                if (test.transform.position.z <= 34.5f)
+                {
+                    report.Add("Runway test stopped at " + test.transform.position.ToString("F2"));
+                    foreach (var hit in Physics.CapsuleCastAll(new Vector3(0, 0.55f, -35), new Vector3(0, 1.45f, -35),
+                        0.3f, Vector3.forward, 70f, ~0, QueryTriggerInteraction.Ignore))
+                        if (hit.collider != cc && !(hit.collider is CharacterController))
+                            report.Add("Runway test path collider: " + hit.collider.name + " at distance " + hit.distance.ToString("F2"));
+                }
             }
-            finally { UnityEngine.Object.DestroyImmediate(test); if (preview != null) preview.enabled = previewEnabled; }
+            finally { UnityEngine.Object.DestroyImmediate(test); if (preview != null) preview.enabled = previewEnabled; if (player != null) player.enabled = playerEnabled; }
             foreach (Transform spawn in GameObject.Find("BirdSpawnPoints").transform)
                 check(!Physics.CheckSphere(spawn.position, 0.5f, ~0, QueryTriggerInteraction.Ignore), "Bird clearance: " + spawn.name);
             report.Add("Failures: " + failures);

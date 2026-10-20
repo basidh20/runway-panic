@@ -14,22 +14,24 @@ Template:
 
 ---
 
-## 2026-10-18 — to: Agent Controller — fix `BirdMotor.LandAt`, then remove the crow's vigil landing timeout
-- **What:** `Scripts/Agents/Movement/BirdMotor.cs` (yours), then `Scripts/Agents/Crow/CrowBrain.Vigil.cs` and `CrowStrategyConfig.cs` (the crow owner hands this part to you, so the fix and its clean-up land together).
+## 2026-10-18 — to: all — Pigeon P1: brain on `P_Bird_Pigeon`, flock coordinator, pigeon sandbox
+- **What:** `Scripts/Agents/Pigeon/` (`PigeonBrain`, `PigeonFlock`, `PigeonStrategyConfig`, `PigeonState`, `PigeonFlockMode`, `PigeonStats`), `ScriptableObjects/Birds/Strategy/PigeonStrategyConfig.asset`, `Prefabs/Birds/P_Bird_Pigeon.prefab` (`PigeonBrain` added on the variant only; `P_Bird_Base` unchanged), `Scenes/Sandbox/Sandbox_IS_Pigeon.unity` (a copy of Main), tool `Tools > IS > Pigeon > Set Up Pigeon Sandbox and Prefab`.
 - **Details:**
-  - **The bug** (open since 17 Oct, entry below; `BirdMotor.cs` is unchanged since F4): a bird sent to `LandAt` (or `HoldPosition`) from the side can circle its point for ever. Near the point the target speed is `min(cornering speed, √(2·a·d))`, but the heading turns at most `maxTurnRate`; when the point is beside the bird, the turn radius `v / ω` stays larger than the distance, so it orbits 3–4 m out and never gets within `landSnapDistance` (0.3 m).
-  - **Same cause, second symptom** (18 Oct, wave-3 playtest): a crow carrying loot overshot its final direct hop to the terminal stash and brushed the invisible north boundary.
-  - **Suggested fix:** within a few metres of a `Land`/`Hold` point, cap the speed so `v / maxTurnRate < distance` (the bird can always turn in), or switch to a slow "flutter-in" that moves straight to the point regardless of heading, turning to `facing` once there.
-- **Action needed (Agent Controller):**
-  1. Fix `LandAt` / `HoldPosition` in `BirdMotor` as above.
-  2. **Remove the vigil landing timeout** — the crow's workaround for this bug:
-     - `CrowBrain.Vigil.cs`: delete the block under `if (vigilLanding)` that starts with the comment *"BirdMotor.LandAt can circle its point forever…"* (the `landing > config.vigilLandTimeout` check, `Motor.Stop()` and `vigilHovering = true`), keep the `return;`; then delete the now-unused `vigilHovering` field (and its reset in the exit code) and the `VigilHoverRadius` constant.
-     - `CrowStrategyConfig.cs`: delete the `vigilLandTimeout` field and its tooltip.
-     - `Docs/IS/Crow/NOTES.md`: in §6 (Vigil) remove the sentence about `vigilLandTimeout`; in §8 change the "Vigil test" row's fix to "fixed in `BirdMotor.LandAt`".
-  3. Test: in Play mode in `Sandbox_IS_Crow` and in `Main`, run `Tools > IS > Crow > Run Main Integration Check` — "Crows guard the shelter while the player hides" must pass with the crows **landed** at the exits (watch F3 labels: Vigil, not circling). Then `Tools > IS > Crow > Run Wave 3 Playtest`: "Touching level geometry" should be 0.
-  4. Set this entry and the 17 Oct `LandAt` entry below to **done**.
-  - Suggested branch: `fix/agents-landat-and-crow-vigil-timeout`; commits: `fix(agents): let birds land at a point they arrive at from the side` · `refactor(ai-crow): remove the vigil land timeout now that LandAt converges` · `docs(ai): close the LandAt hand-off`.
-- **Status:** open
+  - P1 is the skeleton only: in waves 2 and 3, pigeons join one flock (`[PigeonFlock]`, created at runtime, so there is nothing to place in Main) and hover where they spawn, as they did without a brain. They still don't attack, so the note in `Docs/SystemsEngineer/WaveBalanceReport.md` that pigeons don't attack stays true until P4.
+  - The sandbox copy turns its production `WaveManager` off (a prefab-instance override, the same as the Gull sandbox). Main, Build Settings and every other prefab are unchanged.
+- **Action needed:** none. World Builder: nothing to add to Main. Systems Engineer: a pigeon balance note follows with the attack phase (P4).
+- **Status:** on `feature/is-pigeon`; human review and PR into **develop** pending.
+
+## 2026-10-18 — to: all — Gull / S2 merge resolution and four-wave decision
+- **Decision:** retain S2's production four-wave system with all four bird species. This supersedes the earlier three-wave decision and missing-wave-loop statements in older World Builder/Gull notes below.
+- **Camera:** retain S2's complete shoulder-camera, aiming, scope and recoil setup. PlayerCameraRig now permits 75 degrees upward and retains S2's 70-degree downward limit; the saved gameplay prefab and script default agree.
+- **Integration follow-up:** S2's WaveManager is now present. Do not build a duplicate. Re-check Main gameplay after this merge; Gull sandbox/focused fixtures must isolate themselves from automatic production waves. Historical validation reports predate S2's wave integration and are not a merged-gameplay pass.
+
+## 2026-10-18 — to: S1/World Builder + S2 — Main Gull environment wiring
+- **What:** Main's eight existing FOD markers now have real Gull supplies, plus one configured FodManager and GullKettle under `GullRuntime_Main`. The existing Gull species/prefab mapping is reused. See `Docs/IS/Gull/MainIntegration.md` and its validation reports.
+- **Details:** Level marker transforms/metadata, Pigeon roosts and Hawk/Crow/shared setup are retained. No sandbox spawner or live birds are saved into Main. The old marker validator accepts the intended FOD components. **8 Edit-mode checks + 10 focused Play checks passed, zero failures.** The Main check uses temporary birds and explicit GameManager hooks; it does not implement production waves.
+- **Action needed:** Reuse S2's production WaveManager and four-wave assets from develop. Check Gull behaviour during real waves, shop transitions and leftover-bird cleanup; do not derive introduction order from enum IDs or add a second spawner.
+- **Status:** Environment connected on `feature/is-gull`; human commit/review/merge into **develop** required. Combined production-wave verification and the previously recorded performance spike remain open follow-ups.
 
 ## 2026-10-18 — to: all — crow re-checked with the new stats and in the real game
 - **What:** `Scripts/Agents/Crow/` (theft scan, evasion, `ShelterZone.Contains`), crow test tools in `Scripts/Agents/Crow/Debug/`, reports `Docs/IS/Crow/evidence.md`, `main_integration.md`, `wave3_playtest.md`; summary in `Docs/IS/Crow/NOTES.md` §7–8.

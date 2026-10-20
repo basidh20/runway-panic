@@ -1,0 +1,12 @@
+Main Gull runtime — focused Edit-mode reference validation, Unity 6000.6.4f1
+PASS: Eight enabled existing markers have Gull supply references
+PASS: One active configured FOD manager
+PASS: One active configured kettle with dispatch enabled
+PASS: One kettle centre, eight FOD positions and three Pigeon roosts retained
+PASS: Shared spawn/Hawk/Crow marker counts retained
+PASS: Single existing grid, GameManager and player retained
+PASS: No test spawner or live bird saved into Main
+PASS: Shared Gull species resolves to the actual strategy prefab, not the G1 label preview
+Environment readiness only. S2's production WaveManager controls automatic waves separately; this check does not validate that wave loop.
+GameManager.TotalWaves=4; the current team decision is four waves.
+Failures: 0

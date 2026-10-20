@@ -48,6 +48,12 @@ namespace RunwayPanic.Data
         [Tooltip("Radius of the bullet when testing targets (metres): small, fast birds need a little forgiveness.")]
         [SerializeField, Min(0f)] private float hitRadius = 0.1f;
 
+        [Header("Projectile (rocket launchers)")]
+        [Tooltip("Fired instead of an instant bullet (P_Rocket). Empty: the gun is hitscan.")]
+        [SerializeField] private GameObject projectilePrefab;
+        [Tooltip("Blast radius of the projectile (metres): full damage at the centre, falling off to the edge.")]
+        [SerializeField, Min(0f)] private float explosionRadius;
+
         [Header("Shop")]
         [SerializeField, Min(0)] private int cost;
 
@@ -72,6 +78,9 @@ namespace RunwayPanic.Data
         public float SpreadRecovery => spreadRecovery;
         public float Recoil => recoil;
         public float HitRadius => hitRadius;
+        public GameObject ProjectilePrefab => projectilePrefab;
+        public bool IsProjectile => projectilePrefab != null;
+        public float ExplosionRadius => explosionRadius;
         public int Cost => cost;
     }
 }

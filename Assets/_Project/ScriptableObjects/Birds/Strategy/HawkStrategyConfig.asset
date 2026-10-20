@@ -31,7 +31,7 @@ MonoBehaviour:
   barricadeBonusPerSecond: 20
   shieldExpiredBonus: 30
   lookAwayPerSecond: 25
-  lowHpPerSecond: 20
+  lowHpPerSecond: 10
   playerBusyPerSecond: 15
   meterDecayPerSecond: 10
   lookAwayAngle: 100
@@ -40,7 +40,7 @@ MonoBehaviour:
   switchWindowDuration: 0.8
   interactWindowDuration: 1.2
   shieldWindowDuration: 2
-  maxPerchTime: 15
+  maxWatchTime: 20
   learnRate: 0.15
   maxWindowWeight: 2
   slowGunFireInterval: 0.75
@@ -50,8 +50,9 @@ MonoBehaviour:
   minStoopHeight: 12
   stoopSpeedMultiplier: 2.5
   approachSpeedMultiplier: 1.5
-  screamHoverTime: 0.5
-  stoopDamageMultiplier: 1.5
+  screamHoverTime: 0.9
+  stoopDamageMultiplier: 1.25
+  stoopLeadTime: 0
   recoverClimbHeight: 15
   withdrawWait: 4
   withdrawSpeedMultiplier: 1.3

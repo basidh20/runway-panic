@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using RunwayPanic.Agents;
+using RunwayPanic.Agents.Gull;
 using RunwayPanic.AI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -123,7 +124,8 @@ namespace RunwayPanic.EditorTools
                 var marker = point != null ? point.GetComponent<BirdPoint>() : null;
                 check(marker != null && marker.isActiveAndEnabled && marker.Type == spec.type && marker.Group == spec.group &&
                     Mathf.Abs(marker.Radius - spec.radius) < .001f && Vector3.Distance(marker.Position, spec.position) < .001f &&
-                    point.GetComponents<Component>().Length == 2 && point.childCount == 0,
+                    point.GetComponents<Component>().All(component => component is Transform || component is BirdPoint ||
+                        (spec.type == BirdPointType.FodSpawn && component is FodSpawnPoint)) && point.childCount == 0,
                     spec.name + " has the intended metadata and no collision/rendering at " + spec.position.ToString("F2") + ", radius " + spec.radius);
                 if (marker == null || spec.type == BirdPointType.KettleCenter) continue;
                 var support = GameObject.Find(spec.support);
@@ -135,7 +137,7 @@ namespace RunwayPanic.EditorTools
                         supported &= OnSurface(marker.Position + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * marker.Radius, support);
                     }
                 check(supported, spec.name + (spec.type == BirdPointType.Roost ? " centre and eight landing-ring samples fit the intended roof/wing" : " rests on solid airport ground"));
-                // Prospective approach only: neither Gull nor Pigeon brain exists yet; final landing is not a grid query.
+                // Geometry/approach only; live strategies and runtime references are checked separately.
                 Vector3 approach = marker.Position + Vector3.up * (spec.type == BirdPointType.Roost ? 1.5f : .8f);
                 check(grid.IsFlyable(approach) && provider.TryFindPath(new Vector3(0, 6, 0), approach, null, waypoints),
                     spec.name + " has a clear, reachable prospective flight approach");
@@ -148,10 +150,12 @@ namespace RunwayPanic.EditorTools
                     kettleClear &= grid.IsFlyable(new Vector3(Mathf.Cos(angle) * 8, height, Mathf.Sin(angle) * 8));
                 }
             check(kettleClear, "Kettle centre and radius-8 orbit samples at runway-relative heights 6, 10 and 14 m are clear");
-            check(root.GetComponentsInChildren<MonoBehaviour>(true).All(component => component is BirdPoint), "Marker group contains no runtime brain, FOD source, spawner or test behaviour");
+            check(root.GetComponentsInChildren<MonoBehaviour>(true).All(component => component is BirdPoint ||
+                (component is FodSpawnPoint && component.GetComponent<BirdPoint>()?.Type == BirdPointType.FodSpawn)),
+                "Marker group contains only BirdPoint metadata and optional Gull FOD supplies; no brains, spawners or tests");
             lines.Add("Geometry/approach samples only, not live AI, full landing-ring capacity or continuous orbit certification. No Play-mode suite run.");
             lines.Add("Kettle anchor is y=10; orbit heights 6–14 are ABOVE GROUND, not added again to anchor y.");
-            lines.Add("FodSpawnPoint/FOD prefabs and runtime wiring remain Gull G2 work; Pigeon rally goals are dynamic, not static markers.");
+            lines.Add("Optional Gull supply references are validated separately by Tools > IS > Gull > Validate Main Gull Runtime. Pigeon rally goals are dynamic, not static markers.");
             lines.Add("Failures: " + failures);
             Directory.CreateDirectory("Docs/WorldBuilder");
             File.WriteAllLines("Docs/WorldBuilder/GullPigeonMarkerValidation.txt", lines);

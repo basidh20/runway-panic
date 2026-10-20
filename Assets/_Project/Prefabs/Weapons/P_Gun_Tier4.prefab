@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2603306574288101877}
   - component: {fileID: 6482813678817067954}
   - component: {fileID: 8114552246555860967}
+  - component: {fileID: 6938307463908724753}
   m_Layer: 0
   m_Name: P_Gun_Tier4
   m_TagString: Untagged
@@ -69,6 +70,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Weapons.WeaponBase
   data: {fileID: 11400000, guid: 7b35ec9f9e50b674283e9615b329a24f, type: 2}
   muzzle: {fileID: 0}
+--- !u!114 &6938307463908724753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3410607387069786918}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24e5bcf41d6e813418d0d9a16c2516c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Weapons.LoadedRoundVisual
+  round: {fileID: 2894700932738121126}
 --- !u!1001 &6307157746123240104
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -126,6 +140,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: db17688ee83acfa4d9261dd081a8b94a, type: 3}
+--- !u!1 &2894700932738121126 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9199602403423260430, guid: db17688ee83acfa4d9261dd081a8b94a, type: 3}
+  m_PrefabInstance: {fileID: 6307157746123240104}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &5768337001358693699 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: db17688ee83acfa4d9261dd081a8b94a, type: 3}
