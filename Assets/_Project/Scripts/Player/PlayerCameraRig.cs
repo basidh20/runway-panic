@@ -9,10 +9,10 @@ using UnityEngine.Rendering;
 namespace RunwayPanic.Player
 {
     /// <summary>
-    /// The shooter camera: an over-the-shoulder Cinemachine <see cref="CinemachineThirdPersonFollow"/> on a camera
-    /// target that this script turns from the Look input (mouse or stick; the Settings screen's sensitivity and invert
-    /// Y apply). The character stands left of the crosshair so it never hides the target, and walls push the camera in
-    /// instead of it clipping through them.
+    /// The shooter camera: a Cinemachine <see cref="CinemachineThirdPersonFollow"/> on a camera target that this
+    /// script turns from the Look input (mouse or stick; the Settings screen's sensitivity and invert Y apply).
+    /// It supports both the legacy shoulder presentation and a first-person presentation on the same input, recoil,
+    /// shooting and UI contracts.
     /// <list type="bullet">
     /// <item><b>Aim</b> (hold right mouse / left trigger with a gun): the camera moves in over the shoulder and zooms to
     /// the gun's aim field of view, look sensitivity drops to the gun's aim sensitivity, the player walks (no sprint)
@@ -35,6 +35,13 @@ namespace RunwayPanic.Player
         [SerializeField] private Transform cameraTarget;
         [SerializeField] private CinemachineCamera virtualCamera;
         [SerializeField] private CinemachineThirdPersonFollow follow;
+        [Tooltip("The character model only. It is hidden from this player's first-person view while weapons stay visible.")]
+        [SerializeField] private Transform playerVisual;
+
+        [Header("Perspective")]
+        [Tooltip("Places the view at CameraTarget instead of behind the shoulder.")]
+        [SerializeField] private bool firstPerson;
+        [SerializeField, Range(30f, 110f)] private float firstPersonFieldOfView = 75f;
 
         [Header("Look")]
         [Tooltip("Degrees per pixel of mouse movement at sensitivity 1.")]
@@ -94,6 +101,9 @@ namespace RunwayPanic.Player
         /// <summary>Stable horizontal input basis, independent of body turning, recoil and camera collision.</summary>
         public Quaternion MovementRotation => Quaternion.Euler(0f, yaw, 0f);
 
+        /// <summary>True when the player sees from the eye-height camera target.</summary>
+        public bool IsFirstPerson => firstPerson;
+
         /// <summary>True while the aim button is held with a gun (not while reloading).</summary>
         public bool IsAiming { get; private set; }
 
@@ -121,6 +131,7 @@ namespace RunwayPanic.Player
         private void Start()
         {
             yaw = transform.eulerAngles.y;
+            pitch = firstPerson ? 0f : pitch;
             targetRotation = Quaternion.Euler(pitch, yaw, 0f);
             // CharacterController and look both move on render frames. Do not let SmartUpdate
             // infer a physics clock from the parented camera target during straight running.
@@ -161,7 +172,7 @@ namespace RunwayPanic.Player
                 cameraTarget.rotation = targetRotation;
 
             ApplyCamera(data);
-            ShowBody(ScopeBlend < 0.5f);
+            ShowBody(!firstPerson && ScopeBlend < 0.5f);
             if (controller != null)
                 controller.SetAimMovement(Mathf.Lerp(1f, aimMoveSpeed, AimBlend), IsAiming);
         }
@@ -185,6 +196,17 @@ namespace RunwayPanic.Player
         public void AddShake(float degrees)
         {
             shake = Mathf.Max(shake, degrees);
+        }
+
+        /// <summary>Resets the view to a world-space spawn/checkpoint orientation after a respawn warp.</summary>
+        public void ResetViewTo(Quaternion worldRotation)
+        {
+            yaw = worldRotation.eulerAngles.y;
+            pitch = 0f;
+            recoilToReturn = 0f;
+            targetRotation = Quaternion.Euler(pitch, yaw, 0f);
+            if (cameraTarget != null)
+                cameraTarget.rotation = targetRotation;
         }
 
         private void Look(WeaponData data)
@@ -239,29 +261,54 @@ namespace RunwayPanic.Player
         {
             if (follow != null)
             {
-                follow.CameraSide = 1f;
-                follow.CameraDistance = Mathf.Lerp(Mathf.Lerp(hipDistance, aimDistance, AimBlend), 0f, ScopeBlend);
-                Vector3 shoulder = Vector3.Lerp(hipShoulder, aimShoulder, AimBlend);
-                follow.ShoulderOffset = Vector3.Lerp(shoulder, scopeShoulder, ScopeBlend);
-                follow.VerticalArmLength = Mathf.Lerp(hipArmLength, 0f, Mathf.Max(AimBlend, ScopeBlend));
-                follow.Damping = Vector3.Lerp(hipDamping, aimDamping, AimBlend);
+                if (firstPerson)
+                {
+                    follow.CameraDistance = 0f;
+                    follow.ShoulderOffset = Vector3.zero;
+                    follow.VerticalArmLength = 0f;
+                    follow.Damping = Vector3.zero;
+                    follow.AvoidObstacles.Enabled = false;
+                }
+                else
+                {
+                    follow.CameraSide = 1f;
+                    follow.CameraDistance = Mathf.Lerp(Mathf.Lerp(hipDistance, aimDistance, AimBlend), 0f, ScopeBlend);
+                    Vector3 shoulder = Vector3.Lerp(hipShoulder, aimShoulder, AimBlend);
+                    follow.ShoulderOffset = Vector3.Lerp(shoulder, scopeShoulder, ScopeBlend);
+                    follow.VerticalArmLength = Mathf.Lerp(hipArmLength, 0f, Mathf.Max(AimBlend, ScopeBlend));
+                    follow.Damping = Vector3.Lerp(hipDamping, aimDamping, AimBlend);
+                    follow.AvoidObstacles.Enabled = true;
+                }
             }
 
             if (virtualCamera != null)
             {
                 LensSettings lens = virtualCamera.Lens;
-                float aimFieldOfView = data != null ? data.AimFieldOfView : hipFieldOfView;
-                lens.FieldOfView = Mathf.Lerp(hipFieldOfView, aimFieldOfView, AimBlend);
+                float hipFov = firstPerson ? firstPersonFieldOfView : hipFieldOfView;
+                float aimFieldOfView = data != null ? data.AimFieldOfView : hipFov;
+                lens.FieldOfView = Mathf.Lerp(hipFov, aimFieldOfView, AimBlend);
                 virtualCamera.Lens = lens;
             }
         }
 
-        // Through a scope the character would fill the view: hide its meshes but keep their shadows.
+        // The player model would fill a first-person view. Held weapons are excluded so this method never changes
+        // weapon presentation or their effects, even though their hand socket is under PlayerVisual.
         private void ShowBody(bool show)
         {
             if (!show && hiddenRenderers.Length == 0)
             {
-                hiddenRenderers = GetComponentsInChildren<Renderer>();
+                Renderer[] candidates = playerVisual != null
+                    ? playerVisual.GetComponentsInChildren<Renderer>(true)
+                    : GetComponentsInChildren<Renderer>(true);
+                System.Collections.Generic.List<Renderer> bodyRenderers = new System.Collections.Generic.List<Renderer>(candidates.Length);
+                for (int i = 0; i < candidates.Length; i++)
+                {
+                    Renderer renderer = candidates[i];
+                    if (renderer != null && renderer.GetComponentInParent<WeaponBase>() == null)
+                        bodyRenderers.Add(renderer);
+                }
+
+                hiddenRenderers = bodyRenderers.ToArray();
                 hiddenModes = new ShadowCastingMode[hiddenRenderers.Length];
                 for (int i = 0; i < hiddenRenderers.Length; i++)
                 {

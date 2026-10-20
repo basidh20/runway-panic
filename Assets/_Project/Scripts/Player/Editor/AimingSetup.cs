@@ -167,9 +167,12 @@ namespace RunwayPanic.Player.EditorTools
                 rigSo.FindProperty("cameraTarget").objectReferenceValue = target;
                 rigSo.FindProperty("virtualCamera").objectReferenceValue = vcam;
                 rigSo.FindProperty("follow").objectReferenceValue = follow;
-                // Character clearly left of the crosshair, as in shoulder-camera shooters.
-                rigSo.FindProperty("hipShoulder").vector3Value = new Vector3(0.8f, 0.1f, 0f);
-                rigSo.FindProperty("aimShoulder").vector3Value = new Vector3(0.65f, 0.08f, 0f);
+                // Keep a first-person prefab first-person when this setup tool is run again.
+                if (!rigSo.FindProperty("firstPerson").boolValue)
+                {
+                    rigSo.FindProperty("hipShoulder").vector3Value = new Vector3(0.8f, 0.1f, 0f);
+                    rigSo.FindProperty("aimShoulder").vector3Value = new Vector3(0.65f, 0.08f, 0f);
+                }
                 rigSo.ApplyModifiedPropertiesWithoutUndo();
 
                 Transform hud = root.GetComponentInChildren<CrosshairUI>(true).transform;

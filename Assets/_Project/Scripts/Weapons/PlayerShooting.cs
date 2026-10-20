@@ -37,7 +37,7 @@ namespace RunwayPanic.Weapons
         /// <summary>Raised after a shot's damage is applied. Arguments: what was hit, whether that killed it.</summary>
         public event Action<IDamageable, bool> HitConfirmed;
 
-        private const float PivotHeight = 1.5f; // where the aim ray starts: the player's upper body
+        private const float PivotHeight = 1.5f; // third-person aim-ray compensation height
 
         private readonly RaycastHit[] hitBuffer = new RaycastHit[MaxHits];
         private PlayerWeaponHolder weaponHolder;
@@ -200,11 +200,14 @@ namespace RunwayPanic.Weapons
             return TryRaycastIgnoringSelf(ray, maxDistance, out RaycastHit hit) ? hit.point : ray.GetPoint(maxDistance);
         }
 
-        // The crosshair ray, but starting level with the player: anything between the camera and the player (a wall
-        // behind them, a bird passing the lens) must not catch the aim.
+        // In first person the eye is the origin of the crosshair, so use the exact camera ray. The third-person path
+        // retains its upper-body compensation so a wall or bird behind the character cannot catch the aim.
         private Ray AimRay(Camera cam)
         {
             Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            if (cameraRig != null && cameraRig.IsFirstPerson)
+                return ray;
+
             Vector3 pivot = transform.position + Vector3.up * PivotHeight;
             float skip = Mathf.Max(0f, Vector3.Dot(pivot - ray.origin, ray.direction));
             ray.origin += ray.direction * skip;
