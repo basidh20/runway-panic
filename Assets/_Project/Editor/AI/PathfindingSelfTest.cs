@@ -118,8 +118,17 @@ namespace RunwayPanic.AITools
             float marginX = bounds.extents.x + 6f;
             float marginZ = bounds.extents.z + 6f;
 
-            cases.Add(RunCase(grid, provider, path, $"Across the {label} (X)", center - Vector3.right * marginX, center + Vector3.right * marginX, true));
-            cases.Add(RunCase(grid, provider, path, $"Across the {label} (Z)", center - Vector3.forward * marginZ, center + Vector3.forward * marginZ, true));
+            cases.Add(RunCase(grid, provider, path, $"Across the {label} (X)", InsideGrid(grid, center - Vector3.right * marginX), InsideGrid(grid, center + Vector3.right * marginX), true));
+            cases.Add(RunCase(grid, provider, path, $"Across the {label} (Z)", InsideGrid(grid, center - Vector3.forward * marginZ), InsideGrid(grid, center + Vector3.forward * marginZ), true));
+        }
+
+        // An obstacle near the edge of the map (the control tower is 2 m from the north fence) would put the far
+        // end outside the grid; keep both ends 1 m inside it.
+        private static Vector3 InsideGrid(FlightGrid grid, Vector3 point)
+        {
+            Bounds volume = grid.VolumeBounds;
+            Vector3 margin = Vector3.one;
+            return Vector3.Max(volume.min + margin, Vector3.Min(volume.max - margin, point));
         }
 
         private static CaseResult RunCase(FlightGrid grid, GridPathProvider provider, List<Vector3> path,

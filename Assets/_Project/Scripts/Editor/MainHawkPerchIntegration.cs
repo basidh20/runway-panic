@@ -19,7 +19,7 @@ namespace RunwayPanic.EditorTools
         private const string RootName = "HawkPerches";
         private static readonly (string name, Vector3 position, string support)[] Perches =
         {
-            ("Perch_ControlTower", new Vector3(-29.4f, 14.6f, 24.4f), "ControlTower_Placeholder"),
+            ("Perch_ControlTower", new Vector3(-30.9f, 15.09f, 25.9f), "ControlTower_Placeholder"), // new tower roof (20 Oct, ArtControlTowerBuilder)
             ("Perch_TerminalRoof", new Vector3(20, 6.4f, 25.9f), "TerminalRoof"),
             ("Perch_Hangar_NE", new Vector3(-31.9f, 6, -.6f), "Hangar_Greybox"),
             ("Perch_Hangar_SE", new Vector3(-31.9f, 6, -24.8f), "Hangar_Greybox"),

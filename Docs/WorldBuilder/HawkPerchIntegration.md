@@ -8,7 +8,7 @@ Main now has one scene-root `HawkPerches` containing eight empty GameObjects wit
 
 | Marker | World position | Intended surface |
 | --- | --- | --- |
-| Perch_ControlTower | (-29.4, 14.6, 24.4) | Tower roof corner |
+| Perch_ControlTower | (-30.9, 15.09, 25.9) | Control tower roof, runway side (moved 20 Oct for the modelled tower) |
 | Perch_TerminalRoof | (20, 6.4, 25.9) | Terminal roof edge |
 | Perch_Hangar_NE | (-31.9, 6, -0.6) | Hangar roof NE |
 | Perch_Hangar_SE | (-31.9, 6, -24.8) | Hangar roof SE |
