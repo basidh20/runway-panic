@@ -1,6 +1,8 @@
 # First-person conversion: implementation and S2 handoff
 
-Prepared 20 October 2026. This is a plan, not an implemented conversion.
+Prepared 20 October 2026. Implemented through FP4 on
+`feature/first-person-player`; the detailed S2 handoff is in
+`Docs/SystemsEngineer/FirstPersonHandoff.md`.
 
 ## Goal and boundaries
 
@@ -52,7 +54,8 @@ behaviours do not need rewriting for this camera conversion.
 - `PlayerRespawn` warps the player/camera but the camera rig keeps its own yaw
   and pitch. Respawn orientation must be checked explicitly.
 
-No first-person runtime result is claimed by these source facts.
+The source facts above were the pre-implementation baseline. Actual focused
+Main-scene checks are recorded in `Docs/SystemsEngineer/FirstPersonHandoff.md`.
 
 ## Working agreement and Git workflow
 
