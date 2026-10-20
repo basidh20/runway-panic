@@ -423,6 +423,8 @@ def write_material_manifest(collection, meta, repo_root, out_override=None, atla
                 if slot.material is not None:
                     used[slot.material.name] = slot.material
         materials = [material_entry(used[name]) for name in sorted(used)]
+        if not materials:   # collider-only asset (SM_Prop_ControlTower_Collision): nothing for Unity to build
+            return None, 0
     source = ""
     if bpy.data.filepath and repo_root:
         source = os.path.relpath(bpy.data.filepath, repo_root).replace("\\", "/")
@@ -513,8 +515,11 @@ def main():
                 status = "exported -> " + shown_path(path, repo_root)
                 if not args.mixamo and (atlas or not args.out):
                     manifest, count = write_material_manifest(coll, meta, repo_root, args.out, atlas, baker)
-                    report.note("material manifest: %d material(s)%s -> %s"
-                                % (count, " + atlas textures" if atlas else "", shown_path(manifest, repo_root)))
+                    if manifest:
+                        report.note("material manifest: %d material(s)%s -> %s"
+                                    % (count, " + atlas textures" if atlas else "", shown_path(manifest, repo_root)))
+                    else:
+                        report.note("no materials - no material manifest written")
             else:
                 status = "FAILED - exporter returned an error"
                 any_failed = True
