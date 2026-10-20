@@ -56,8 +56,10 @@ namespace RunwayPanic.Audio
             int tier = weapon != null ? Mathf.Clamp((int)weapon.Rarity, 0, shotByRarity.Length - 1) : 0;
             SoundPlayer.Play(shotByRarity[tier], muzzle);
 
-            // A miss ends exactly at the gun's range; anything shorter hit something solid.
-            bool hitSurface = target == null && weapon != null && (end - muzzle).magnitude < weapon.Range - 0.5f;
+            // A miss ends exactly at the gun's range; anything shorter hit something solid. (A rocket's explosion
+            // makes its own sound.)
+            bool rocket = weapon != null && weapon.Data != null && weapon.Data.IsProjectile;
+            bool hitSurface = !rocket && target == null && weapon != null && (end - muzzle).magnitude < weapon.Range - 0.5f;
             if (hitSurface)
                 SoundPlayer.Play(impact, end);
         }

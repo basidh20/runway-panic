@@ -24,6 +24,8 @@ namespace RunwayPanic.AudioTools
             for (int v = 0; v < 3; v++) { int s = v; yield return (Sfx("Weapons", $"SFX_Shot_Rifle_{v + 1}"), ClipKind.Effect, () => Rifle(s)); }
             yield return (Sfx("Weapons", "SFX_Shot_Sniper"), ClipKind.Effect, Sniper);
             yield return (Sfx("Weapons", "SFX_Shot_RPG"), ClipKind.Effect, Rpg);
+            yield return (Sfx("Weapons", "SFX_Rocket_Flight"), ClipKind.Loop, RocketFlight);
+            for (int v = 0; v < 2; v++) { int s = v; yield return (Sfx("Weapons", $"SFX_Explosion_{v + 1}"), ClipKind.Effect, () => Explosion(s)); }
             yield return (Sfx("Weapons", "SFX_Reload_Start"), ClipKind.Effect, ReloadStart);
             yield return (Sfx("Weapons", "SFX_Reload_Finish"), ClipKind.Effect, ReloadFinish);
             yield return (Sfx("Weapons", "SFX_Weapon_Equip"), ClipKind.Effect, Equip);
@@ -118,11 +120,32 @@ namespace RunwayPanic.AudioTools
             .Noise(0f, 1.2f, Perc(0.01f, 0.5f), 0.35f, 53, 250f)
             .Echo(0.28f, 0.35f, 3).Saturate(1.8f).Normalise().FadeOut(0.3f);
 
-        private static Signal Rpg() => new Signal(1.4f)
-            .Tone(0f, 0.4f, Glide(90f, 45f, 0.15f), Perc(0.002f, 0.15f), 1f)
-            .Band(0f, 1.0f, Glide(2500f, 400f, 0.9f), 1.2f, Swell(0.02f, 0.7f, 1f), 0.8f, 61)
-            .Noise(0f, 0.6f, Perc(0.005f, 0.4f), 0.25f, 62, 0f, 4000f)
-            .Echo(0.2f, 0.25f, 2).Saturate(1.5f).Normalise().FadeOut(0.2f);
+        // RPG launch: the booster charge cracks and booms out of both ends of the tube, then the rocket motor
+        // ignites and roars away (a falling whoosh with hiss on top).
+        private static Signal Rpg() => new Signal(1.6f)
+            .Noise(0f, 0.05f, Perc(0.0005f, 0.012f), 1f, 63, 0f, 1800f)
+            .Noise(0f, 0.5f, Perc(0.002f, 0.12f), 0.9f, 64, 900f)
+            .Tone(0f, 0.45f, Glide(75f, 32f, 0.25f), Perc(0.002f, 0.18f), 1f)
+            .Band(0.04f, 1.3f, Glide(1800f, 500f, 1.3f), 1.4f, Swell(0.03f, 1f, 1.3f), 0.75f, 61)
+            .Noise(0.04f, 1.2f, Swell(0.02f, 1f, 1.2f), 0.3f, 62, 5000f, 1500f)
+            .Echo(0.22f, 0.3f, 2).Saturate(1.6f).Normalise().FadeOut(0.25f);
+
+        // The rocket motor in flight: a steady roaring hiss over a low rumble (loops on the flying rocket).
+        private static Signal RocketFlight() => new Signal(1.5f)
+            .Band(0f, 1.5f, t => 1700f + 200f * Mathf.Sin(2f * Mathf.PI * 3f * t), 1.2f, Const(1f), 0.8f, 65)
+            .Noise(0f, 1.5f, Const(1f), 0.35f, 66, 6000f, 2500f)
+            .Noise(0f, 1.5f, Const(1f), 0.6f, 67, 180f)
+            .LoopCrossfade(1.2f, 0.3f).Normalise(0.75f);
+
+        // A warhead going off outdoors: a sharp crack, a deep boom that rolls on, crackling debris and a long echo
+        // off the hangars.
+        private static Signal Explosion(int v) => new Signal(3.2f)
+            .Noise(0f, 0.06f, Perc(0.0003f, 0.015f), 1f, 101 + v, 0f, 1500f)
+            .Tone(0f, 1.2f, Glide(55f - v * 6f, 24f, 0.6f), Perc(0.002f, 0.45f), 1f)
+            .Noise(0f, 2.6f, Perc(0.003f, 0.7f), 1f, 103 + v, 260f)
+            .Noise(0f, 1.6f, Perc(0.004f, 0.35f), 0.5f, 105 + v, 1200f)
+            .Band(0.08f, 1.4f, Glide(3200f, 1400f, 1.4f), 2.5f, Swell(0.05f, 1.2f, 1.4f), 0.18f, 107 + v)
+            .Echo(0.45f + v * 0.08f, 0.35f, 3).Saturate(2.2f).LowPass(5000f).Normalise().FadeOut(0.6f);
 
         private static Signal ReloadStart() => new Signal(0.45f)
             .Metal(0f, new[] { 1250f, 2830f, 4400f }, 0.015f, 0.8f)

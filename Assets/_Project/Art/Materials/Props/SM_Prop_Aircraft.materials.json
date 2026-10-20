@@ -1,0 +1,48 @@
+{
+  "asset": "SM_Prop_Aircraft",
+  "source": "SourceArt/Blender/Props/SM_Prop_Aircraft.blend",
+  "materials": [
+    {
+      "name": "M_Prop_Aircraft_Atlas",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.0,
+      "emissionColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": true,
+      "baseMap": "T_Prop_Aircraft_Atlas_Albedo",
+      "maskMap": "T_Prop_Aircraft_Atlas_Mask"
+    },
+    {
+      "name": "M_Prop_Aircraft_WhiteRed_Atlas",
+      "baseColor": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      },
+      "metallic": 0.0,
+      "roughness": 0.0,
+      "emissionColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0
+      },
+      "emissionStrength": 0.0,
+      "textured": true,
+      "baseMap": "T_Prop_Aircraft_WhiteRed_Atlas_Albedo",
+      "maskMap": "T_Prop_Aircraft_Atlas_Mask"
+    }
+  ]
+}
