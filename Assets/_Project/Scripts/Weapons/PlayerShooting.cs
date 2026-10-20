@@ -82,6 +82,11 @@ namespace RunwayPanic.Weapons
             if (current != null && current.Data != null)
                 bloom = Mathf.MoveTowards(bloom, 0f, current.Data.SpreadRecovery * Time.deltaTime);
 
+            // UI clicks use the same mouse button as Attack. Gameplay weapon input is valid only during a live wave,
+            // never while a pause/shop/end screen has released the cursor for menu interaction.
+            if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
+                return;
+
             if (reloadAction != null && reloadAction.WasPressedThisFrame())
             {
                 WeaponBase weapon = weaponHolder.CurrentWeapon;
