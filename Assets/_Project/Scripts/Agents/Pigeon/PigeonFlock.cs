@@ -79,6 +79,7 @@ namespace RunwayPanic.Agents.Pigeon
 
         private void OnDisable()
         {
+            UnbindThreatEvents();
             UnbindGame();
         }
 
@@ -167,6 +168,7 @@ namespace RunwayPanic.Agents.Pigeon
         private void Update()
         {
             BindGame();
+            BindThreatEvents();
             PruneMembers();
 
             // Paused, shopping or game over: the flock freezes with its members.
