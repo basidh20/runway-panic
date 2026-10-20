@@ -68,15 +68,22 @@ namespace RunwayPanic.Agents.Pigeon
         protected override void OnEnable()
         {
             base.OnEnable();
+            if (Health != null) Health.Damaged += HandleDamage;
 
             // Re-enabled after Start (pooling, tests): start over by joining the flock again, because OnDisable left it.
-            if (started && state != PigeonState.Dead)
-                ChangeState(PigeonState.JoinFlock);
+            if (started && IsAlive)
+            {
+                state = PigeonState.JoinFlock;
+                stateTime = 0f;
+                EnterState(state);
+            }
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
+            if (Health != null) Health.Damaged -= HandleDamage;
+            if (Motor != null && IsAlive) { Motor.SpeedMultiplier = 1f; Motor.Stop(); }
 
             // Also runs when the WaveManager destroys a surviving bird at time-up (no death event): without this the
             // flock would keep a dead reference holding a roost slot or a dive token.
@@ -109,9 +116,25 @@ namespace RunwayPanic.Agents.Pigeon
             if (!started || state == PigeonState.Dead)
                 return;
 
-            // Paused, shopping or no player yet: freeze decisions (the motor keeps its last order).
-            if (!IsGameplayActive || Hub == null || !Hub.HasPlayer)
+            // The shared motor does not gate Shopping itself: stop explicitly, then reissue orders on resume.
+            if (!IsGameplayActive)
+            {
+                if (Motor != null) Motor.Stop();
+                nextPath = 0f;
                 return;
+            }
+
+            if (Motor == null || config == null) return;
+            if (Hub == null || !Hub.HasPlayer || !Hub.Health.IsAlive)
+            {
+                if (state != PigeonState.JoinFlock && state != PigeonState.FlyToRoost && state != PigeonState.Roosting)
+                    ChangeState(PigeonState.FlyToRoost);
+            }
+            else if (state == PigeonState.Roosting || state == PigeonState.FlyToRoost)
+                ChangeState(flock != null ? PigeonState.Flocking : PigeonState.Solo);
+
+            if (flock != null && flock.Mode == PigeonFlockMode.Scattering && state != PigeonState.Panic)
+                ChangeState(PigeonState.Panic);
 
             stateTime += Time.deltaTime;
             TickState(state);
@@ -122,7 +145,7 @@ namespace RunwayPanic.Agents.Pigeon
         /// </summary>
         public void ChangeState(PigeonState next)
         {
-            if (state == PigeonState.Dead)
+            if (state == PigeonState.Dead || state == next)
                 return;
 
             ExitState(state);
@@ -133,6 +156,7 @@ namespace RunwayPanic.Agents.Pigeon
 
         protected override void OnBirdDied()
         {
+            if (flock != null && config != null) flock.ReportThreat(Health.LastHitShotOrigin, config.deathAlarm);
             PigeonStats.Deaths++;
             ChangeState(PigeonState.Dead);
             base.OnBirdDied();

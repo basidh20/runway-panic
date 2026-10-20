@@ -18,11 +18,13 @@ namespace RunwayPanic.Agents.Pigeon
         public static int Despawns;
         /// <summary>Changes of the flock-level state machine.</summary>
         public static int FlockModeChanges;
+        public static int Dives, Hits, Panics, RallySelections, PathFailures, LandingTimeouts;
 
         /// <summary>Sets every counter back to zero.</summary>
         public static void Reset()
         {
             Joins = Leaves = Deaths = Despawns = FlockModeChanges = 0;
+            Dives = Hits = Panics = RallySelections = PathFailures = LandingTimeouts = 0;
         }
 
         // Statics survive Play mode when domain reload is off: start every session clean.
