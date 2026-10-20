@@ -100,6 +100,12 @@ namespace RunwayPanic.Player
 
         private void Update()
         {
+            if (cameraRig != null && cameraRig.IsFirstPerson)
+            {
+                playerController?.ClearAim();
+                return;
+            }
+
             bool holdingGun = weaponHolder != null && weaponHolder.CurrentWeaponObject != null &&
                               weaponHolder.CurrentWeaponObject.activeInHierarchy;
             UpdateFacing(holdingGun);
@@ -107,6 +113,9 @@ namespace RunwayPanic.Player
 
         private void LateUpdate()
         {
+            if (cameraRig != null && cameraRig.IsFirstPerson)
+                return;
+
             Transform gun = weaponHolder != null && weaponHolder.CurrentWeaponObject != null &&
                             weaponHolder.CurrentWeaponObject.activeInHierarchy
                 ? weaponHolder.CurrentWeaponObject.transform
