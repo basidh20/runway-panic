@@ -14,6 +14,59 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Start Main Preview Lighting Bake")]
+        private static void StartMainPreviewBake()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            var settings = AssetDatabase.LoadAssetAtPath<LightingSettings>("Assets/_Project/Settings/MainPreviewLighting.asset");
+            if (settings == null || !Lightmapping.TryGetLightingSettings(out var assigned) || assigned != settings || Lightmapping.isRunning)
+                throw new InvalidOperationException("Preview lighting is not assigned or a bake is already running.");
+            if (!Lightmapping.BakeAsync()) throw new InvalidOperationException("Unity could not start the preview lighting bake.");
+            Debug.Log("[AirportC4] Started the preview lighting bake. Completion must be checked separately.");
+        }
+
+        [MenuItem("Tools/Runway Panic/Configure Main Preview Lighting")]
+        private static void ConfigureMainPreviewLighting()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            const string path = "Assets/_Project/Settings/MainPreviewLighting.asset";
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path) != null ||
+                Lightmapping.TryGetLightingSettings(out _))
+                throw new InvalidOperationException("A lighting settings asset already exists or is assigned; review it first.");
+            var sun = RenderSettings.sun;
+            if (sun == null || sun.type != LightType.Directional || sun.lightmapBakeType != LightmapBakeType.Realtime)
+                throw new InvalidOperationException("Expected a realtime directional sun in Main.");
+
+            var settings = new LightingSettings
+            {
+                name = "MainPreviewLighting",
+                bakedGI = true,
+                realtimeGI = false,
+                lightmapper = LightingSettings.Lightmapper.ProgressiveCPU,
+                mixedBakeMode = MixedLightingMode.IndirectOnly,
+                lightmapResolution = 4f,
+                lightmapMaxSize = 1024,
+                directSampleCount = 16,
+                indirectSampleCount = 32,
+                environmentSampleCount = 32,
+                maxBounces = 1,
+                lightProbeSampleCountMultiplier = 1
+            };
+            AssetDatabase.CreateAsset(settings, path);
+            Lightmapping.lightingSettings = settings;
+            Undo.RecordObject(sun, "Set preview sun to mixed");
+            sun.lightmapBakeType = LightmapBakeType.Mixed;
+            EditorUtility.SetDirty(sun);
+            EditorSceneManager.MarkSceneDirty(scene);
+            AssetDatabase.SaveAssets();
+            if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Could not save preview lighting setup.");
+            Debug.Log("[AirportC4] Configured low-quality CPU preview; sun mixed indirect-only, interior lights remain realtime. No bake started.");
+        }
+
         [MenuItem("Tools/Runway Panic/Add Airport Light Probes")]
         private static void AddAirportLightProbes()
         {

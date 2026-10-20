@@ -148,6 +148,23 @@ intersecting colliders and near-duplicates. These are initial positions only:
 they have not been baked or visually validated, and interior/exterior light
 leakage and dynamic actor appearance must be checked in the preview bake.
 
+The preview uses `MainPreviewLighting.asset`: Progressive CPU lightmapper,
+4 texels per unit, 1024 maximum atlas size, 16 direct / 32 indirect / 32
+environment samples, one bounce and a probe multiplier of one. The sun is
+Mixed with Baked Indirect mode, keeping direct illumination and shadows
+realtime; interior point lights remain realtime. PC and mobile URP assets have
+mixed lighting enabled. Unity 6000.6 labels Progressive CPU deprecated, so a
+later quality bake should consider the Unity Compute Light Baker if supported.
+This low-quality configuration is for assessment, not the final deliverable.
+
+On 20 October 2026, the preview bake completed in 37.78 seconds and saved one
+1024x1024 baked lightmap (2.7 MB) plus lighting data under
+`Assets/_Project/Scenes/Main/`. Main now references that data. This confirms
+the pipeline saves successfully; it is not the final quality bake. The gameplay
+view remained readable at the shop/player camera after the bake, but shelter
+and hangar interiors still need a targeted player-height check before final
+lighting is approved.
+
 To repeat the audit, open saved Main outside Play mode and choose
 `Tools > Runway Panic > Audit Main Lighting Bake Readiness`. The detailed report
 is written to `/private/tmp/RunwayPanic-C4/lighting-audit.txt` on this Mac and
