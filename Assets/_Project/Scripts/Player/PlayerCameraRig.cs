@@ -198,6 +198,17 @@ namespace RunwayPanic.Player
             shake = Mathf.Max(shake, degrees);
         }
 
+        /// <summary>Resets the view to a world-space spawn/checkpoint orientation after a respawn warp.</summary>
+        public void ResetViewTo(Quaternion worldRotation)
+        {
+            yaw = worldRotation.eulerAngles.y;
+            pitch = 0f;
+            recoilToReturn = 0f;
+            targetRotation = Quaternion.Euler(pitch, yaw, 0f);
+            if (cameraTarget != null)
+                cameraTarget.rotation = targetRotation;
+        }
+
         private void Look(WeaponData data)
         {
             if (lookAction == null)
