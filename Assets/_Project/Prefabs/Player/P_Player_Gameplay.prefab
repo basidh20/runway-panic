@@ -4633,7 +4633,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Player.PlayerShield
   duration: 10
-  damageReduction: 0.5
+  damageReduction: 1
   bubble: {fileID: 2495549023574136388}
 --- !u!114 &6817391851223279392
 MonoBehaviour:

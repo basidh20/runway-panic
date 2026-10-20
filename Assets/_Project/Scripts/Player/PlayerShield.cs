@@ -4,7 +4,7 @@ using UnityEngine;
 namespace RunwayPanic.Player
 {
     /// <summary>
-    /// Temporary damage reduction from a shield pickup. While active, <see cref="PlayerHealth"/> multiplies
+    /// Temporary damage immunity from a shield pickup. While active, <see cref="PlayerHealth"/> multiplies
     /// incoming damage by <see cref="DamageMultiplier"/> and a bubble is shown around the player.
     /// Dying removes the shield.
     /// </summary>
@@ -12,8 +12,8 @@ namespace RunwayPanic.Player
     public sealed class PlayerShield : MonoBehaviour
     {
         [SerializeField, Min(0.1f)] private float duration = 10f;
-        [Tooltip("Fraction of damage blocked while active (0.5 = half damage).")]
-        [SerializeField, Range(0f, 1f)] private float damageReduction = 0.5f;
+        [Tooltip("Fraction of damage blocked while active (1 = all damage).")]
+        [SerializeField, Range(0f, 1f)] private float damageReduction = 1f;
         [Tooltip("Shown while the shield is active.")]
         [SerializeField] private GameObject bubble;
 
