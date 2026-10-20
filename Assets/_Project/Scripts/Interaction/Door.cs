@@ -87,6 +87,19 @@ namespace RunwayPanic.Interaction
                 direction = Vector3.Dot(awayFrom.Value - closedPosition, closedForward) >= 0f ? 1f : -1f;
             }
 
+            // While the panel is still swinging shut, continue on its current side instead of
+            // forcing it through the frame if the player immediately opens it from the other side.
+            if (Mathf.Abs(CurrentAngle) > 3f)
+                direction = Mathf.Sign(CurrentAngle);
+
+            // A double-action door may open either way, but a closing panel must stop at the
+            // closed plane rather than being pushed all the way open on the opposite side.
+            hinge.limits = new JointLimits
+            {
+                min = direction < 0f ? -openAngle : 0f,
+                max = direction > 0f ? openAngle : 0f
+            };
+
             IsOpen = true;
             SetTargetAngle(openAngle * direction);
             Opened?.Invoke();

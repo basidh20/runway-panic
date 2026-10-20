@@ -64,6 +64,7 @@ namespace RunwayPanic.PlayerTools
             public float Body;      // extra body height
             public float Plant;    // 1 = lower the body so the lowest foot stays on the ground (crouches)
             public float BodyPitch; // whole body tipped backwards around the hips, degrees (90 = lying on the back)
+            public float GaitStride, GaitLift, GaitPhase;
 
             // Holding a gun (upper-body clips): the arms are placed with two-bone IK instead of swing angles.
             public float Armed;    // 0 = arms from the angles above, 1 = right hand at 'Hand' holding the gun
@@ -117,6 +118,7 @@ namespace RunwayPanic.PlayerTools
             public float Breath;      // chest rise (idle)
             public float ArmSpread;   // how far the arms hang away from the body
             public float Plant;       // 1 = keep the lower foot on the ground (the hips dip as the legs spread)
+            public float Stride, Lift;
 
             public Pose Sample(float phase)
             {
@@ -136,8 +138,9 @@ namespace RunwayPanic.PlayerTools
                     ElbowL = Elbow, ElbowR = Elbow, Spread = ArmSpread,
                     Lean = Lean, Twist = Twist * sin, Breath = breath,
                     // Lowest when the legs are furthest apart (twice per cycle); idle just breathes.
-                    Body = ThighSwing > 0f ? Bob * Mathf.Cos(2f * phase) : Bob * sin,
+                    Body = (ThighSwing > 0f ? Bob * Mathf.Cos(2f * phase) : Bob * sin) - Stride * 0.25f,
                     Plant = Plant,
+                    GaitStride = Stride, GaitLift = Lift, GaitPhase = phase,
                 };
             }
         }
@@ -153,13 +156,15 @@ namespace RunwayPanic.PlayerTools
         private static readonly Gait Walk = new Gait
         {
             Name = "A_Player_Walk", Period = 0.7f, ThighSwing = 42f, KneeBase = 12f, KneeLift = 75f, FootRoll = 18f,
-            ArmSwing = 38f, Elbow = 70f, Lean = 8f, Twist = 7f, ArmSpread = 0.12f, Plant = 1f,
+            ArmSwing = 24f, Elbow = 45f, Lean = 5f, Twist = 3f, ArmSpread = 0.12f,
+            Stride = 0.25f, Lift = 0.10f, Bob = 0.008f,
         };
 
         private static readonly Gait Run = new Gait
         {
             Name = "A_Player_Run", Period = 0.6f, ThighSwing = 58f, KneeBase = 18f, KneeLift = 100f, FootRoll = 22f,
-            ArmSwing = 50f, Elbow = 90f, Lean = 14f, Twist = 10f, ArmSpread = 0.1f, Plant = 1f,
+            ArmSwing = 36f, Elbow = 75f, Lean = 9f, Twist = 4f, ArmSpread = 0.1f,
+            Stride = 0.34f, Lift = 0.18f, Bob = 0.015f,
         };
 
         // ---- Jump key poses ----
@@ -586,6 +591,22 @@ namespace RunwayPanic.PlayerTools
             Debug.Log($"[Player Animator] Generated locomotion, jump, weapon (aim, fire, equip, reload), action, hit and death clips in {OutputFolder}.");
         }
 
+        [MenuItem("Tools/S2/Generate Smooth Locomotion")]
+        public static void GenerateLocomotion()
+        {
+            using (var rig = Rig.Load())
+            {
+                if (rig == null) return;
+                foreach (Gait gait in new[] { Idle, Walk, Run })
+                {
+                    Gait g = gait;
+                    Save(rig.Bake(g.Period, g.KeyStep, true,
+                        t => g.Sample(t / g.Period * Mathf.PI * 2f)), g.Name);
+                }
+            }
+            AssetDatabase.SaveAssets();
+        }
+
         private static void Save(AnimationClip clip, string name)
         {
             string path = $"{OutputFolder}/{name}.anim";
@@ -631,6 +652,8 @@ namespace RunwayPanic.PlayerTools
 
             // Muscle index → curl target, for each hand's finger "Stretched" muscles.
             private readonly (int index, float curl)[] rightFingers, leftFingers;
+            private readonly Vector3 restLeftFoot, restRightFoot, restBodyPosition;
+            private readonly Quaternion restBodyRotation;
 
             private Rig(GameObject instance, Animator animator, Vector3 gripPosition, Quaternion gripRotation)
             {
@@ -663,6 +686,12 @@ namespace RunwayPanic.PlayerTools
                 restFootL = FootDir(HumanBodyBones.LeftFoot, HumanBodyBones.LeftToes);
                 restFootR = FootDir(HumanBodyBones.RightFoot, HumanBodyBones.RightToes);
                 restFootHeight = LowestFootHeight();
+                restLeftFoot = Bone(HumanBodyBones.LeftFoot).position;
+                restRightFoot = Bone(HumanBodyBones.RightFoot).position;
+                var neutral = new HumanPose();
+                poseHandler.GetHumanPose(ref neutral);
+                restBodyPosition = neutral.bodyPosition;
+                restBodyRotation = neutral.bodyRotation;
             }
 
             public static Rig Load()
@@ -754,6 +783,13 @@ namespace RunwayPanic.PlayerTools
                     float body = p.Body - p.Plant * (LowestFootHeight() - restFootHeight);
 
                     poseHandler.GetHumanPose(ref pose);
+                    if (p.GaitStride > 0f)
+                    {
+                        // Humanoid's inferred centre of mass and orientation vary as limbs swing.
+                        // Keep the locomotion root stable; only the small authored bob moves it.
+                        pose.bodyPosition = restBodyPosition;
+                        pose.bodyRotation = restBodyRotation;
+                    }
                     pose.bodyPosition += up * (body / Mathf.Max(0.01f, animator.humanScale));
                     if (p.BodyPitch != 0f)
                         pose.bodyRotation = Quaternion.AngleAxis(-p.BodyPitch, right) * pose.bodyRotation;
@@ -850,8 +886,31 @@ namespace RunwayPanic.PlayerTools
                 PoseLeg(HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot,
                     HumanBodyBones.RightToes, restThighR, restShinR, restFootR, p.ThighR, p.KneeR, p.FootR);
 
+                if (p.GaitStride > 0f)
+                {
+                    // Bend the legs around a continuous foot path instead of raising/lowering the
+                    // entire body to whichever foot happens to be lowest each frame.
+                    PoseGaitLeg(HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg,
+                        HumanBodyBones.LeftFoot, restLeftFoot, p, p.GaitPhase);
+                    PoseGaitLeg(HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg,
+                        HumanBodyBones.RightFoot, restRightFoot, p, p.GaitPhase + Mathf.PI);
+                }
+
                 if (p.Armed > 0f)
                     HoldGun(p);
+            }
+
+            private void PoseGaitLeg(HumanBodyBones upper, HumanBodyBones lower, HumanBodyBones foot,
+                Vector3 restFoot, Pose pose, float phase)
+            {
+                float swing = Mathf.Max(0f, Mathf.Cos(phase));
+                Vector3 target = restFoot + forward * (pose.GaitStride * Mathf.Sin(phase)) +
+                    up * (pose.GaitLift * swing * swing - pose.Body);
+                Transform end = Bone(foot);
+                Quaternion rotation = end.rotation;
+                Vector3 pole = Bone(upper).position + forward;
+                TwoBoneIK.Solve(Bone(upper), Bone(lower), end, target, pole);
+                end.rotation = rotation;
             }
 
             // Right hand to 'Hand' (two-bone IK), turned so the mounted gun points along 'GunPitch'; then the left hand

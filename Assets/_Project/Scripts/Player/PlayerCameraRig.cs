@@ -23,6 +23,7 @@ namespace RunwayPanic.Player
     /// <item><b>Shake</b>: <see cref="AddShake"/> jolts the view (RPG launch, explosions nearby) and dies away.</item>
     /// </list>
     /// </summary>
+    [DefaultExecutionOrder(-200)]
     [RequireComponent(typeof(PlayerInput))]
     public sealed class PlayerCameraRig : MonoBehaviour
     {
@@ -88,6 +89,10 @@ namespace RunwayPanic.Player
         private float recoilToReturn;
         private float swayTime;
         private float shake;
+        private Quaternion targetRotation;
+
+        /// <summary>Stable horizontal input basis, independent of body turning, recoil and camera collision.</summary>
+        public Quaternion MovementRotation => Quaternion.Euler(0f, yaw, 0f);
 
         /// <summary>True while the aim button is held with a gun (not while reloading).</summary>
         public bool IsAiming { get; private set; }
@@ -116,6 +121,15 @@ namespace RunwayPanic.Player
         private void Start()
         {
             yaw = transform.eulerAngles.y;
+            targetRotation = Quaternion.Euler(pitch, yaw, 0f);
+            // CharacterController and look both move on render frames. Do not let SmartUpdate
+            // infer a physics clock from the parented camera target during straight running.
+            CinemachineBrain brain = GetComponentInChildren<CinemachineBrain>();
+            if (brain != null)
+            {
+                brain.UpdateMethod = CinemachineBrain.UpdateMethods.LateUpdate;
+                brain.BlendUpdateMethod = CinemachineBrain.BrainUpdateMethods.LateUpdate;
+            }
             ApplyCamera(null);
         }
 
@@ -142,13 +156,22 @@ namespace RunwayPanic.Player
             RecoverRecoil();
 
             Vector2 sway = Sway() + Shake();
+            targetRotation = Quaternion.Euler(pitch + sway.y, yaw + sway.x, 0f);
             if (cameraTarget != null)
-                cameraTarget.rotation = Quaternion.Euler(pitch + sway.y, yaw + sway.x, 0f);
+                cameraTarget.rotation = targetRotation;
 
             ApplyCamera(data);
             ShowBody(ScopeBlend < 0.5f);
             if (controller != null)
                 controller.SetAimMovement(Mathf.Lerp(1f, aimMoveSpeed, AimBlend), IsAiming);
+        }
+
+        private void LateUpdate()
+        {
+            // The player rotates in Update. Restore world orientation after that parent rotation,
+            // before Cinemachine samples the target in LateUpdate.
+            if (cameraTarget != null)
+                cameraTarget.rotation = targetRotation;
         }
 
         /// <summary>Kicks the view up by <paramref name="degrees"/>; most of it settles back over a moment.</summary>

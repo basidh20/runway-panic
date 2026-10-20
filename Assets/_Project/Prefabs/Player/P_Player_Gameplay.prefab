@@ -4450,6 +4450,12 @@ MonoBehaviour:
   sprintSpeed: 7.5
   rotationSpeed: 12
   movementReference: {fileID: 4172546093885229929}
+  acceleration: 22
+  deceleration: 30
+  inputDeadZone: 0.1
+  airControl: 0.35
+  coyoteTime: 0.1
+  jumpBufferTime: 0.12
   maxAimAngle: 60
   maxAimAngleWhileShooting: 20
   jumpHeight: 1.2
@@ -4777,6 +4783,8 @@ MonoBehaviour:
   scopeSwaySpeed: 0.35
   recoilReturn: 0.7
   recoilRecovery: 9
+  shakeRecovery: 4
+  shakeFrequency: 22
 --- !u!1 &8930974583446172621
 GameObject:
   m_ObjectHideFlags: 0
