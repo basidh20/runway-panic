@@ -29,6 +29,8 @@ namespace RunwayPanic.Weapons
         [SerializeField] private Transform firstPersonCamera;
         [SerializeField] private Vector3 firstPersonLocalPosition = new Vector3(0.30f, -0.24f, 0.45f);
         [SerializeField] private Vector3 firstPersonLocalEulerAngles;
+        [Tooltip("Adds weapon sway, gait, firing, equip and reload presentation without moving the aiming camera.")]
+        [SerializeField] private bool animateFirstPersonWeapon = true;
 
         /// <summary>Raised after a gun is equipped. Argument: its WeaponBase, or null if the gun has none.</summary>
         public event Action<WeaponBase> WeaponEquipped;
@@ -51,6 +53,11 @@ namespace RunwayPanic.Weapons
             {
                 CreateSocket(firstPersonCamera != null ? firstPersonCamera : Camera.main != null ? Camera.main.transform : null,
                     "Socket_ViewWeapon", firstPersonLocalPosition, firstPersonLocalEulerAngles);
+                if (HandSocket != null && animateFirstPersonWeapon)
+                    HandSocket.gameObject.AddComponent<FirstPersonWeaponMotion>().Initialize(
+                        this, cameraRig, GetComponent<PlayerController>());
+                if (HandSocket != null)
+                    FirstPersonArms.Attach(this, cameraRig, HandSocket.parent);
                 return;
             }
 
