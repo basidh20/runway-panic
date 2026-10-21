@@ -138,6 +138,18 @@ public static class FirstPersonPolishCheck
                             "Scoped weapon hidden behind scope overlay");
                         if(weapon.Data.HasScope) check(holder.GetComponentInChildren<FirstPersonArms>().GetComponentsInChildren<SkinnedMeshRenderer>().All(r=>!r.enabled),"Arms hidden in scope");
                         else check(weapon.GetComponentsInChildren<Renderer>().Any(r => !r.forceRenderingOff),"Non-scoped aim keeps gun visible");
+                        if(!weapon.Data.HasScope)
+                        {
+                            var aimedArms = holder.GetComponentInChildren<FirstPersonArms>();
+                            Vector3 support = (Vector3)typeof(FirstPersonArms).GetMethod("SupportPoint", BindingFlags.Instance|BindingFlags.NonPublic).Invoke(aimedArms,null);
+                            float supportError = Vector3.Distance(aimedArms.LeftHand.position,support);
+                            float gripError = Vector3.Distance(aimedArms.RightHand.position,weapon.transform.TransformPoint(new Vector3(0.015f,-0.065f,-0.075f)));
+                            check(supportError<0.035f && gripError<0.025f,"Tier "+(tier+1)+" aimed hands reach both grips (left="+supportError.ToString("F4")+", right="+gripError.ToString("F4")+")");
+                            Ray reticle = Camera.main.ViewportPointToRay(new Vector3(0.5f,0.5f));
+                            string blocked = string.Join(",",weapon.GetComponentsInChildren<Renderer>().Concat(aimedArms.GetComponentsInChildren<Renderer>())
+                                .Where(r=>r.enabled && !r.forceRenderingOff && BlocksReticle(r,reticle)).Select(r=>r.name));
+                            check(blocked.Length==0,"Tier "+(tier+1)+" aimed reticle clear of weapon and arms "+blocked);
+                        }
                         ScreenCapture.CaptureScreenshot(Path.Combine(directory,"Tier" + (tier+1) + "-Aim.png"));
                         next(41); break;
                     case 41:
@@ -206,5 +218,24 @@ public static class FirstPersonPolishCheck
         };
         EditorApplication.update += tick;
         return "Started all-four-weapon fire/reload/aim/scope/switch/walk/sprint/jump/respawn check. Report: "+directory;
+    }
+
+    private static bool BlocksReticle(Renderer renderer, Ray ray)
+    {
+        Mesh baked = null;
+        Mesh mesh = null;
+        if(renderer is SkinnedMeshRenderer skin) { baked=new Mesh();skin.BakeMesh(baked);mesh=baked; }
+        else { var filter=renderer.GetComponent<MeshFilter>();if(filter!=null)mesh=filter.sharedMesh; }
+        if(mesh==null) return false;
+        var temporary = new GameObject("FP_AimRayCheck");
+        try
+        {
+            temporary.transform.SetPositionAndRotation(renderer.transform.position,renderer.transform.rotation);
+            temporary.transform.localScale=renderer.transform.lossyScale;
+            var collider=temporary.AddComponent<MeshCollider>();collider.sharedMesh=mesh;
+            Physics.SyncTransforms();
+            return collider.Raycast(ray,out _,3f);
+        }
+        finally { UnityEngine.Object.DestroyImmediate(temporary);if(baked!=null)UnityEngine.Object.DestroyImmediate(baked); }
     }
 }

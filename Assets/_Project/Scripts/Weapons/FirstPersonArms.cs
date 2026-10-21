@@ -147,8 +147,9 @@ namespace RunwayPanic.Weapons
         private Vector3 SupportPoint()
         {
             bool pistol = weapon.Data.HoldType == WeaponHoldType.Pistol && !weapon.Data.IsProjectile;
-            return weapon.transform.TransformPoint(pistol ? new Vector3(-0.035f, -0.025f, 0.015f) :
-                weapon.Data.IsProjectile ? new Vector3(-0.035f, -0.035f, 0.32f) : new Vector3(-0.025f, 0.025f, 0.30f));
+            return weapon.transform.TransformPoint(pistol ? new Vector3(-0.035f, -0.075f, -0.065f) :
+                weapon.Data.IsProjectile ? new Vector3(-0.06f, -0.035f, 0.18f) :
+                weapon.Data.HasScope ? new Vector3(-0.025f, 0.025f, 0.30f) : new Vector3(-0.025f, 0.005f, 0.24f));
         }
 
         private void LateUpdate()
@@ -170,8 +171,13 @@ namespace RunwayPanic.Weapons
             SampleHandAnimation(progress);
             // Presentation shoulders start below the frame; their lengths remain constant.
             Vector3 rightAnchor = transform.parent.TransformPoint(new Vector3(0.26f, -0.34f, 0.12f));
-            Vector3 leftAnchor = transform.parent.TransformPoint(new Vector3(-0.16f, -0.34f,
-                Mathf.Lerp(0.28f, 0.42f, rig.AimBlend)));
+            bool pistol = weapon.Data.HoldType == WeaponHoldType.Pistol && !weapon.Data.IsProjectile;
+            // Bringing the pistol's shoulder forward nearly onto its wrist folded the arm
+            // against the eye. Keep that shoulder back; long guns still need a forward reach.
+            Vector3 leftShoulderPosition = pistol
+                ? Vector3.Lerp(new Vector3(-0.16f, -0.34f, 0.28f), new Vector3(-0.24f, -0.34f, 0.02f), rig.AimBlend)
+                : new Vector3(-0.16f, -0.34f, Mathf.Lerp(0.28f, 0.42f, rig.AimBlend));
+            Vector3 leftAnchor = transform.parent.TransformPoint(leftShoulderPosition);
             if (rightShoulder != null) rightShoulder.position += rightAnchor - rightUpper.position;
             else rightUpper.position = rightAnchor;
             if (leftShoulder != null) leftShoulder.position += leftAnchor - leftUpper.position;

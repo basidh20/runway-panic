@@ -82,6 +82,21 @@ Screenshots and the detailed report are in `Temp/FirstPersonPolishCheck`.
 
 ## Boundaries and remaining art work
 
+### 21 October: non-scoped aim correction
+
+The pistol, assault rifle and launcher now use separate aimed positions. The
+pistol support shoulder stays back instead of folding its arm up beside the
+sights. The rifle grips sit closer to the receiver, and the launcher stays at
+the shoulder rather than putting its tube over the camera centre. The sniper's
+scope pose, FOV and overlay behavior are unchanged.
+
+The extended live probe passed over 1,847 gameplay frames with zero failures.
+It now checks both hands reach their grips while aimed and casts the centre
+view ray against the visible gun/hand meshes to verify the reticle is clear.
+All three non-scoped weapons passed these checks, along with the existing
+fire/reload/switch/scope/movement/respawn checks. Aimed-view captures are saved
+under `Docs/WorldBuilder/Evidence/FirstPersonPSX/Aim-*.png`.
+
 SHA-256 comparison confirmed these files are unchanged:
 `Assets/_Project/Scenes/MainMenu.unity`, `Assets/_Project/Scenes/Main.unity`,
 `Assets/_Project/Scripts/Core/GameManager.cs`, and

@@ -139,8 +139,12 @@ namespace RunwayPanic.Weapons
             bool pistol = data.HoldType == WeaponHoldType.Pistol && !data.IsProjectile;
             Vector3 hip = pistol ? restPosition : data.IsProjectile
                 ? new Vector3(0.32f, -0.28f, 0.62f) : new Vector3(0.27f, -0.24f, 0.51f);
-            // Keep the stock clear of the near plane and bring the existing sights onto the reticle.
-            Vector3 aimed = new Vector3(0f, pistol ? -0.10f : -0.16f, pistol ? hip.z + 0.025f : 0.72f);
+            // The opaque imported optics are not scope cameras. Keep their tops below the
+            // crosshair; a launcher stays at the shoulder instead of putting its tube over the eye.
+            // Preserve the sniper's existing transition into its scope overlay.
+            Vector3 aimed = data.HasScope ? new Vector3(0f, -0.16f, 0.72f) : data.IsProjectile
+                ? new Vector3(0.18f, -0.20f, 0.74f) : pistol
+                ? new Vector3(0f, -0.125f, 0.56f) : new Vector3(0f, -0.215f, 0.68f);
             Vector3 position = Vector3.Lerp(hip, aimed, aim) - restPosition;
             Vector3 angles = Vector3.zero;
 

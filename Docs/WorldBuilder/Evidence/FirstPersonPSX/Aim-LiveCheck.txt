@@ -1,0 +1,91 @@
+First-person polish live check
+PASS Tier 1 motion attached
+PASS Tier 1 uses existing camera
+PASS Tier 1 renderers visible
+PASS Tier 1 rigged hands and sleeves visible
+PASS Supplied PSX rig and animation player are active
+PASS Tier 1 right hand holds grip
+PASS Tier 1 exact camera-centre shooting ray
+PASS Tier 1 shot consumes exactly one round
+PASS Shot event queues recoil until LateUpdate
+PASS Tier 1 visible weapon recoil
+PASS Tier 1 reload presentation follows weapon timer
+PASS Tier 1 support hand leaves gun for reload
+PASS Tier 1 reload restores correct magazine
+PASS Tier 1 aim blend completes
+Aim input: True devices=FirstPersonCheckKeyboard,FirstPersonCheckMouse state=Playing
+PASS Non-scoped aim keeps gun visible
+PASS Tier 1 aimed hands reach both grips (left=0.0000, right=0.0000)
+PASS Tier 1 aimed reticle clear of weapon and arms 
+PASS Tier 1 visible after leaving aim
+PASS Tier 2 motion attached
+PASS Tier 2 uses existing camera
+PASS Tier 2 renderers visible
+PASS Tier 2 rigged hands and sleeves visible
+PASS Supplied PSX rig and animation player are active
+PASS Tier 2 right hand holds grip
+PASS Tier 2 exact camera-centre shooting ray
+PASS Tier 2 shot consumes exactly one round
+PASS Shot event queues recoil until LateUpdate
+PASS Tier 2 visible weapon recoil
+PASS Tier 2 reload presentation follows weapon timer
+PASS Tier 2 support hand leaves gun for reload
+PASS Tier 2 reload restores correct magazine
+PASS Tier 2 aim blend completes
+Aim input: True devices=FirstPersonCheckKeyboard,FirstPersonCheckMouse state=Playing
+PASS Non-scoped aim keeps gun visible
+PASS Tier 2 aimed hands reach both grips (left=0.0000, right=0.0000)
+PASS Tier 2 aimed reticle clear of weapon and arms 
+PASS Tier 2 visible after leaving aim
+PASS Tier 3 motion attached
+PASS Tier 3 uses existing camera
+PASS Tier 3 renderers visible
+PASS Tier 3 rigged hands and sleeves visible
+PASS Supplied PSX rig and animation player are active
+PASS Tier 3 right hand holds grip
+PASS Tier 3 exact camera-centre shooting ray
+PASS Tier 3 shot consumes exactly one round
+PASS Shot event queues recoil until LateUpdate
+PASS Tier 3 visible weapon recoil
+PASS Tier 3 reload presentation follows weapon timer
+PASS Tier 3 support hand leaves gun for reload
+PASS Tier 3 reload restores correct magazine
+PASS Tier 3 aim blend completes
+Aim input: True devices=FirstPersonCheckKeyboard,FirstPersonCheckMouse state=Playing
+PASS Scoped weapon hidden behind scope overlay
+PASS Arms hidden in scope
+PASS Tier 3 visible after leaving aim
+PASS Tier 4 motion attached
+PASS Tier 4 uses existing camera
+PASS Tier 4 renderers visible
+PASS Tier 4 rigged hands and sleeves visible
+PASS Supplied PSX rig and animation player are active
+PASS Tier 4 right hand holds grip
+PASS Tier 4 exact camera-centre shooting ray
+PASS Tier 4 shot consumes exactly one round
+PASS Shot event queues recoil until LateUpdate
+PASS Tier 4 visible weapon recoil
+PASS Tier 4 reload presentation follows weapon timer
+PASS Tier 4 support hand leaves gun for reload
+PASS Tier 4 reload restores correct magazine
+PASS Tier 4 aim blend completes
+Aim input: True devices=FirstPersonCheckKeyboard,FirstPersonCheckMouse state=Playing
+PASS Non-scoped aim keeps gun visible
+PASS Tier 4 aimed hands reach both grips (left=0.0000, right=0.0000)
+PASS Tier 4 aimed reticle clear of weapon and arms 
+PASS Tier 4 visible after leaving aim
+PASS Returning to pistol reuses original cached WeaponBase
+PASS Exactly four cached weapons; no duplicate viewmodels
+PASS Switching preserves magazine ammo
+PASS Walk responds at original 4.5 m/s
+PASS Weapon gait does not shake the aiming camera
+PASS Walking animates the weapon
+PASS Sprint retains original 7.5 m/s
+PASS Sprint lowers weapon smoothly
+PASS Jump and landing complete with presentation active
+PASS Death and respawn restore the player
+PASS Respawn view resets level
+PASS Weapon animation survives respawn
+PASS Four waves preserved
+PASS 75-degree upward limit preserved
+Advancing frames: 1847; failures: 0
