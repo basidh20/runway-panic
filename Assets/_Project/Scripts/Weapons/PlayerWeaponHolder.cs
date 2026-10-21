@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using RunwayPanic.Player;
 using UnityEngine;
 
 namespace RunwayPanic.Weapons
 {
     /// <summary>
-    /// Holds the player's equipped gun in the right hand. Creates a hand socket under the
-    /// Humanoid RightHand bone and parents gun instances to it at local zero, as the gun prefabs expect.
+    /// Holds the player's equipped gun. In third-person it uses the Humanoid RightHand bone; in first-person it
+    /// uses a camera-relative socket, so the gun never clips through the view when the hidden body animates.
     /// Guns are spawned once and then shown or hidden, so each keeps its own ammo between switches.
     /// </summary>
     public sealed class PlayerWeaponHolder : MonoBehaviour
@@ -23,11 +24,20 @@ namespace RunwayPanic.Weapons
         [SerializeField] private Vector3 gripLocalPosition;
         [SerializeField] private Vector3 gripLocalEulerAngles;
 
+        [Header("First-Person View")]
+        [Tooltip("Gameplay camera that owns the first-person weapon socket.")]
+        [SerializeField] private Transform firstPersonCamera;
+        [SerializeField] private Vector3 firstPersonLocalPosition = new Vector3(0.30f, -0.24f, 0.45f);
+        [SerializeField] private Vector3 firstPersonLocalEulerAngles;
+        [Tooltip("Adds weapon sway, gait, firing, equip and reload presentation without moving the aiming camera.")]
+        [SerializeField] private bool animateFirstPersonWeapon = true;
+
         /// <summary>Raised after a gun is equipped. Argument: its WeaponBase, or null if the gun has none.</summary>
         public event Action<WeaponBase> WeaponEquipped;
 
         private readonly Dictionary<GameObject, GameObject> spawnedWeapons = new Dictionary<GameObject, GameObject>();
         private GameObject currentInstance;
+        private PlayerCameraRig cameraRig;
 
         public Transform HandSocket { get; private set; }
         public GameObject CurrentWeaponObject => currentInstance;
@@ -35,8 +45,21 @@ namespace RunwayPanic.Weapons
 
         private void Awake()
         {
+            cameraRig = GetComponent<PlayerCameraRig>();
             if (characterAnimator == null)
                 characterAnimator = GetComponentInChildren<Animator>();
+
+            if (cameraRig != null && cameraRig.IsFirstPerson)
+            {
+                CreateSocket(firstPersonCamera != null ? firstPersonCamera : Camera.main != null ? Camera.main.transform : null,
+                    "Socket_ViewWeapon", firstPersonLocalPosition, firstPersonLocalEulerAngles);
+                if (HandSocket != null && animateFirstPersonWeapon)
+                    HandSocket.gameObject.AddComponent<FirstPersonWeaponMotion>().Initialize(
+                        this, cameraRig, GetComponent<PlayerController>());
+                if (HandSocket != null)
+                    FirstPersonArms.Attach(this, cameraRig, HandSocket.parent);
+                return;
+            }
 
             Transform hand = FindHandBone();
             if (hand == null)
@@ -46,9 +69,21 @@ namespace RunwayPanic.Weapons
                 return;
             }
 
-            HandSocket = new GameObject(SocketName).transform;
-            HandSocket.SetParent(hand, false);
-            HandSocket.SetLocalPositionAndRotation(gripLocalPosition, Quaternion.Euler(gripLocalEulerAngles));
+            CreateSocket(hand, SocketName, gripLocalPosition, gripLocalEulerAngles);
+        }
+
+        private void CreateSocket(Transform parent, string socketName, Vector3 localPosition, Vector3 localEulerAngles)
+        {
+            if (parent == null)
+            {
+                Debug.LogError($"{nameof(PlayerWeaponHolder)} could not find a parent for its weapon socket.", this);
+                enabled = false;
+                return;
+            }
+
+            HandSocket = new GameObject(socketName).transform;
+            HandSocket.SetParent(parent, false);
+            HandSocket.SetLocalPositionAndRotation(localPosition, Quaternion.Euler(localEulerAngles));
         }
 
         private void Start()

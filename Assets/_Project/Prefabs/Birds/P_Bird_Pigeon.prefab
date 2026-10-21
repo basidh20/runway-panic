@@ -87,5 +87,26 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5648174821525129418, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8179175798974526591}
   m_SourcePrefab: {fileID: 100100000, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+--- !u!1 &5046003549994969534 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5648174821525129418, guid: 2409dca63f1dbb24491a197a29bdf209, type: 3}
+  m_PrefabInstance: {fileID: 604986951308730740}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8179175798974526591
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5046003549994969534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a4851be355ee424e815f58532b3191f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Agents.Pigeon.PigeonBrain
+  config: {fileID: 11400000, guid: 81904c0b58d5360419b4e0512c2d9b31, type: 2}

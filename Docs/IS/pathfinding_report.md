@@ -95,3 +95,51 @@ Random pairs (seed 12345, flyable points anywhere in the volume; fails only on l
 
 Barricade (temporary `P_Barricade_Movable` on the runway, moved 6 m): PASSED: at A it blocked **8** cells; after moving 6 m to B it blocks **8** cells there and **0** cells stay wrongly blocked at A.
 
+## Run 2026-10-20 20:19 — FAILURES
+
+- Scene: `Assets/_Project/Scenes/Main.unity` (Edit mode, Unity 6000.6.4f1)
+- Grid: 50 × 12 × 40 = 24,000 cells of 2 m; volume y 0.5 → 24.5 m; clearance 0.4 m; 1,415 blocked; 3 free-air region(s); built in 11.2 ms
+- A*: 26 neighbours, no corner cutting, octile heuristic × 1.001 tie-break, limit 8,000 cells, sealed-off goals rejected by region check
+- Pass rules: path found; every leg clear of geometry (sphere 0.05 m); worst of 20 timed searches < 2 ms; obstacle crossings must have a blocked straight line
+
+| Case | Result | Straight line blocked | Legs clear | Ends at target | Waypoints | Cells expanded | Straight (m) | Path (m) | Avg ms | Worst ms | Note |
+|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|
+| Across the hangar (X) | PASS | yes | yes | yes | 3 | 22 | 23.5 | 27.8 | 0.027 | 0.069 |  |
+| Across the hangar (Z) | PASS | yes | yes | yes | 3 | 47 | 37.0 | 41.0 | 0.041 | 0.053 |  |
+| Across the tower (X) | PASS | yes | yes | yes | 2 | 13 | 21.7 | 22.5 | 0.017 | 0.019 |  |
+| Across the tower (Z) | PASS | yes | yes | yes | 3 | 37 | 21.2 | 23.5 | 0.032 | 0.036 |  |
+| Corner to corner (SW → NE) | PASS | yes | yes | yes | 2 | 100 | 116.8 | 116.9 | 0.108 | 0.116 |  |
+| Corner to corner (NW → SE) | PASS | yes | yes | yes | 3 | 321 | 116.8 | 119.2 | 0.262 | 0.277 |  |
+
+Random pairs (seed 12345, flyable points anywhere in the volume; fails only on legs through geometry or searches ≥ 2 ms; "no path" can be a closed room or the 8,000-cell search limit, drawn in magenta):
+
+| Pairs | Found | No path | Legs through geometry | Not ending at target | Avg ms | Worst ms | ≥ 2 ms | Max cells expanded |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 200 | 199 | 1 (1 sealed off) | 0 | 0 | 0.057 | 3.350 | 1 | 4019 |
+
+Barricade (temporary `P_Barricade_Movable` on the runway, moved 6 m): PASSED: at A it blocked **8** cells; after moving 6 m to B it blocks **8** cells there and **0** cells stay wrongly blocked at A.
+
+## Run 2026-10-20 20:23 — FAILURES
+
+- Scene: `Assets/_Project/Scenes/Main.unity` (Edit mode, Unity 6000.6.4f1)
+- Grid: 50 × 12 × 40 = 24,000 cells of 2 m; volume y 0.5 → 24.5 m; clearance 0.4 m; 1,415 blocked; 3 free-air region(s); built in 11.1 ms
+- A*: 26 neighbours, no corner cutting, octile heuristic × 1.001 tie-break, limit 8,000 cells, sealed-off goals rejected by region check
+- Pass rules: path found; every leg clear of geometry (sphere 0.05 m); worst of 20 timed searches < 2 ms; obstacle crossings must have a blocked straight line
+
+| Case | Result | Straight line blocked | Legs clear | Ends at target | Waypoints | Cells expanded | Straight (m) | Path (m) | Avg ms | Worst ms | Note |
+|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|
+| Across the hangar (X) | PASS | yes | yes | yes | 3 | 22 | 23.5 | 27.8 | 0.026 | 0.044 |  |
+| Across the hangar (Z) | PASS | yes | yes | yes | 3 | 47 | 37.0 | 41.0 | 0.040 | 0.045 |  |
+| Across the tower (X) | PASS | yes | yes | yes | 2 | 13 | 21.7 | 22.5 | 0.017 | 0.027 |  |
+| Across the tower (Z) | PASS | yes | yes | yes | 3 | 37 | 21.2 | 23.5 | 0.032 | 0.036 |  |
+| Corner to corner (SW → NE) | PASS | yes | yes | yes | 2 | 100 | 116.8 | 116.9 | 0.114 | 0.157 |  |
+| Corner to corner (NW → SE) | PASS | yes | yes | yes | 3 | 321 | 116.8 | 119.2 | 0.265 | 0.304 |  |
+
+Random pairs (seed 12345, flyable points anywhere in the volume; fails only on legs through geometry or searches ≥ 2 ms; "no path" can be a closed room or the 8,000-cell search limit, drawn in magenta):
+
+| Pairs | Found | No path | Legs through geometry | Not ending at target | Avg ms | Worst ms | ≥ 2 ms | Max cells expanded |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 200 | 199 | 1 (1 sealed off) | 0 | 0 | 0.057 | 3.504 | 1 | 4019 |
+
+Barricade (temporary `P_Barricade_Movable` on the runway, moved 6 m): PASSED: at A it blocked **8** cells; after moving 6 m to B it blocks **8** cells there and **0** cells stay wrongly blocked at A.
+

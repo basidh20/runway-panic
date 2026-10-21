@@ -70,10 +70,11 @@ namespace RunwayPanic.Player.EditorTools
                         Fov = 12f, Sensitivity = 0.3f, Hip = 5f, Aim = 0f,
                         PerShot = 3f, Max = 8f, Recovery = 6f, Recoil = 3.5f, Radius = 0.08f, Scope = true,
                     },
-                    // RPG: a big rocket — wide hit radius, big kick.
+                    // RPG: a big rocket — flies straight (it's a slow projectile, so spread would just drop it into
+                    // the ground), wide hit radius, big kick.
                     _ => new GunAim
                     {
-                        Fov = 45f, Sensitivity = 0.65f, Hip = 2.5f, Aim = 0.6f,
+                        Fov = 45f, Sensitivity = 0.65f, Hip = 1f, Aim = 0.25f,
                         PerShot = 2f, Max = 5f, Recovery = 5f, Recoil = 4f, Radius = 0.35f,
                     },
                 };
@@ -166,9 +167,12 @@ namespace RunwayPanic.Player.EditorTools
                 rigSo.FindProperty("cameraTarget").objectReferenceValue = target;
                 rigSo.FindProperty("virtualCamera").objectReferenceValue = vcam;
                 rigSo.FindProperty("follow").objectReferenceValue = follow;
-                // Character clearly left of the crosshair, as in shoulder-camera shooters.
-                rigSo.FindProperty("hipShoulder").vector3Value = new Vector3(0.8f, 0.1f, 0f);
-                rigSo.FindProperty("aimShoulder").vector3Value = new Vector3(0.65f, 0.08f, 0f);
+                // Keep a first-person prefab first-person when this setup tool is run again.
+                if (!rigSo.FindProperty("firstPerson").boolValue)
+                {
+                    rigSo.FindProperty("hipShoulder").vector3Value = new Vector3(0.8f, 0.1f, 0f);
+                    rigSo.FindProperty("aimShoulder").vector3Value = new Vector3(0.65f, 0.08f, 0f);
+                }
                 rigSo.ApplyModifiedPropertiesWithoutUndo();
 
                 Transform hud = root.GetComponentInChildren<CrosshairUI>(true).transform;

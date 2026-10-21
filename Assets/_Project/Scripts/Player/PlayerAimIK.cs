@@ -16,6 +16,7 @@ namespace RunwayPanic.Player
     /// flinch (tag "Hit") briefly loosens the aim so the hit knocks the gun. While a gun is held it also tells
     /// <see cref="PlayerController"/> where the aim is, so the body turns to keep it within the torso's reach.
     /// </summary>
+    [DefaultExecutionOrder(-150)]
     [RequireComponent(typeof(PlayerAnimator))]
     public sealed class PlayerAimIK : MonoBehaviour
     {
@@ -97,14 +98,28 @@ namespace RunwayPanic.Player
             leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand);
         }
 
+        private void Update()
+        {
+            if (cameraRig != null && cameraRig.IsFirstPerson)
+            {
+                playerController?.ClearAim();
+                return;
+            }
+
+            bool holdingGun = weaponHolder != null && weaponHolder.CurrentWeaponObject != null &&
+                              weaponHolder.CurrentWeaponObject.activeInHierarchy;
+            UpdateFacing(holdingGun);
+        }
+
         private void LateUpdate()
         {
+            if (cameraRig != null && cameraRig.IsFirstPerson)
+                return;
+
             Transform gun = weaponHolder != null && weaponHolder.CurrentWeaponObject != null &&
                             weaponHolder.CurrentWeaponObject.activeInHierarchy
                 ? weaponHolder.CurrentWeaponObject.transform
                 : null;
-
-            UpdateFacing(gun != null);
 
             bool armed = gun != null && animator.layerCount > UpperBodyLayer &&
                          animator.GetCurrentAnimatorStateInfo(UpperBodyLayer).IsTag(ArmedTag);
@@ -133,7 +148,10 @@ namespace RunwayPanic.Player
 
             // Squared up to the aim right after a shot and the whole time the player aims down the sights.
             bool squared = Time.time - lastShotTime < shootingFacingTime || (cameraRig != null && cameraRig.IsAiming);
-            playerController.SetAim(cam.transform.forward, squared);
+            Vector3 direction = cameraRig != null && cameraRig.isActiveAndEnabled
+                ? cameraRig.MovementRotation * Vector3.forward
+                : cam.transform.forward;
+            playerController.SetAim(direction, squared);
         }
 
         // While the hit flinch plays, aim correction dips and recovers (a sine over the clip), so the hit knocks

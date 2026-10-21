@@ -39,11 +39,27 @@ namespace RunwayPanic.AudioTools
         [MenuItem("Tools/Audio/Generate Game Audio")]
         public static void Generate()
         {
+            int written = GenerateClips(_ => true);
+            WirePrefabs();
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Audio] Generated {written} clips, {CueCount} cues, and wired the prefabs.");
+        }
+
+        /// <summary>
+        /// Synthesises only the clips whose file name contains one of <paramref name="names"/>, then refreshes every
+        /// cue — for a feature that adds a few sounds without rewriting the rest. Prefabs are not touched.
+        /// </summary>
+        internal static int GenerateOnly(params string[] names) =>
+            GenerateClips(path => names.Any(n => Path.GetFileName(path).Contains(n)));
+
+        private static int GenerateClips(Func<string, bool> include)
+        {
             var kinds = new Dictionary<string, ClipKind>();
             int written = 0;
             try
             {
-                List<(string path, ClipKind kind, Func<Signal> make)> recipes = GameAudioRecipes.All().ToList();
+                List<(string path, ClipKind kind, Func<Signal> make)> recipes =
+                    GameAudioRecipes.All().Where(r => include(r.path)).ToList();
                 foreach ((string path, ClipKind kind, Func<Signal> make) in recipes)
                 {
                     EditorUtility.DisplayProgressBar("Generating game audio", Path.GetFileName(path), written / (float)recipes.Count);
@@ -61,9 +77,7 @@ namespace RunwayPanic.AudioTools
             ApplyImportSettings(kinds);
             CreateCues();
             AssetDatabase.SaveAssets();
-            WirePrefabs();
-            AssetDatabase.SaveAssets();
-            Debug.Log($"[Audio] Generated {written} clips, {CueCount} cues, and wired the prefabs.");
+            return written;
         }
 
         // ---------- Import settings ----------
@@ -146,6 +160,8 @@ namespace RunwayPanic.AudioTools
             yield return Cue("SC_Shot_Rifle", Variants("Weapons", "SFX_Shot_Rifle", 3), W, 0.75f, 0.03f, true, 4f, 120f, 6);
             yield return Cue("SC_Shot_Sniper", new[] { S("Weapons", "SFX_Shot_Sniper") }, W, 1f, 0.02f, true, 6f, 200f, 2);
             yield return Cue("SC_Shot_RPG", new[] { S("Weapons", "SFX_Shot_RPG") }, W, 1f, 0.03f, true, 6f, 160f, 2);
+            yield return Cue("SC_Rocket_Flight", new[] { S("Weapons", "SFX_Rocket_Flight") }, W, 0.55f, 0f, true, 3f, 80f, 3);
+            yield return Cue("SC_Explosion", Variants("Weapons", "SFX_Explosion", 2), W, 1f, 0.06f, true, 12f, 300f, 3);
             yield return Cue("SC_Reload_Start", new[] { S("Weapons", "SFX_Reload_Start") }, W, 0.6f, 0.02f, true, 2f, 20f, 2);
             yield return Cue("SC_Reload_Finish", new[] { S("Weapons", "SFX_Reload_Finish") }, W, 0.65f, 0.02f, true, 2f, 20f, 2);
             yield return Cue("SC_Weapon_Equip", new[] { S("Weapons", "SFX_Weapon_Equip") }, W, 0.55f, 0.03f, true, 2f, 15f, 2);

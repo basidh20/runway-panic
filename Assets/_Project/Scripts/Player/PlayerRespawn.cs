@@ -21,6 +21,7 @@ namespace RunwayPanic.Player
         private PlayerHealth playerHealth;
         private PlayerLifeManager lifeManager;
         private PlayerController playerController;
+        private PlayerCameraRig cameraRig;
         private Vector3 startPosition;
         private Quaternion startRotation;
         private Coroutine respawnRoutine;
@@ -33,6 +34,7 @@ namespace RunwayPanic.Player
             playerHealth = GetComponent<PlayerHealth>();
             lifeManager = GetComponent<PlayerLifeManager>();
             playerController = GetComponent<PlayerController>();
+            cameraRig = GetComponent<PlayerCameraRig>();
             startPosition = transform.position;
             startRotation = transform.rotation;
         }
@@ -84,6 +86,8 @@ namespace RunwayPanic.Player
             transform.SetPositionAndRotation(position, rotation);
             characterController.enabled = true;
 
+            // The rig owns its own yaw/pitch, so reset it explicitly instead of preserving the view direction from death.
+            cameraRig?.ResetViewTo(rotation);
             // Snap the camera instead of letting it fly across the map.
             CinemachineCore.OnTargetObjectWarped(transform, delta);
 

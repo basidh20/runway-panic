@@ -14,7 +14,8 @@ namespace RunwayPanic.Weapons
     /// distance — no parallax, so a bird in open sky is hit exactly where the crosshair is — and it is as wide as the
     /// gun's hit radius, so small fast birds don't need pixel-perfect aim. Cover between the gun's muzzle and the impact
     /// still blocks the shot. Damages anything implementing <see cref="IDamageable"/> and kicks the camera with the
-    /// gun's recoil.
+    /// gun's recoil. A gun with a projectile (the RPG) launches a <see cref="Rocket"/> at that point instead, which
+    /// does the damage when it goes off.
     /// </summary>
     [RequireComponent(typeof(PlayerInput), typeof(PlayerWeaponHolder))]
     public sealed class PlayerShooting : MonoBehaviour
@@ -36,7 +37,7 @@ namespace RunwayPanic.Weapons
         /// <summary>Raised after a shot's damage is applied. Arguments: what was hit, whether that killed it.</summary>
         public event Action<IDamageable, bool> HitConfirmed;
 
-        private const float PivotHeight = 1.5f; // where the aim ray starts: the player's upper body
+        private const float PivotHeight = 1.5f; // third-person aim-ray compensation height
 
         private readonly RaycastHit[] hitBuffer = new RaycastHit[MaxHits];
         private PlayerWeaponHolder weaponHolder;
@@ -80,6 +81,11 @@ namespace RunwayPanic.Weapons
             WeaponBase current = weaponHolder.CurrentWeapon;
             if (current != null && current.Data != null)
                 bloom = Mathf.MoveTowards(bloom, 0f, current.Data.SpreadRecovery * Time.deltaTime);
+
+            // UI clicks use the same mouse button as Attack. Gameplay weapon input is valid only during a live wave,
+            // never while a pause/shop/end screen has released the cursor for menu interaction.
+            if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
+                return;
 
             if (reloadAction != null && reloadAction.WasPressedThisFrame())
             {
@@ -149,14 +155,26 @@ namespace RunwayPanic.Weapons
 
             Debug.DrawLine(origin, endPoint, target != null ? Color.red : Color.yellow, 0.2f);
 
-            // Announce the shot BEFORE applying damage: a bird that dies from this hit reads the shot's
-            // origin (via PlayerEventHub) to know where the shooter stood.
-            ShotFired?.Invoke(origin, endPoint, target);
-
-            if (target != null && target.IsAlive)
+            if (data != null && data.IsProjectile)
             {
-                target.TakeDamage(weapon.Damage, weapon.Rarity);
-                HitConfirmed?.Invoke(target, !target.IsAlive);
+                // A rocket flies there and does its own damage when it goes off; nothing is hit yet.
+                ShotFired?.Invoke(origin, endPoint, null);
+                Vector3 direction = toEnd.sqrMagnitude > 0.01f ? toEnd.normalized : aimRay.direction;
+                GameObject projectile = Instantiate(data.ProjectilePrefab, origin, Quaternion.LookRotation(direction));
+                if (projectile.TryGetComponent(out Rocket rocket))
+                    rocket.Launch(this, weapon, direction);
+            }
+            else
+            {
+                // Announce the shot BEFORE applying damage: a bird that dies from this hit reads the shot's
+                // origin (via PlayerEventHub) to know where the shooter stood.
+                ShotFired?.Invoke(origin, endPoint, target);
+
+                if (target != null && target.IsAlive)
+                {
+                    target.TakeDamage(weapon.Damage, weapon.Rarity);
+                    HitConfirmed?.Invoke(target, !target.IsAlive);
+                }
             }
 
             // 4. Feel: the spread blooms and the view kicks (less while aiming).
@@ -171,6 +189,9 @@ namespace RunwayPanic.Weapons
             return true;
         }
 
+        /// <summary>Reports a hit done later by one of this shooter's projectiles (raises <see cref="HitConfirmed"/>).</summary>
+        public void ReportHit(IDamageable target, bool killed) => HitConfirmed?.Invoke(target, killed);
+
         /// <summary>
         /// The point under the crosshair (no spread), up to <paramref name="maxDistance"/>: what the gun should point
         /// at. Used by the aim IK so the barrel lines up with where shots will go.
@@ -184,11 +205,14 @@ namespace RunwayPanic.Weapons
             return TryRaycastIgnoringSelf(ray, maxDistance, out RaycastHit hit) ? hit.point : ray.GetPoint(maxDistance);
         }
 
-        // The crosshair ray, but starting level with the player: anything between the camera and the player (a wall
-        // behind them, a bird passing the lens) must not catch the aim.
+        // In first person the eye is the origin of the crosshair, so use the exact camera ray. The third-person path
+        // retains its upper-body compensation so a wall or bird behind the character cannot catch the aim.
         private Ray AimRay(Camera cam)
         {
             Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            if (cameraRig != null && cameraRig.IsFirstPerson)
+                return ray;
+
             Vector3 pivot = transform.position + Vector3.up * PivotHeight;
             float skip = Mathf.Max(0f, Vector3.Dot(pivot - ray.origin, ray.direction));
             ray.origin += ray.direction * skip;

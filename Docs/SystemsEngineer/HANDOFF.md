@@ -13,6 +13,17 @@ Template:
 
 ---
 
+## 2026-10-18 — to: World Builder — what is left for `Main` from the Systems Engineer
+- **What:** `Scenes/Main.unity` (yours — I don't edit it).
+- **Details:** everything else of mine already works in `Main` through prefabs that are in it: the player (now with the over-the-shoulder camera, aim and sniper scope), the GameManager (now running the four timed waves at your `BirdSpawn_01`–`08` markers), the shop, the pickups, the shelter doors and both checkpoints. The main menu is its own scene, first in the build. One item is still missing:
+  - **Movable barricades: none are placed** (`P_Barricade_Movable`, 0 in `Main`, checked 18 Oct). It is a variant of your `P_Greybox_Barricade` — same look — that the player can push and that birds path around.
+- **Action needed:**
+  1. In `Main.unity`, replace the static barricades you want movable with `Prefabs/Interactables/P_Barricade_Movable` (same position and rotation). Keep some static ones as fixed cover if you like.
+  2. Leave the movable ones **out of the NavMesh bake** — they carve the NavMesh themselves once they stop moving; baked in, their start position would become a permanent wall. The bird flight grid updates itself when one is pushed (`Barricade.Settled`), nothing to wire.
+  3. Please also: keep the spawn markers in group `AirportSpawn` (the waves use them), and don't add an EventSystem to `Main` (the menus share one that lives across scenes).
+  4. Tell me whether the team wants **three or four waves** — your FlightIntegration doc says three, the game and the README use four (current). I rebuild the waves if it changes.
+- **Status:** open
+
 ## 2026-10-18 — to: all — timed waves, the wave HUD, and a balance / checkpoint playtest
 - **What:** `WaveManager` on `Prefabs/Core/P_GameManager` (already in `Main`, so no scene edit), waves in `ScriptableObjects/Waves/Wave_1_Gulls` … `Wave_4_Hawks`, HUD additions on `P_Player_Gameplay`; tools `Tools > S2 > Build Waves and Wave HUD` and `Tools > S2 > Run Wave and Checkpoint Playtest`; report `Docs/SystemsEngineer/WaveBalanceReport.md`.
 - **Details:**

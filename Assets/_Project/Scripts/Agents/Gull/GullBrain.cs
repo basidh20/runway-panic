@@ -22,6 +22,8 @@ namespace RunwayPanic.Agents.Gull
         [SerializeField] private GullStrategyConfig config;
         [Tooltip("Historical G1 label demonstration only. Leave OFF for real G2 gathering.")]
         [SerializeField] private bool previewStateCycle;
+        [Tooltip("Opt in to Gull state-transition messages in the Editor or a development build.")]
+        [SerializeField] private bool logStateTransitions;
         [Tooltip("Optional final Gull warning call. An audible synthetic chirp is used until a clip is assigned.")]
         [SerializeField] private AudioClip callClip;
 
@@ -424,7 +426,7 @@ namespace RunwayPanic.Agents.Gull
                     }
                     break;
             }
-            if (Application.isEditor || Debug.isDebugBuild)
+            if (logStateTransitions && (Application.isEditor || Debug.isDebugBuild))
                 Debug.Log("[Gull] " + name + " -> " + CurrentStateName + (previewStateCycle ? " (G1 label preview)" : ""), this);
         }
 

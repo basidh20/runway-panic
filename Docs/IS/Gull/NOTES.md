@@ -4,7 +4,15 @@ Branch: `feature/is-gull`, based on develop after PR #44 (airport AI marker prep
 
 ## References and scope
 
-For every bird task consult the workspace's `BIRD_STRATEGIES.md`; for Gull also consult `01_GULL_PLAN.md`. The team's **three waves / four species** decision overrides the older four-wave example. G1 does not configure waves.
+For every bird task consult the workspace's `BIRD_STRATEGIES.md`; for Gull also consult `01_GULL_PLAN.md`. The team's latest decision is **four waves / four species**. Earlier three-wave references below describe historical work and are superseded.
+
+## Current sandbox and Main wave isolation
+
+`Sandbox_IS_Gull` disables only its own inherited `WaveManager` through a scene prefab override. The shared GameManager prefab and Main remain enabled for production waves. Open the sandbox, press Play, click Game view and press **B once** for five test Gulls; **F3** toggles labels and **F4** shows the statistics panel. These are manual test birds, not the production wave spawner. Stop Play and open `Main` for normal automatic countdowns and waves.
+
+The controlled **Tools > IS > Gull > Run Focused Main Gull Check** temporarily suspends the Main WaveManager during its own Play session, then restores its prior enabled state when Play exits, including interruptions. The check uses three temporary birds and explicit GameManager wave hooks. Existing reports below are historical and do not certify the latest combined build. The owner has since observed that Gull drops work in normal gameplay; that observation is not a new automated test result.
+
+For the current normal-Main Wave 1 observation and the owner's separate nonlethal-hit/distress-recovery check, see `MainWaveRegression.md`. Gull transition logging is now off by default; to investigate a particular Gull, enable **Log State Transitions** on its GullBrain in the Editor or a development build. F3 labels and F4 statistics remain separate opt-in diagnostics. Errors about missing required references remain visible.
 
 `00_SHARED_FOUNDATION.md`, referenced by the Gull plan, was not present in the workspace or Downloads during this implementation. The actual checked-in `BirdBrain`, motor/animator interfaces, health, markers, state label, test spawner and handoff notes were inspected instead. F1/F2 and the current F3/F4 components exist; Gull is already a valid species. No shared contract was reimplemented.
 
@@ -286,7 +294,7 @@ Warmup is at least 15 seconds and also waits for one actual FOD impact, so Unity
 
 The report is `PerformanceSample.md`. Combined mean is the sum of the captured scopes' nanoseconds, converted to milliseconds and divided by the number of non-empty eight-call brain frames. Per-marker p95/peaks are reported separately. **Adding individual marker peaks gives a conservative bound, not the actual same-frame combined peak or p95.** Different marker peaks may occur in different frames; no invented combined percentile is reported.
 
-The scopes include synchronous work called inside those Unity callbacks. They exclude rendering/GPU, general physics-engine work, animation-system jobs, player/hub/debug scripts, and unlisted callbacks. Warmup also excludes initial spawn/first-use cost; distress/death spikes are not tested. State-transition logging remains enabled, so a debug-log cost can appear inside a recorded brain callback. This is one Editor sample, not full standalone-build certification.
+The scopes include synchronous work called inside those Unity callbacks. They exclude rendering/GPU, general physics-engine work, animation-system jobs, player/hub/debug scripts, and unlisted callbacks. Warmup also excludes initial spawn/first-use cost; distress/death spikes are not tested. State-transition logging was enabled for this historical capture, so a debug-log cost can appear inside a recorded brain callback. Logging is now opt-in; no new performance measurement was made. This is one Editor sample, not full standalone-build certification.
 
 The initial marker lookup was inconclusive because this Unity version prefixes script names with `Assembly-CSharp.dll!namespace::`. Matching was corrected using actual engine metadata; missing scopes were never treated as zero cost. **Inspect Available Timing Markers** writes diagnostic metadata to the ignored `Logs/GullProfilerMarkers.txt` without modifying game assets. Profiler recording is restored to its prior enabled state and all recorders are disposed after success, failure or interruption.
 
@@ -309,7 +317,7 @@ The mean is below 0.5 ms, but the brain's **1.1237 ms** peak alone proves the st
 - G4 prediction, warning, real drop and fallback swoop are implemented in the Gull sandbox; final tuning/art/sound and wider balance checks remain integration work.
 - G5 damage-triggered distress reaction and cooldown are implemented in the Gull sandbox.
 - G6a debug metrics overlay is implemented and visually confirmed by the project owner. G6b includes six measured autonomous accuracy attempts. G6c records scoped eight-Gull Editor timings: low mean, but an over-budget brain peak. Detailed spike analysis, development-player confirmation and final integration/viva evidence remain outstanding.
-- Main now has one configured Gull kettle/manager and the shared species prefab is ready for spawning. The focused Main fixture tests explicit GameManager hooks, not an automatic wave loop. S1/World Builder co-owns the missing WaveManager/Spawner with S2; the final three-wave setup must be applied in that separate milestone. No B-key test spawner or live birds are saved in Main.
+- Main now has one configured Gull kettle/manager and the shared species prefab is ready for spawning. S2's production WaveManager runs four waves. The focused Main fixture suspends that manager and tests explicit GameManager hooks; it is not a production-wave test. No B-key test spawner or live birds are saved in Main.
 
 Do not present G1's timer cycle as completed intelligent behaviour. G4 and G6b provide small functional samples, not a statistically reliable hit rate; the Editor performance sample does not establish a full performance pass. Keep future phases in separate meaningful commits; do not bundle the full Gull implementation into the G1 commit.
 

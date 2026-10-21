@@ -22,6 +22,7 @@ namespace RunwayPanic.Player
     /// 0, which plays the death and puts the gun arm down until the respawn heals the player.</item>
     /// </list>
     /// </summary>
+    [DefaultExecutionOrder(-50)]
     [RequireComponent(typeof(CharacterController))]
     public sealed class PlayerAnimator : MonoBehaviour
     {
@@ -56,6 +57,8 @@ namespace RunwayPanic.Player
         [SerializeField] private Animator animator;
         [Tooltip("Seconds the Speed parameter takes to follow the real speed. Higher = softer blends.")]
         [SerializeField, Min(0f)] private float speedDampTime = 0.1f;
+        [Tooltip("Faster blend into the first step, so the body does not slide before the legs start walking.")]
+        [SerializeField, Min(0f)] private float startSpeedDampTime = 0.025f;
         [Tooltip("How fast the arms blend into or out of holding a gun (per second).")]
         [SerializeField, Min(0.1f)] private float armsBlendSpeed = 6f;
 
@@ -94,6 +97,7 @@ namespace RunwayPanic.Player
 
             // Movement belongs to the CharacterController; clips are "In Place".
             animator.applyRootMotion = false;
+            animator.updateMode = AnimatorUpdateMode.Normal;
 
             if (animator.runtimeAnimatorController != null)
             {
@@ -157,7 +161,9 @@ namespace RunwayPanic.Player
         {
             Vector3 velocity = characterController.velocity;
             velocity.y = 0f;
-            animator.SetFloat(SpeedId, velocity.magnitude, speedDampTime, Time.deltaTime);
+            float speed = velocity.magnitude;
+            float dampTime = speed > animator.GetFloat(SpeedId) ? startSpeedDampTime : speedDampTime;
+            animator.SetFloat(SpeedId, speed, dampTime, Time.deltaTime);
 
             if (playerController != null)
             {
