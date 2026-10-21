@@ -28,11 +28,7 @@ namespace RunwayPanic.EditorTools
         };
         private static readonly string[] FireTrucks =
         {
-            "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Vehicles/FireTruck1.prefab",
-            "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Vehicles/FireTruck2.prefab",
-            "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Vehicles/FireTruck3.prefab",
             "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Vehicles/ForestFireTruck1.prefab",
-            "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Vehicles/ForestFireTruck2.prefab",
             "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Vehicles/ForestFireTruck3.prefab"
         };
 
@@ -144,8 +140,9 @@ namespace RunwayPanic.EditorTools
         private static void CapturePreviews(string[] targets, string path)
         {
             const int width = 480, height = 320;
-            var sheet = new Texture2D(width * 3, height * 2, TextureFormat.RGB24, false);
-            var background = new Color[width * 3 * height * 2];
+            int rows = Mathf.CeilToInt(targets.Length / 3f);
+            var sheet = new Texture2D(width * 3, height * rows, TextureFormat.RGB24, false);
+            var background = new Color[width * 3 * height * rows];
             for (int i = 0; i < background.Length; i++) background[i] = new Color(0.18f, 0.20f, 0.23f);
             sheet.SetPixels(background);
             try
@@ -177,7 +174,7 @@ namespace RunwayPanic.EditorTools
                         preview.BeginStaticPreview(new Rect(0, 0, width, height));
                         preview.Render(true);
                         result = preview.EndStaticPreview();
-                        sheet.SetPixels((i % 3) * width, (1 - i / 3) * height, width, height, result.GetPixels());
+                        sheet.SetPixels((i % 3) * width, (rows - 1 - i / 3) * height, width, height, result.GetPixels());
                     }
                     finally
                     {

@@ -128,3 +128,17 @@ Desktop.ini
 *.mp4.meta
 
 /docs_for_ai
+
+# Locally downloaded prop packs: required assets are already tracked explicitly.
+# These rules keep unused models, extra variants and demo content out of commits.
+# Git continues to track changes to the required files already in the repository.
+/Assets/Alstra Infinite/
+/Assets/Alstra Infinite.meta
+/Assets/Emilulz_Assets/
+/Assets/Emilulz_Assets.meta
+/Assets/Free_Street_Props/
+/Assets/Free_Street_Props.meta
+/Assets/OlegWER/
+/Assets/OlegWER.meta
+/Assets/Scenes/Jucho/FirefightersPack/
+/Assets/Scenes/Jucho/FirefightersPack.meta
