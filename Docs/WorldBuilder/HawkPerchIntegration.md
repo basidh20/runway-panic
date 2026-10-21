@@ -8,13 +8,13 @@ Main now has one scene-root `HawkPerches` containing eight empty GameObjects wit
 
 | Marker | World position | Intended surface |
 | --- | --- | --- |
-| Perch_ControlTower | (-29.4, 14.6, 24.4) | Tower roof corner |
+| Perch_ControlTower | (-30.9, 15.09, 25.9) | Control tower roof, runway side (moved 20 Oct for the modelled tower) |
 | Perch_TerminalRoof | (20, 6.4, 25.9) | Terminal roof edge |
 | Perch_Hangar_NE | (-31.9, 6, -0.6) | Hangar roof NE |
 | Perch_Hangar_SE | (-31.9, 6, -24.8) | Hangar roof SE |
-| Perch_PlaneA_Tail | (-17.6, 3.5, -28.45) | Aircraft A tail |
-| Perch_PlaneB_Tail | (36.45, 3.3, -1) | Aircraft B tail |
-| Perch_PlaneD_Tail | (41.15, 3.3, 23) | Aircraft D tail |
+| Perch_PlaneA_Tail | (-16.99, 4.14, -29.30) | Aircraft A tailplane (1.35x model, aligned by Enlarge Plane A) |
+| Perch_PlaneB_Tail | (37.19, 3.07, -1) | Aircraft B tailplane (moved 20 Oct for the aircraft model) |
+| Perch_PlaneD_Tail | (41.89, 3.07, 23) | Aircraft D tailplane (moved 20 Oct for the aircraft model) |
 | Perch_ShelterB_Roof | (21, 4.3, -12) | Shelter B roof |
 
 These are the Hawk owner's exact handoff positions, not new layout choices. They sit on surfaces as reference points; **the current Hawk soars above them rather than landing**. Its shared config adds the soaring height/radius, and `StoopPlanner.ClampCircleToVolume` keeps circles within the grid. Marker positions themselves must not be raised by the soaring height a second time.

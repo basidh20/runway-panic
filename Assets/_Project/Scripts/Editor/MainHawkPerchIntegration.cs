@@ -19,13 +19,15 @@ namespace RunwayPanic.EditorTools
         private const string RootName = "HawkPerches";
         private static readonly (string name, Vector3 position, string support)[] Perches =
         {
-            ("Perch_ControlTower", new Vector3(-29.4f, 14.6f, 24.4f), "ControlTower_Placeholder"),
+            ("Perch_ControlTower", new Vector3(-30.9f, 15.09f, 25.9f), "ControlTower_Placeholder"), // new tower roof (20 Oct, ArtControlTowerBuilder)
             ("Perch_TerminalRoof", new Vector3(20, 6.4f, 25.9f), "TerminalRoof"),
             ("Perch_Hangar_NE", new Vector3(-31.9f, 6, -.6f), "Hangar_Greybox"),
             ("Perch_Hangar_SE", new Vector3(-31.9f, 6, -24.8f), "Hangar_Greybox"),
-            ("Perch_PlaneA_Tail", new Vector3(-17.6f, 3.5f, -28.45f), "Plane_A_Greybox"),
-            ("Perch_PlaneB_Tail", new Vector3(36.45f, 3.3f, -1), "Plane_B_Greybox"),
-            ("Perch_PlaneD_Tail", new Vector3(41.15f, 3.3f, 23), "Plane_D_Greybox"),
+            // Aircraft models (20 Oct): tailplane collider top + 0.02 m, local (0, 3.05, -3.89). Plane A is the point
+            // Enlarge Plane A already aligned on its 1.35x model; B/D are 90 deg-turned 1x models (root + 3.89 m in X).
+            ("Perch_PlaneA_Tail", new Vector3(-16.987864f, 4.1375003f, -29.301777f), "Plane_A_Greybox"),
+            ("Perch_PlaneB_Tail", new Vector3(37.19f, 3.07f, -1), "Plane_B_Greybox"),
+            ("Perch_PlaneD_Tail", new Vector3(41.89f, 3.07f, 23), "Plane_D_Greybox"),
             ("Perch_ShelterB_Roof", new Vector3(21, 4.3f, -12), "Shelter_B")
         };
 

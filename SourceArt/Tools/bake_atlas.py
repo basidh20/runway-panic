@@ -37,12 +37,15 @@ import numpy as np
 #             Blender pads every island by the pack margin, so the gap is 2 x margin (measured: 0.008 on the birds):
 #             0.008 x 256 = 2.05 px. The bleed count in the export report is the proof.
 #   variants  JSON next to this file: recoloured copies of the asset (bird species) that reuse the same UVs.
+# None = no atlas, for an asset whose name starts with an atlas asset's name (SM_Prop_ControlTower_Collision).
 ATLAS = {
     "SK_Bird": dict(size=256, variants="bird_species.json"),
     "SK_Bird_Hawk": dict(size=256),
     "SK_Player": dict(size=512),   # pack margin 0.002 -> gap 0.004 x 512 = 2.05 px
     "SM_Gun": dict(size=128),
     "SM_Prop_Aircraft": dict(size=256, variants="aircraft_liveries.json"),   # margin 0.004, like the birds
+    "SM_Prop_ControlTower": dict(size=256),                                   # margin 0.004 (prepare_tower.py)
+    "SM_Prop_ControlTower_Collision": None,   # collider meshes only: no materials, no atlas
 }
 
 EPS = 1e-6               # texels; a triangle that only touches a texel's border does not count as touching it
@@ -56,7 +59,7 @@ def config_for(asset):
     for prefix in ATLAS:
         if asset.startswith(prefix) and (match is None or len(prefix) > len(match)):
             match = prefix
-    return dict(ATLAS[match]) if match else None
+    return dict(ATLAS[match]) if match and ATLAS[match] else None
 
 
 def asset_stem(asset):

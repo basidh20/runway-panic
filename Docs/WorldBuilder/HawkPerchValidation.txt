@@ -1,7 +1,7 @@
 Main Hawk perches — focused Edit-mode marker/surface/soaring-clearance check
 Unity: 6000.6.4f1
 PASS: Eight named markers under one HawkPerches root
-PASS: Perch_ControlTower is a non-colliding Perch at (-29.40, 14.60, 24.40)
+PASS: Perch_ControlTower is a non-colliding Perch at (-30.90, 15.09, 25.90)
 PASS: Perch_ControlTower matches the intended roof/tail surface
 PASS: Perch_ControlTower soar centre and eight circle samples have clear flight space using shared config
 PASS: Perch_ControlTower scores through the shared Hawk utility selector
@@ -17,15 +17,15 @@ PASS: Perch_Hangar_SE is a non-colliding Perch at (-31.90, 6.00, -24.80)
 PASS: Perch_Hangar_SE matches the intended roof/tail surface
 PASS: Perch_Hangar_SE soar centre and eight circle samples have clear flight space using shared config
 PASS: Perch_Hangar_SE scores through the shared Hawk utility selector
-PASS: Perch_PlaneA_Tail is a non-colliding Perch at (-17.60, 3.50, -28.45)
+PASS: Perch_PlaneA_Tail is a non-colliding Perch at (-16.99, 4.14, -29.30)
 PASS: Perch_PlaneA_Tail matches the intended roof/tail surface
 PASS: Perch_PlaneA_Tail soar centre and eight circle samples have clear flight space using shared config
 PASS: Perch_PlaneA_Tail scores through the shared Hawk utility selector
-PASS: Perch_PlaneB_Tail is a non-colliding Perch at (36.45, 3.30, -1.00)
+PASS: Perch_PlaneB_Tail is a non-colliding Perch at (37.19, 3.07, -1.00)
 PASS: Perch_PlaneB_Tail matches the intended roof/tail surface
 PASS: Perch_PlaneB_Tail soar centre and eight circle samples have clear flight space using shared config
 PASS: Perch_PlaneB_Tail scores through the shared Hawk utility selector
-PASS: Perch_PlaneD_Tail is a non-colliding Perch at (41.15, 3.30, 23.00)
+PASS: Perch_PlaneD_Tail is a non-colliding Perch at (41.89, 3.07, 23.00)
 PASS: Perch_PlaneD_Tail matches the intended roof/tail surface
 PASS: Perch_PlaneD_Tail soar centre and eight circle samples have clear flight space using shared config
 PASS: Perch_PlaneD_Tail scores through the shared Hawk utility selector
