@@ -85,5 +85,8 @@ An Editor top view of ForestFireTruck3 near Shelter A showed a gap around its
 body in the ground NavMesh, with ground coverage continuing around the truck.
 Its horizontal roof also has an elevated NavMesh patch; this is not ground
 walkability or a generated access link. Unity's window became unavailable
-before the other truck and abandoned aircraft overlay views could be reviewed;
-those two visual checks remain pending. No Play session was run in this task.
+before the other truck and abandoned aircraft overlay views could be reviewed
+by the agent. The owner subsequently checked those two views manually and
+reported that both looked good. This closes the requested footprint review
+with owner-reported evidence, not an additional automated check. No Play
+session was run by the agent in this task.
