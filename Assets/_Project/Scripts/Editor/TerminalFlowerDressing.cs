@@ -261,13 +261,18 @@ namespace RunwayPanic.EditorTools
 
         private static void CapturePreview(Vector3 centre, string path = "/private/tmp/RunwayPanic-Flowers.png")
         {
+            CaptureView(centre + new Vector3(2f, 1.8f, -4f), centre + Vector3.up * 0.3f, path);
+        }
+
+        internal static void CaptureView(Vector3 position, Vector3 targetPoint, string path)
+        {
             var go = new GameObject("FlowerPreview_TEMP") { hideFlags = HideFlags.HideAndDontSave };
             var camera = go.AddComponent<Camera>();
             camera.enabled = false;
             camera.fieldOfView = 55f;
             camera.farClipPlane = 200f;
-            camera.transform.position = centre + new Vector3(2f, 1.8f, -4f);
-            camera.transform.LookAt(centre + Vector3.up * 0.3f);
+            camera.transform.position = position;
+            camera.transform.LookAt(targetPoint);
             go.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
             var target = RenderTexture.GetTemporary(960, 540, 24);
             var old = RenderTexture.active;
