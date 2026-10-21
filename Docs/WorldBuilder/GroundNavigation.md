@@ -9,9 +9,10 @@ slightly more conservative. It does **not** make the player follow a NavMesh.
 The surface collects marked physics colliders under `Environment`: the ground,
 solid buildings and frames, fixed cover, boundaries and parked aircraft. The
 two door panels and three movable barricades have explicit ignore modifiers;
-they are not permanently baked into their starting locations. Other objects
-outside `Environment`, including players, birds, FOD and pickups, are not bake
-sources. Triggers and movable physics bodies are excluded by the setup. The
+they are not permanently baked into their starting locations. The final refresh
+also explicitly marks the placed imported scenery listed below, even outside
+`Environment`. Other unmarked objects, including players, birds, FOD and
+pickups, are not bake sources. Triggers and movable physics bodies are excluded by the setup. The
 movable prefab's existing NavMeshObstacle carves only after it has settled.
 The static bake treats doorways as open; a closed physical door can still block
 the player, and is not dynamically carved by this setup. Inspect exclusions
@@ -66,3 +67,23 @@ included both parked trucks, the abandoned aircraft, 17 cones, three hydrants
 and two extension cords alongside Environment. It reported the two shelter
 door panels and three movable cover roots as exclusions. No scene or NavMesh
 asset was changed by this inspection; the refresh/footprint review is pending.
+
+### Final-prop bake results — 21 October 2026
+
+The Refresh command completed in the Editor and saved Main with 25 additional
+scene-instance NavMeshModifiers for the final imported props. The original
+NavMesh data GUID (`d403a739283674683b7d664a270e6771`) and surface reference
+were retained; the saved data changed from 32,200 to 37,876 bytes. Existing
+door/movable-cover exclusions, geometry, agent settings and lighting were not
+changed.
+
+The focused Check command returned runway=True, shelter A floor=True, shelter
+B floor=True, shelter A back wall=False, and PathComplete for both shelter
+approach-to-interior routes. These are Editor NavMesh sampling/path checks,
+not a physical player walk-through or a new movable-cover carving test.
+An Editor top view of ForestFireTruck3 near Shelter A showed a gap around its
+body in the ground NavMesh, with ground coverage continuing around the truck.
+Its horizontal roof also has an elevated NavMesh patch; this is not ground
+walkability or a generated access link. Unity's window became unavailable
+before the other truck and abandoned aircraft overlay views could be reviewed;
+those two visual checks remain pending. No Play session was run in this task.
