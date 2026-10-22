@@ -14,6 +14,115 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Apply Cloudy Sky Background")]
+        private static void ApplyCloudySky()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            const string texturePath = "Assets/_Project/Art/Textures/Sky/sunflowers_puresky_4k.hdr";
+            const string materialPath = "Assets/_Project/Art/Materials/WorldSurfaces/M_CloudyAfternoonSky.mat";
+            var shader = Shader.Find("Skybox/Panoramic");
+            var importer = AssetImporter.GetAtPath(texturePath) as TextureImporter;
+            if (shader == null || importer == null) throw new InvalidOperationException("Import the Sunflowers Pure Sky HDR panorama first.");
+            importer.textureType = TextureImporterType.Default;
+            importer.textureShape = TextureImporterShape.Texture2D;
+            importer.sRGBTexture = false;
+            importer.maxTextureSize = 4096;
+            importer.mipmapEnabled = false; // Avoid the panoramic wrap seam selecting bright coarse mips.
+            importer.isReadable = false;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.SaveAndReimport();
+            var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
+            if (texture == null || texture.width != 4096 || texture.height != 2048)
+                throw new InvalidOperationException("Expected the 4K, 2:1 HDR panorama.");
+            var sky = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+            if (sky != null && sky.shader != shader) throw new InvalidOperationException("Unexpected shader on the cloudy sky material.");
+            if (sky == null)
+            {
+                sky = new Material(shader) { name = "M_CloudyAfternoonSky" };
+                sky.SetFloat("_Mapping", 1); // Latitude/longitude panorama.
+                sky.SetFloat("_ImageType", 0); // Full 360-degree image.
+                sky.SetFloat("_Layout", 0); // Mono, not a stereo panorama.
+                sky.SetColor("_Tint", new Color(.52f, .505f, .49f));
+                sky.SetFloat("_Exposure", 1f);
+                sky.SetFloat("_Rotation", 0f);
+                AssetDatabase.CreateAsset(sky, materialPath);
+            }
+            if (!sky.HasProperty("_MainTex")) throw new InvalidOperationException("Expected the panoramic sky texture slot.");
+            Undo.RecordObject(sky, "Assign cloud panorama");
+            sky.SetTexture("_MainTex", texture);
+            EditorUtility.SetDirty(sky);
+            // Scene sky only: retain sun transform/intensity, ambient mode/colours, interior
+            // lights and all baked data. No environment rebake or reflection update is requested.
+            RenderSettings.skybox = sky;
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Could not save the cloudy sky in Main.");
+            SceneView.RepaintAll();
+            Debug.Log("[CloudSky] Applied 4K Sunflowers Pure Sky panorama. Sun, ambient colours, hangar lights and baked lighting retained. No bake started.");
+        }
+
+        [MenuItem("Tools/Runway Panic/Preview Cloudy Sky Background")]
+        private static void PreviewCloudySky()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode || SceneManager.GetActiveScene().path != MainPlayerIntegration.ScenePath)
+                throw new InvalidOperationException("Open Main outside Play mode first.");
+            TerminalFlowerDressing.CaptureView(new Vector3(.5f, 1.72f, -26), new Vector3(0, 6, 8),
+                "/private/tmp/RunwayPanic-CloudSky-Airport.png");
+            TerminalFlowerDressing.CaptureView(new Vector3(.5f, 1.72f, -26), new Vector3(.5f, 25, -15),
+                "/private/tmp/RunwayPanic-CloudSky-Up.png");
+        }
+
+        [MenuItem("Tools/Runway Panic/Apply Bright Late Afternoon")]
+        private static void ApplyBrightLateAfternoon()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            var sun = RenderSettings.sun;
+            if (sun == null || sun.type != LightType.Directional || sun.gameObject.name != "Sun_Directional")
+                throw new InvalidOperationException("Expected the existing Main directional sun.");
+            var skyShader = Shader.Find("Skybox/Procedural");
+            if (skyShader == null) throw new InvalidOperationException("Procedural sky shader was not found.");
+            const string skyPath = "Assets/_Project/Art/Materials/WorldSurfaces/M_BrightAfternoonSky.mat";
+            var sky = AssetDatabase.LoadAssetAtPath<Material>(skyPath);
+            if (sky != null && sky.shader != skyShader)
+                throw new InvalidOperationException("Unexpected material at the afternoon sky path.");
+            if (sky == null)
+            {
+                sky = new Material(skyShader) { name = "M_BrightAfternoonSky" };
+                AssetDatabase.CreateAsset(sky, skyPath);
+            }
+            Undo.RecordObjects(new UnityEngine.Object[] { sun, sky }, "Apply bright late-afternoon lighting");
+            sky.SetColor("_SkyTint", new Color(.52f, .53f, .57f));
+            sky.SetColor("_GroundColor", new Color(.50f, .43f, .35f));
+            sky.SetFloat("_Exposure", 1.3f);
+            sky.SetFloat("_AtmosphereThickness", 1.3f);
+            sky.SetFloat("_SunSize", .035f);
+            RenderSettings.skybox = sky;
+            sun.color = new Color(1f, .87f, .72f);
+            sun.intensity = 1.3f;
+            // Keep the sun transform, shadows, bake mode and Hawk reference untouched.
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(.63f, .69f, .78f);
+            RenderSettings.ambientEquatorColor = new Color(.59f, .54f, .49f);
+            RenderSettings.ambientGroundColor = new Color(.36f, .34f, .30f);
+            EditorUtility.SetDirty(sky);
+            EditorUtility.SetDirty(sun);
+            EditorSceneManager.MarkSceneDirty(scene);
+            AssetDatabase.SaveAssetIfDirty(sky);
+            if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Could not save Main.");
+            Debug.Log("[Afternoon] Saved warm, bright lighting. Sun direction, interior lights and existing bake retained; no rebake performed.");
+            try
+            {
+                TerminalFlowerDressing.CaptureView(new Vector3(.5f, 1.72f, -26), new Vector3(0, 4, 8),
+                    "/private/tmp/RunwayPanic-BrightAfternoon.png");
+            }
+            catch (Exception e) { Debug.LogWarning("[Afternoon] Preview capture failed: " + e.Message); }
+        }
+
         [MenuItem("Tools/Runway Panic/Start Main Preview Lighting Bake")]
         private static void StartMainPreviewBake()
         {
