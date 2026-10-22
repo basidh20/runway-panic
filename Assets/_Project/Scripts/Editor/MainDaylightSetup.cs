@@ -29,10 +29,10 @@ namespace RunwayPanic.EditorTools
             importer.textureShape = TextureImporterShape.Texture2D;
             importer.sRGBTexture = false;
             importer.maxTextureSize = 4096;
-            importer.mipmapEnabled = true;
+            importer.mipmapEnabled = false; // Avoid the panoramic wrap seam selecting bright coarse mips.
             importer.isReadable = false;
             importer.wrapMode = TextureWrapMode.Repeat;
-            importer.filterMode = FilterMode.Trilinear;
+            importer.filterMode = FilterMode.Bilinear;
             importer.SaveAndReimport();
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
             if (texture == null || texture.width != 4096 || texture.height != 2048)

@@ -20,8 +20,9 @@ Initial Exposure is 1, Rotation is 0, with a slight warm tint.
 
 The project's ordinary surface-texture importer was reducing this panorama to
 1K and applying the standard colour-texture rule. A narrow exception for HDR/EXR
-files under `Art/Textures/Sky/` preserves 4K, linear HDR colour, mipmaps and
-trilinear filtering. Other art folders retain their original import behaviour.
+files under `Art/Textures/Sky/` preserves 4K and linear HDR colour. These skies
+use bilinear filtering with mipmaps disabled to avoid a visible wrap seam.
+Other art folders retain their original import behaviour.
 No global importer version bump or blanket texture reimport was requested.
 
 Applied through `Tools > Runway Panic > Apply Cloudy Sky Background` and saved.
@@ -51,3 +52,17 @@ To revert only the background, open Window > Rendering > Lighting > Environment
 and assign `M_BrightAfternoonSky` to Skybox Material, then save Main. Both sky
 materials are retained. The HDR extension is already covered by repository LFS
 rules; stage the new texture and its meta file normally.
+
+## Dotted white line repair
+
+Reproduced the owner's line with all scene geometry excluded from the camera,
+and confirmed Game-view gizmos were already off. Sky-only views at yaw 225 and
+315 degrees showed the dotted line before the fix. The source HDR image was
+unchanged and did not contain this rendered line.
+
+Disabled mipmaps and selected bilinear filtering for HDR/EXR skies in the
+scoped importer rule and the cloudy-sky setup command. Reimported this panorama;
+both previously affected sky-only views then rendered without the line. No
+material colour, sky exposure/rotation/tint, sun, geometry or gameplay changes
+were needed. Removed the temporary inspection menu/code after verification.
+Play-mode owner confirmation is still pending; no new build was run.

@@ -37,9 +37,11 @@ namespace RunwayPanic.ArtTools
                 importer.textureShape = TextureImporterShape.Texture2D;
                 importer.sRGBTexture = false;
                 importer.maxTextureSize = 4096;
-                importer.mipmapEnabled = true;
+                // Implicit mip selection jumps at the panoramic longitude seam and can
+                // sample the sun-bright smallest mip, producing a dotted white line.
+                importer.mipmapEnabled = false;
                 importer.isReadable = false;
-                importer.filterMode = FilterMode.Trilinear;
+                importer.filterMode = FilterMode.Bilinear;
                 importer.wrapMode = TextureWrapMode.Repeat;
                 importer.textureCompression = TextureImporterCompression.CompressedHQ;
                 return;
