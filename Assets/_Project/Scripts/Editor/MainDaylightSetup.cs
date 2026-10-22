@@ -14,6 +14,54 @@ namespace RunwayPanic.EditorTools
     /// <summary>Adjusts outdoor daylight without changing the sun's direction or gameplay.</summary>
     public static class MainDaylightSetup
     {
+        [MenuItem("Tools/Runway Panic/Apply Bright Late Afternoon")]
+        private static void ApplyBrightLateAfternoon()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            var sun = RenderSettings.sun;
+            if (sun == null || sun.type != LightType.Directional || sun.gameObject.name != "Sun_Directional")
+                throw new InvalidOperationException("Expected the existing Main directional sun.");
+            var skyShader = Shader.Find("Skybox/Procedural");
+            if (skyShader == null) throw new InvalidOperationException("Procedural sky shader was not found.");
+            const string skyPath = "Assets/_Project/Art/Materials/WorldSurfaces/M_BrightAfternoonSky.mat";
+            var sky = AssetDatabase.LoadAssetAtPath<Material>(skyPath);
+            if (sky != null && sky.shader != skyShader)
+                throw new InvalidOperationException("Unexpected material at the afternoon sky path.");
+            if (sky == null)
+            {
+                sky = new Material(skyShader) { name = "M_BrightAfternoonSky" };
+                AssetDatabase.CreateAsset(sky, skyPath);
+            }
+            Undo.RecordObjects(new UnityEngine.Object[] { sun, sky }, "Apply bright late-afternoon lighting");
+            sky.SetColor("_SkyTint", new Color(.52f, .53f, .57f));
+            sky.SetColor("_GroundColor", new Color(.50f, .43f, .35f));
+            sky.SetFloat("_Exposure", 1.3f);
+            sky.SetFloat("_AtmosphereThickness", 1.3f);
+            sky.SetFloat("_SunSize", .035f);
+            RenderSettings.skybox = sky;
+            sun.color = new Color(1f, .87f, .72f);
+            sun.intensity = 1.3f;
+            // Keep the sun transform, shadows, bake mode and Hawk reference untouched.
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(.63f, .69f, .78f);
+            RenderSettings.ambientEquatorColor = new Color(.59f, .54f, .49f);
+            RenderSettings.ambientGroundColor = new Color(.36f, .34f, .30f);
+            EditorUtility.SetDirty(sky);
+            EditorUtility.SetDirty(sun);
+            EditorSceneManager.MarkSceneDirty(scene);
+            AssetDatabase.SaveAssetIfDirty(sky);
+            if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Could not save Main.");
+            Debug.Log("[Afternoon] Saved warm, bright lighting. Sun direction, interior lights and existing bake retained; no rebake performed.");
+            try
+            {
+                TerminalFlowerDressing.CaptureView(new Vector3(.5f, 1.72f, -26), new Vector3(0, 4, 8),
+                    "/private/tmp/RunwayPanic-BrightAfternoon.png");
+            }
+            catch (Exception e) { Debug.LogWarning("[Afternoon] Preview capture failed: " + e.Message); }
+        }
+
         [MenuItem("Tools/Runway Panic/Start Main Preview Lighting Bake")]
         private static void StartMainPreviewBake()
         {

@@ -20,13 +20,13 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.58, g: 0.66, b: 0.74, a: 1}
-  m_AmbientEquatorColor: {r: 0.45, g: 0.49, b: 0.5, a: 1}
-  m_AmbientGroundColor: {r: 0.28, g: 0.3, b: 0.29, a: 1}
+  m_AmbientSkyColor: {r: 0.63, g: 0.69, b: 0.78, a: 1}
+  m_AmbientEquatorColor: {r: 0.59, g: 0.54, b: 0.49, a: 1}
+  m_AmbientGroundColor: {r: 0.36, g: 0.34, b: 0.3, a: 1}
   m_AmbientIntensity: 1
   m_AmbientMode: 1
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 0ab97db452db44609b7e91d5496a9109, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -3982,8 +3982,8 @@ Light:
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
-  m_Color: {r: 1, g: 0.96, b: 0.89, a: 1}
-  m_Intensity: 1.25
+  m_Color: {r: 1, g: 0.87, b: 0.72, a: 1}
+  m_Intensity: 1.3
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.802082
@@ -6607,18 +6607,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1335449487}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &401830683
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 401830679}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c472d3ab1714d52a17a640270b0ee6e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
 --- !u!102 &401830681
 TextMesh:
   serializedVersion: 3
@@ -6637,7 +6625,7 @@ TextMesh:
   m_FontSize: 64
   m_FontStyle: 0
   m_RichText: 1
-  m_Font: {fileID: 0}
+  m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
   m_Color:
     serializedVersion: 2
     rgba: 4293127656
@@ -6690,6 +6678,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &401830683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 401830679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c472d3ab1714d52a17a640270b0ee6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &403557220
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -29989,18 +29989,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1335449487}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2036502842
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2036502838}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c472d3ab1714d52a17a640270b0ee6e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
 --- !u!102 &2036502840
 TextMesh:
   serializedVersion: 3
@@ -30019,7 +30007,7 @@ TextMesh:
   m_FontSize: 64
   m_FontStyle: 0
   m_RichText: 1
-  m_Font: {fileID: 0}
+  m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
   m_Color:
     serializedVersion: 2
     rgba: 4293127656
@@ -30072,6 +30060,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2036502842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2036502838}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c472d3ab1714d52a17a640270b0ee6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2036581895
 PrefabInstance:
   m_ObjectHideFlags: 0
