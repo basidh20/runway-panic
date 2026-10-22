@@ -190,3 +190,14 @@ An outdoor temporary Editor-camera preview was inspected at
 remain readable. The visible player body in that preview is the edit-mode
 model, not evidence of a camera-mode change. Actual first-person gameplay
 and interior appearance are still for the owner's short manual review.
+
+### Hangar wall signs
+
+The hangar entrance lintel now has bold navy HANGAR lettering, while a red
+EXIT faces inward above the side exit opening. Both reuse the depth-tested
+world-text material and font-atlas binding used by the runway numbers, rather
+than the old overlay font shader. The lettering is close to the wall faces,
+has no colliders or shadow casting, and does not restore the removed shelter
+or checkpoint labels. No navigation or lighting rebake is required for these
+text-only changes. Outdoor and interior temporary Editor-camera views were
+captured for placement/readability review; no new gameplay test is claimed.
