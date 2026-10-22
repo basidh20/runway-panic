@@ -169,3 +169,35 @@ To repeat the audit, open saved Main outside Play mode and choose
 `Tools > Runway Panic > Audit Main Lighting Bake Readiness`. The detailed report
 is written to `/private/tmp/RunwayPanic-C4/lighting-audit.txt` on this Mac and
 is not a project asset.
+
+## Bright late-afternoon video look — 22 October 2026
+
+Main now uses a warm directional light colour (1, 0.87, 0.72), intensity 1.3,
+and brighter neutral/warm trilight ambient colours. A dedicated
+`M_BrightAfternoonSky` procedural sky material keeps a pale blue upper sky
+with a warmer horizon; exposure and atmosphere thickness are both 1.3. This
+is a bright late-afternoon treatment, not a low-sun sunset or night scene.
+
+The sun transform and Hawk reference, shadow settings, interior point lights,
+light probes and existing baked lightmap data were retained. No new bake was
+run; the old indirect lighting remains and should be reviewed before the
+final viva build rather than described as a newly matched afternoon bake.
+The editor command `Tools > Runway Panic > Apply Bright Late Afternoon`
+applies/saves the settings only in saved Main outside Play mode.
+
+An outdoor temporary Editor-camera preview was inspected at
+`/private/tmp/RunwayPanic-BrightAfternoon.png`; the runway, buildings and sky
+remain readable. The visible player body in that preview is the edit-mode
+model, not evidence of a camera-mode change. Actual first-person gameplay
+and interior appearance are still for the owner's short manual review.
+
+### Hangar wall signs
+
+The hangar entrance lintel now has bold navy HANGAR lettering, while a red
+EXIT faces inward above the side exit opening. Both reuse the depth-tested
+world-text material and font-atlas binding used by the runway numbers, rather
+than the old overlay font shader. The lettering is close to the wall faces,
+has no colliders or shadow casting, and does not restore the removed shelter
+or checkpoint labels. No navigation or lighting rebake is required for these
+text-only changes. Outdoor and interior temporary Editor-camera views were
+captured for placement/readability review; no new gameplay test is claimed.

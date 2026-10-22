@@ -14,6 +14,63 @@ namespace RunwayPanic.EditorTools
         private const string ScenePath = "Assets/_Project/Scenes/Main.unity";
         private const string PrefabPath = "Assets/_Project/Prefabs/Environment/Greybox/P_Greybox_Hangar.prefab";
 
+        [MenuItem("Tools/Runway Panic/Apply Hangar Wall Signs")]
+        private static void ApplyWallSigns()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != ScenePath || scene.isDirty)
+                throw new InvalidOperationException("Open saved Main outside Play mode first.");
+            var material = AssetDatabase.LoadAssetAtPath<Material>(
+                "Assets/_Project/Art/Materials/WorldSurfaces/M_RunwayNumbers_Depth.mat");
+            if (material == null || material.shader.name != "RunwayPanic/Ground Paint Text")
+                throw new InvalidOperationException("The depth-tested world text material is missing.");
+            var root = PrefabUtility.LoadPrefabContents(PrefabPath);
+            try
+            {
+                var entrance = root.transform.Find("Hangar_Sign");
+                var exit = root.transform.Find("Exit_Sign");
+                if (entrance == null || exit == null || entrance.GetComponent<TextMesh>() == null || exit.GetComponent<TextMesh>() == null)
+                    throw new InvalidOperationException("Expected original hangar sign objects were not found.");
+                SetSign(entrance, "HANGAR", new Color32(32, 55, 72, 255), .12f,
+                    new Vector3(7.006f, 5.25f, 0), Quaternion.Euler(0, -90, 0));
+                SetSign(exit, "EXIT", new Color32(230, 55, 45, 255), .095f,
+                    new Vector3(0, 3.75f, 12.094f), Quaternion.identity);
+                PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+
+                void SetSign(Transform sign, string caption, Color color, float size, Vector3 position, Quaternion rotation)
+                {
+                    var label = sign.GetComponent<TextMesh>();
+                    label.text = caption;
+                    // The unlit world-text shader consumes vertex RGB in the project's working colour space.
+                    label.color = QualitySettings.activeColorSpace == ColorSpace.Linear ? color.linear : color;
+                    label.fontStyle = FontStyle.Bold;
+                    label.characterSize = size;
+                    sign.localPosition = position;
+                    sign.localRotation = rotation;
+                    var renderer = sign.GetComponent<MeshRenderer>();
+                    renderer.sharedMaterial = material;
+                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    renderer.receiveShadows = false;
+                    if (sign.GetComponent<RunwayPanic.World.GroundPaintText>() == null)
+                        sign.gameObject.AddComponent<RunwayPanic.World.GroundPaintText>();
+                    sign.gameObject.SetActive(true);
+                }
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+            Debug.Log("[HangarSigns] Applied navy HANGAR on the exterior entrance lintel and red EXIT above the inside exit. Depth tested; no colliders/gameplay changes.");
+            var placed = GameObject.Find("Environment/Buildings/Hangar_Greybox/P_Greybox_Hangar");
+            if (placed == null) return;
+            try
+            {
+                var t = placed.transform;
+                TerminalFlowerDressing.CaptureView(t.TransformPoint(new Vector3(22, 2, 0)),
+                    t.TransformPoint(new Vector3(7, 5.25f, 0)), "/private/tmp/RunwayPanic-HangarEntranceSign.png");
+                TerminalFlowerDressing.CaptureView(t.TransformPoint(new Vector3(0, 1.8f, 6.5f)),
+                    t.TransformPoint(new Vector3(0, 3.75f, 12.094f)), "/private/tmp/RunwayPanic-HangarExitSign.png");
+            }
+            catch (Exception e) { Debug.LogWarning("[HangarSigns] Preview failed: " + e.Message); }
+        }
+
         [MenuItem("Tools/Runway Panic/Make Hangar Enterable")]
         public static void Build()
         {

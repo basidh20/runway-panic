@@ -11,34 +11,59 @@ using UnityEngine.SceneManagement;
 
 namespace RunwayPanic.EditorTools
 {
-    /// <summary>One-time Main ground navigation setup using the environment and explicit dynamic exclusions.</summary>
+    /// <summary>Main ground navigation setup and refresh with explicit scenery/dynamic exclusions.</summary>
     public static class MainGroundNavigation
     {
         private const string ScenePath = "Assets/_Project/Scenes/Main.unity";
         private const string DataPath = "Assets/_Project/Navigation/MainGroundNavMesh.asset";
+        private static bool refreshInProgress;
+        private static readonly string[] FinalSceneryPrefabs =
+        {
+            "Assets/_Project/Prefabs/Environment/P_Prop_ControlTower.prefab",
+            "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Equipment/TrafficCone.prefab",
+            "Assets/Free_Street_Props/PBR_Prefabs/firehydrant_01_a_02.prefab",
+            "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Equipment/ExtensionCord.prefab",
+            "Assets/OlegWER/AbandonedAircraft/Prefabs/SM_aircraft_.prefab",
+            "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Vehicles/ForestFireTruck1.prefab",
+            "Assets/Scenes/Jucho/FirefightersPack/Models/Prefabs/Vehicles/ForestFireTruck3.prefab"
+        };
+
+        private static GameObject[] SourceRoots()
+        {
+            var scene = SceneManager.GetActiveScene();
+            var environment = GameObject.Find("Environment");
+            if (environment == null || environment.scene != scene)
+                throw new InvalidOperationException("Main Environment was not found in the active scene.");
+            var props = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsSortMode.None)
+                .Where(t => t.gameObject.scene == scene && !t.IsChildOf(environment.transform) &&
+                            PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject) &&
+                            FinalSceneryPrefabs.Contains(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(t.gameObject)))
+                .Select(t => t.gameObject)
+                .Where(g => g.GetComponentsInChildren<Collider>().Any(c => c.enabled && !c.isTrigger));
+            return new[] { environment }.Concat(props).Distinct().ToArray();
+        }
+
+        private static GameObject DynamicRoot(Collider collider)
+        {
+            return collider.GetComponentInParent<Door>()?.gameObject ??
+                   collider.GetComponentInParent<NavMeshObstacle>()?.gameObject ??
+                   collider.GetComponentInParent<Rigidbody>()?.gameObject ??
+                   collider.GetComponentInParent<NavMeshAgent>()?.gameObject ??
+                   (collider.isTrigger || collider is CharacterController ? collider.gameObject : null);
+        }
 
         private static Collider[] Sources()
         {
-            var environment = GameObject.Find("Environment");
-            if (environment == null) throw new InvalidOperationException("Main Environment was not found.");
-            return environment.GetComponentsInChildren<Collider>()
-                .Where(c => c.enabled && !c.isTrigger && c.gameObject.activeInHierarchy &&
-                            c.GetComponentInParent<Rigidbody>() == null &&
-                            c.GetComponentInParent<NavMeshObstacle>() == null &&
-                            c.GetComponentInParent<Door>() == null)
+            return SourceRoots().SelectMany(g => g.GetComponentsInChildren<Collider>()).Distinct()
+                .Where(c => c.enabled && c.gameObject.activeInHierarchy && DynamicRoot(c) == null)
                 .ToArray();
         }
 
         private static GameObject[] Exclusions()
         {
-            var environment = GameObject.Find("Environment");
-            return environment.GetComponentsInChildren<Collider>()
-                .Where(c => c.enabled && c.gameObject.activeInHierarchy &&
-                            (c.isTrigger || c.GetComponentInParent<Rigidbody>() != null ||
-                             c.GetComponentInParent<NavMeshObstacle>() != null || c.GetComponentInParent<Door>() != null))
-                .Select(c => c.GetComponentInParent<Door>()?.gameObject ??
-                             c.GetComponentInParent<NavMeshObstacle>()?.gameObject ??
-                             c.GetComponentInParent<Rigidbody>()?.gameObject ?? c.gameObject)
+            return SourceRoots().SelectMany(g => g.GetComponentsInChildren<Collider>())
+                .Where(c => c.enabled && c.gameObject.activeInHierarchy)
+                .Select(DynamicRoot).Where(g => g != null)
                 .Distinct().ToArray();
         }
 
@@ -47,7 +72,71 @@ namespace RunwayPanic.EditorTools
         {
             var sources = Sources();
             Debug.Log("[GroundNav] Static colliders: " + sources.Length + "; excluded roots:\n" +
-                      string.Join("\n", Exclusions().Select(c => PathOf(c.transform))));
+                      string.Join("\n", Exclusions().Select(c => PathOf(c.transform))) +
+                      "\nCandidate scenery roots (not proof of a refreshed bake):\n" +
+                      string.Join("\n", SourceRoots().Select(g => PathOf(g.transform))));
+        }
+
+        [MenuItem("Tools/Runway Panic/Refresh Main Ground Navigation")]
+        public static void Refresh()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (refreshInProgress || EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode ||
+                scene.path != ScenePath || scene.isDirty || SceneManager.sceneCount != 1)
+                throw new InvalidOperationException("Open only saved Main outside Play mode and wait for compilation/baking.");
+            var surface = GameObject.Find("GroundNavigation")?.GetComponent<NavMeshSurface>();
+            if (surface == null || surface.navMeshData == null ||
+                AssetDatabase.GetAssetPath(surface.navMeshData) != DataPath ||
+                surface.collectObjects != CollectObjects.MarkedWithModifier ||
+                surface.useGeometry != NavMeshCollectGeometry.PhysicsColliders)
+                throw new InvalidOperationException("Expected marked-collider ground navigation setup was not found; inspect before changing it.");
+            if (!Sources().Any(c => c.name == "Ground_100x80"))
+                throw new InvalidOperationException("Expected airport ground collider not found.");
+
+            // Validate before adding anything. Never rewrite a teammate's existing modifier settings.
+            var roots = SourceRoots();
+            var excluded = Exclusions();
+            foreach (var root in roots.Concat(excluded).Distinct())
+            {
+                var modifier = root.GetComponent<NavMeshModifier>();
+                bool ignore = excluded.Contains(root);
+                if (modifier != null && (!modifier.enabled || !modifier.applyToChildren ||
+                    modifier.ignoreFromBuild != ignore || !modifier.AffectsAgentType(surface.agentTypeID)))
+                    throw new InvalidOperationException("Conflicting navigation modifier: " + PathOf(root.transform));
+            }
+            Undo.SetCurrentGroupName("Refresh airport navigation sources");
+            foreach (var root in roots.Concat(excluded).Distinct())
+            {
+                if (root.GetComponent<NavMeshModifier>() != null) continue;
+                var modifier = Undo.AddComponent<NavMeshModifier>(root);
+                modifier.applyToChildren = true;
+                modifier.ignoreFromBuild = excluded.Contains(root);
+            }
+
+            // Update in place: keep the asset GUID, surface reference and agent/bake settings.
+            var data = surface.navMeshData;
+            refreshInProgress = true;
+            try
+            {
+                var operation = surface.UpdateNavMesh(data);
+                operation.completed += _ =>
+                {
+                    try
+                    {
+                        EditorUtility.SetDirty(data);
+                        AssetDatabase.SaveAssetIfDirty(data);
+                        if (scene.isLoaded)
+                        {
+                            EditorSceneManager.MarkSceneDirty(scene);
+                            if (!EditorSceneManager.SaveScene(scene))
+                                throw new InvalidOperationException("Could not save refreshed Main.");
+                        }
+                        Debug.Log("[GroundNav] Refresh completed; saved existing NavMesh asset and scenery modifiers. Run Check Main Ground Navigation and visually review prop footprints.");
+                    }
+                    finally { refreshInProgress = false; }
+                };
+            }
+            catch { refreshInProgress = false; throw; }
         }
 
         [MenuItem("Tools/Runway Panic/Bake Main Ground Navigation")]
@@ -63,8 +152,11 @@ namespace RunwayPanic.EditorTools
             if (sources.Length == 0 || !sources.Any(c => c.name == "Ground_100x80"))
                 throw new InvalidOperationException("Expected airport ground collider not found.");
 
-            var include = Undo.AddComponent<NavMeshModifier>(GameObject.Find("Environment"));
-            include.applyToChildren = true;
+            foreach (var sourceRoot in SourceRoots())
+            {
+                var include = Undo.AddComponent<NavMeshModifier>(sourceRoot);
+                include.applyToChildren = true;
+            }
             foreach (var excluded in Exclusions())
             {
                 var modifier = Undo.AddComponent<NavMeshModifier>(excluded);

@@ -5,7 +5,8 @@ namespace RunwayPanic.Player
 {
     /// <summary>
     /// Temporary damage immunity from a shield pickup. While active, <see cref="PlayerHealth"/> multiplies
-    /// incoming damage by <see cref="DamageMultiplier"/> and a bubble is shown around the player.
+    /// incoming damage by <see cref="DamageMultiplier"/>. The bubble is shown only outside first-person view;
+    /// the HUD countdown indicates protection in first person without tinting the camera view.
     /// Dying removes the shield.
     /// </summary>
     [RequireComponent(typeof(PlayerHealth))]
@@ -14,7 +15,7 @@ namespace RunwayPanic.Player
         [SerializeField, Min(0.1f)] private float duration = 10f;
         [Tooltip("Fraction of damage blocked while active (1 = all damage).")]
         [SerializeField, Range(0f, 1f)] private float damageReduction = 1f;
-        [Tooltip("Shown while the shield is active.")]
+        [Tooltip("Shown while the shield is active outside first-person view.")]
         [SerializeField] private GameObject bubble;
 
         /// <summary>Raised when a shield starts. Argument: duration in seconds.</summary>
@@ -24,6 +25,7 @@ namespace RunwayPanic.Player
         public event Action Expired;
 
         private PlayerHealth health;
+        private PlayerCameraRig cameraRig;
         private float endTime;
 
         public bool IsActive { get; private set; }
@@ -33,6 +35,7 @@ namespace RunwayPanic.Player
         private void Awake()
         {
             health = GetComponent<PlayerHealth>();
+            cameraRig = GetComponent<PlayerCameraRig>();
             if (bubble != null)
                 bubble.SetActive(false);
         }
@@ -64,7 +67,7 @@ namespace RunwayPanic.Player
             IsActive = true;
             endTime = Time.time + duration;
             if (bubble != null)
-                bubble.SetActive(true);
+                bubble.SetActive(cameraRig == null || !cameraRig.IsFirstPerson);
 
             Activated?.Invoke(duration);
             return true;
