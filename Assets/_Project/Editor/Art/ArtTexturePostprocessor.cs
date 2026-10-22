@@ -25,6 +25,26 @@ namespace RunwayPanic.ArtTools
             var importer = (TextureImporter)assetImporter;
             string textureName = Path.GetFileNameWithoutExtension(assetPath);
 
+            // A 360-degree HDR sky covers the whole view, unlike an ordinary surface texture.
+            // Keep this exception scoped to HDR/EXR panoramas in the dedicated Sky folder;
+            // existing character, bird, weapon, prop and environment rules remain unchanged.
+            string extension = Path.GetExtension(assetPath);
+            if (assetPath.StartsWith(ArtBudgets.TexturesRoot + "Sky/") &&
+                (extension.Equals(".hdr", System.StringComparison.OrdinalIgnoreCase) ||
+                 extension.Equals(".exr", System.StringComparison.OrdinalIgnoreCase)))
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.textureShape = TextureImporterShape.Texture2D;
+                importer.sRGBTexture = false;
+                importer.maxTextureSize = 4096;
+                importer.mipmapEnabled = true;
+                importer.isReadable = false;
+                importer.filterMode = FilterMode.Trilinear;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.textureCompression = TextureImporterCompression.CompressedHQ;
+                return;
+            }
+
             importer.textureType = textureName.EndsWith("_Normal")
                 ? TextureImporterType.NormalMap
                 : TextureImporterType.Default;
