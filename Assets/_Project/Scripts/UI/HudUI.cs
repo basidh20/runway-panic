@@ -48,6 +48,8 @@ namespace RunwayPanic.UI
         [SerializeField] private Image damageFlash;
         [SerializeField, Range(0f, 1f)] private float flashAlpha = 0.35f;
         [SerializeField, Min(0.01f)] private float flashFadeTime = 0.4f;
+        [Tooltip("Opacity the flash image fades up to while the player is down (waiting to respawn).")]
+        [SerializeField, Range(0f, 1f)] private float deathFadeAlpha = 0.65f;
 
         private PlayerHealth health;
         private PlayerLifeManager lives;
@@ -55,11 +57,14 @@ namespace RunwayPanic.UI
         private PlayerInventory inventory;
         private PlayerWeaponHolder weaponHolder;
         private PlayerShield shield;
+        private PlayerRespawn respawn;
         private GameManager gameManager;
         private WaveManager waves;
         private float bannerHideTime;
         private WeaponBase trackedWeapon;
         private float flashAmount;
+        private bool down;
+        private float deathFade;
 
         private void Awake()
         {
@@ -69,13 +74,15 @@ namespace RunwayPanic.UI
             inventory = GetComponentInParent<PlayerInventory>();
             weaponHolder = GetComponentInParent<PlayerWeaponHolder>();
             shield = GetComponentInParent<PlayerShield>();
+            respawn = GetComponentInParent<PlayerRespawn>();
             SetFlash(0f);
         }
 
         private void OnEnable()
         {
-            if (health != null) { health.HealthChanged += ShowHealth; health.Damaged += Flash; }
-            if (lives != null) lives.LivesChanged += ShowLives;
+            if (health != null) { health.HealthChanged += ShowHealth; health.Damaged += Flash; health.Died += HandleDied; }
+            if (lives != null) { lives.LivesChanged += ShowLives; lives.LifeLost += HandleLifeLost; }
+            if (respawn != null) respawn.Respawned += HandleRespawned;
             if (coins != null) coins.CoinsChanged += ShowCoins;
             if (inventory != null) inventory.ItemCountChanged += ShowItems;
             if (weaponHolder != null) weaponHolder.WeaponEquipped += TrackWeapon;
@@ -83,8 +90,9 @@ namespace RunwayPanic.UI
 
         private void OnDisable()
         {
-            if (health != null) { health.HealthChanged -= ShowHealth; health.Damaged -= Flash; }
-            if (lives != null) lives.LivesChanged -= ShowLives;
+            if (health != null) { health.HealthChanged -= ShowHealth; health.Damaged -= Flash; health.Died -= HandleDied; }
+            if (lives != null) { lives.LivesChanged -= ShowLives; lives.LifeLost -= HandleLifeLost; }
+            if (respawn != null) respawn.Respawned -= HandleRespawned;
             if (coins != null) coins.CoinsChanged -= ShowCoins;
             if (inventory != null) inventory.ItemCountChanged -= ShowItems;
             if (weaponHolder != null) weaponHolder.WeaponEquipped -= TrackWeapon;
@@ -143,13 +151,19 @@ namespace RunwayPanic.UI
             if (shieldText != null)
             {
                 bool active = shield != null && shield.IsActive;
-                shieldText.enabled = active;
+                bool protectedAfterRespawn = health != null && health.IsAlive && health.IsInvulnerable;
+                shieldText.enabled = active || protectedAfterRespawn;
                 if (active)
                     shieldText.text = $"SHIELD  {Mathf.CeilToInt(shield.RemainingTime)}s";
+                else if (protectedAfterRespawn)
+                    shieldText.text = "PROTECTED";
             }
 
-            if (flashAmount > 0f)
+            // While down, the flash image fades up to a dark red screen; it clears again on respawn.
+            float fadeTarget = down ? 1f : 0f;
+            if (!Mathf.Approximately(deathFade, fadeTarget) || flashAmount > 0f)
             {
+                deathFade = Mathf.MoveTowards(deathFade, fadeTarget, Time.unscaledDeltaTime / (down ? 0.8f : 0.3f));
                 flashAmount = Mathf.Max(0f, flashAmount - Time.unscaledDeltaTime / flashFadeTime);
                 SetFlash(flashAmount);
             }
@@ -317,13 +331,27 @@ namespace RunwayPanic.UI
             SetFlash(1f);
         }
 
+        private void HandleDied() => down = true;
+
+        // A death that still leaves a life: say what happens next while the screen is dark.
+        private void HandleLifeLost(int remaining)
+        {
+            if (banner == null)
+                return;
+            float delay = respawn != null ? respawn.RespawnDelay : 2f;
+            ShowBanner("YOU ARE DOWN",
+                $"{remaining} {(remaining == 1 ? "life" : "lives")} left - back to the checkpoint", delay + 0.5f);
+        }
+
+        private void HandleRespawned() => down = false;
+
         private void SetFlash(float amount)
         {
             if (damageFlash == null)
                 return;
 
             Color c = damageFlash.color;
-            c.a = amount * flashAlpha;
+            c.a = Mathf.Max(amount * flashAlpha, deathFade * deathFadeAlpha);
             damageFlash.color = c;
             damageFlash.enabled = c.a > 0.001f;
         }

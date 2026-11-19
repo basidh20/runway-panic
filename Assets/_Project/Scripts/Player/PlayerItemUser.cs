@@ -33,6 +33,10 @@ namespace RunwayPanic.Player
 
         private void Update()
         {
+            // Not while paused (Update still runs at time scale 0), in the shop or on an end screen.
+            if (!PlayerInputGate.CanAct(health))
+                return;
+
             bool useMedkit = (Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame) ||
                              (Gamepad.current != null && Gamepad.current.dpad.up.wasPressedThisFrame);
             bool useShield = (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame) ||

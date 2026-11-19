@@ -55,7 +55,8 @@ namespace RunwayPanic.Interaction
                 return;
 
             PlayerHealth player = other.GetComponentInParent<PlayerHealth>();
-            if (player == null || !player.IsAlive || !TryCollect(player.gameObject))
+            // Only during play: a shield picked up in the shop or on an end screen would just run out unused.
+            if (player == null || !PlayerInputGate.CanAct(player) || !TryCollect(player.gameObject))
                 return;
 
             isCollected = true;

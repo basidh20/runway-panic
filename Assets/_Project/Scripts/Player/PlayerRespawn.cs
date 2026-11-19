@@ -13,6 +13,14 @@ namespace RunwayPanic.Player
     public sealed class PlayerRespawn : MonoBehaviour
     {
         [SerializeField, Min(0f)] private float respawnDelay = 2f;
+        [Tooltip("Seconds after a respawn in which birds cannot hurt the player, so a bird waiting at the checkpoint is not an instant death.")]
+        [SerializeField, Min(0f)] private float respawnInvulnerability = 3f;
+
+        /// <summary>Seconds between the death and the respawn (for the HUD's death screen).</summary>
+        public float RespawnDelay => respawnDelay;
+
+        /// <summary>Length of the grace period after a respawn.</summary>
+        public float RespawnInvulnerability => respawnInvulnerability;
 
         /// <summary>Raised after the player has been moved and healed.</summary>
         public event Action Respawned;
@@ -92,6 +100,7 @@ namespace RunwayPanic.Player
             CinemachineCore.OnTargetObjectWarped(transform, delta);
 
             playerHealth.ResetHealth();
+            playerHealth.SetInvulnerable(respawnInvulnerability);
             if (playerController != null)
                 playerController.enabled = true;
 
@@ -102,6 +111,7 @@ namespace RunwayPanic.Player
         private void OnValidate()
         {
             respawnDelay = Mathf.Max(0f, respawnDelay);
+            respawnInvulnerability = Mathf.Max(0f, respawnInvulnerability);
         }
     }
 }

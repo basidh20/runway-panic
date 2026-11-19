@@ -55,6 +55,8 @@ namespace RunwayPanic.Player
         private float lastJumpPressedTime = float.NegativeInfinity;
         private bool jumpConsumed;
         private float startAccelerationRemaining;
+        private PlayerHealth health;
+        private bool canAct = true;
 
         public Vector2 MoveInput { get; private set; }
         public bool IsSprinting { get; private set; }
@@ -104,6 +106,7 @@ namespace RunwayPanic.Player
         {
             characterController = GetComponent<CharacterController>();
             cameraRig = GetComponent<PlayerCameraRig>();
+            health = GetComponent<PlayerHealth>();
 
             PlayerInput playerInput = GetComponent<PlayerInput>();
             moveAction = playerInput.actions?.FindAction(MoveActionName, false);
@@ -126,15 +129,17 @@ namespace RunwayPanic.Player
             if (!characterController.enabled || Time.deltaTime <= 0f)
                 return;
 
+            // Shop and end screens keep time running: the body still falls and settles, but takes no input.
+            canAct = PlayerInputGate.CanAct(health);
             bool hadMoveInput = MoveInput.sqrMagnitude > 0f;
-            MoveInput = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
+            MoveInput = canAct ? Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f) : Vector2.zero;
             if (MoveInput.magnitude < inputDeadZone)
                 MoveInput = Vector2.zero;
             if (!hadMoveInput && MoveInput.sqrMagnitude > 0f && planarVelocity.sqrMagnitude < 0.01f)
                 startAccelerationRemaining = startAccelerationTime;
             if (MoveInput == Vector2.zero)
                 startAccelerationRemaining = 0f;
-            IsSprinting = sprintAction.IsPressed() && MoveInput.sqrMagnitude > 0f && !aiming;
+            IsSprinting = canAct && sprintAction.IsPressed() && MoveInput.sqrMagnitude > 0f && !aiming;
             float targetSpeed = (IsSprinting ? sprintSpeed : walkSpeed) * aimSpeedScale;
 
             Vector3 moveDirection = GetMoveDirection(MoveInput);
@@ -221,7 +226,7 @@ namespace RunwayPanic.Player
         {
             IsGrounded = characterController.isGrounded;
 
-            if (jumpAction.WasPressedThisFrame())
+            if (canAct && jumpAction.WasPressedThisFrame())
                 lastJumpPressedTime = Time.time;
 
             if (IsGrounded && verticalVelocity <= 0f)

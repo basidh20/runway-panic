@@ -93,6 +93,7 @@ namespace RunwayPanic.Core
 
             Instance = null;
             Time.timeScale = 1f;
+            AudioListener.pause = false;
         }
 
         private void Start()
@@ -223,6 +224,7 @@ namespace RunwayPanic.Core
         private void ApplyStateEffects()
         {
             Time.timeScale = CurrentState == GameState.Paused ? 0f : 1f;
+            AudioListener.pause = CurrentState == GameState.Paused;
 
             bool lockCursor = CurrentState == GameState.Playing;
             Cursor.lockState = lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
