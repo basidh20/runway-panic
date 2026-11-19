@@ -22,4 +22,7 @@ MonoBehaviour:
   attackCooldown: 1.2
   coinReward: 15
   requiredWeaponRarity: 2
-  wrongWeaponDamageMultiplier: 0.1
+  weakerWeaponMultipliers:
+  - 0.5
+  - 0.25
+  - 0.1

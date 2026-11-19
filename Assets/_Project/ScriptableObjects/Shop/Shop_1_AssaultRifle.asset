@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Shop_1_AssaultRifle
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.ShopItem
   displayName: Assault Rifle
-  description: Uncommon. Rapid fire. Full damage against pigeons.
+  description: "Uncommon. Rapid fire. Full damage on pigeons and gulls: 3 hits drop a pigeon."
   icon: {fileID: 0}
   kind: 0
   weapon: {fileID: 11400000, guid: 88f8ab99b85c76f419b52f12b952aa7d, type: 2}

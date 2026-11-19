@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.WaveData
   waveNumber: 4
   title: All Species
-  hint: Every bird is back. Only the RPG stops a hawk - when it screams, look up!
+  hint: Every bird is back. Bring the RPG for hawks - when it screams, look up!
   duration: 130
   spawnInterval: 5
   firstSpawnDelay: 2
