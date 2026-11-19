@@ -253,6 +253,10 @@ namespace RunwayPanic.Weapons
                 RaycastHit hit = Hits[i];
                 if (IsOwner(hit.collider) || hit.distance >= nearestDistance)
                     continue;
+                // A falling dead bird is not something to explode on.
+                IDamageable damageable = hit.collider.GetComponentInParent<IDamageable>();
+                if (damageable != null && !damageable.IsAlive)
+                    continue;
                 nearest = hit;
                 nearestDistance = hit.distance;
             }

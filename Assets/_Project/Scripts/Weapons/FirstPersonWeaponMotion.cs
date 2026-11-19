@@ -32,6 +32,14 @@ namespace RunwayPanic.Weapons
         private Renderer[] renderers = System.Array.Empty<Renderer>();
         private bool[] originalHidden = System.Array.Empty<bool>();
         private bool scopeHidden;
+        private float wallBlock, wallBlockVelocity;
+
+        // The gun is drawn in the world like everything else, so near a wall or door it would poke through it.
+        // Instead it is tucked: pulled back towards the chest, lowered and turned aside, as a person holds a gun
+        // close to a wall. Probe = a short sphere cast along the view.
+        private const float WallProbeRadius = 0.09f;
+        private const float WallProbeExtra = 0.25f;   // beyond the muzzle's resting reach
+        private static readonly RaycastHit[] WallHits = new RaycastHit[8];
 
         internal void Initialize(PlayerWeaponHolder owner, PlayerCameraRig cameraRig, PlayerController movement)
         {
@@ -199,6 +207,10 @@ namespace RunwayPanic.Weapons
             }
             else reloading = false;
 
+            float tuck = WallTuck(Mathf.Max(hip.z, aimed.z) + WallProbeExtra, dt);
+            position += new Vector3(0.02f, -0.07f, -0.28f) * tuck;
+            angles += new Vector3(22f, -38f, 8f) * tuck;
+
             float equip = 1f - Mathf.SmoothStep(0f, 1f, (Time.time - equipStart) / 0.28f);
             position.y -= equip * 0.14f;
             angles += new Vector3(15f, 0f, -10f) * equip;
@@ -211,6 +223,33 @@ namespace RunwayPanic.Weapons
             transform.SetLocalPositionAndRotation(restPosition + posePosition + Vector3.back * (recoil * 0.028f),
                 restRotation * Quaternion.Euler(poseAngles + new Vector3(-recoil * 4.5f, 0f, recoil * 0.6f)));
             SetScopeHidden(rig.ScopeBlend > 0.95f);
+        }
+
+        // 0 = free, 1 = a wall right in front of the eye. Smoothed so the gun does not twitch along uneven walls.
+        private float WallTuck(float reach, float dt)
+        {
+            Transform view = transform.parent;
+            float target = 0f;
+            if (view != null)
+            {
+                int count = Physics.SphereCastNonAlloc(view.position, WallProbeRadius, view.forward, WallHits, reach, ~0,
+                    QueryTriggerInteraction.Ignore);
+                float nearest = reach;
+                for (int i = 0; i < count; i++)
+                {
+                    Collider hit = WallHits[i].collider;
+                    // Skip the player and anything alive (a bird in the face is shot, not tucked away from).
+                    if (hit == null || hit.transform.IsChildOf(holder.transform) ||
+                        hit.GetComponentInParent<Core.IDamageable>() != null)
+                        continue;
+                    if (WallHits[i].distance > 0f && WallHits[i].distance < nearest)
+                        nearest = WallHits[i].distance;
+                }
+                target = Mathf.Clamp01(1f - nearest / reach) * 1.6f;
+                target = Mathf.Clamp01(target);
+            }
+            wallBlock = Mathf.SmoothDamp(wallBlock, target, ref wallBlockVelocity, 0.08f, Mathf.Infinity, dt);
+            return Mathf.SmoothStep(0f, 1f, wallBlock);
         }
 
         private void SetScopeHidden(bool hidden)

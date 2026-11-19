@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using RunwayPanic.Core;
+using RunwayPanic.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -21,7 +23,10 @@ namespace RunwayPanic.Weapons
         /// <summary>Raised after a gun is added. Argument: the gun prefab.</summary>
         public event Action<GameObject> WeaponAdded;
 
+        private static readonly Key[] SlotKeys = { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4 };
+
         private PlayerWeaponHolder weaponHolder;
+        private PlayerHealth health;
         private InputAction nextAction;
         private InputAction previousAction;
 
@@ -31,6 +36,7 @@ namespace RunwayPanic.Weapons
         private void Awake()
         {
             weaponHolder = GetComponent<PlayerWeaponHolder>();
+            health = GetComponent<PlayerHealth>();
 
             PlayerInput playerInput = GetComponent<PlayerInput>();
             nextAction = playerInput.actions?.FindAction(NextActionName, false);
@@ -55,10 +61,43 @@ namespace RunwayPanic.Weapons
 
         private void Update()
         {
+            if (!PlayerInputGate.CanAct(health))
+                return;
+
+            // Keys 1-4 pick a gun by its tier (1 pistol, 2 assault rifle, 3 sniper, 4 RPG), whatever order it was bought in.
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                for (int slot = 0; slot < SlotKeys.Length; slot++)
+                    if (keyboard[SlotKeys[slot]].wasPressedThisFrame)
+                    {
+                        SelectTier((WeaponRarity)slot);
+                        return;
+                    }
+            }
+
+            // Next / Previous: mouse wheel and D-pad left/right.
             if (nextAction.WasPressedThisFrame())
                 Cycle(1);
             else if (previousAction.WasPressedThisFrame())
                 Cycle(-1);
+        }
+
+        /// <summary>Equips the owned gun of tier <paramref name="tier"/>. Returns false if none is owned.</summary>
+        public bool SelectTier(WeaponRarity tier)
+        {
+            for (int i = 0; i < ownedWeapons.Count; i++)
+            {
+                WeaponBase weapon = ownedWeapons[i].GetComponent<WeaponBase>();
+                if (weapon != null && weapon.Data != null && weapon.Data.Rarity == tier)
+                {
+                    if (i != CurrentIndex)
+                        EquipAt(i);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
