@@ -18,8 +18,8 @@ namespace RunwayPanic.Agents.Gull.EditorTools
             var config = AssetDatabase.LoadAssetAtPath<GullStrategyConfig>(GullG1Setup.ConfigPath);
             var species = AssetDatabase.LoadAssetAtPath<RunwayPanic.Data.BirdSpeciesData>("Assets/_Project/ScriptableObjects/Birds/BirdSpecies_Gull.asset");
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(GullFodSetup.PrefabPath);
-            var points = UnityEngine.Object.FindObjectsByType<BirdPoint>(FindObjectsSortMode.None).Where(point => point.Type == BirdPointType.FodSpawn).ToArray();
-            var managers = UnityEngine.Object.FindObjectsByType<FodManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var points = UnityEngine.Object.FindObjectsByType<BirdPoint>().Where(point => point.Type == BirdPointType.FodSpawn).ToArray();
+            var managers = UnityEngine.Object.FindObjectsByType<FodManager>(FindObjectsInactive.Include);
             if (config == null || species == null || prefab == null || points.Length != 8 || managers.Length > 1)
                 throw new InvalidOperationException("Expected Gull assets, eight existing FOD markers and at most one manager.");
             var contents = PrefabUtility.LoadPrefabContents(GullG1Setup.PrefabPath);

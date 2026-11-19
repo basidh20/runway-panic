@@ -60,8 +60,8 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 if (EditorApplication.timeSinceStartup - began < 1) return;
                 if (birds == null)
                 {
-                    UnityEngine.Object.FindObjectsByType<BirdTestSpawner>(FindObjectsSortMode.None).Single().Spawn();
-                    birds = UnityEngine.Object.FindObjectsByType<GullBrain>(FindObjectsSortMode.None);
+                    UnityEngine.Object.FindObjectsByType<BirdTestSpawner>().Single().Spawn();
+                    birds = UnityEngine.Object.FindObjectsByType<GullBrain>();
                     Check(birds.Length == 5 && birds.All(bird => bird.GetComponents<BirdBrain>().Length == 1 &&
                         bird.GetComponent<BirdHealth>().Species.Species == BirdSpecies.Gull), "Five Gull instances, one species brain each");
                     Check(birds.All(bird => bird.Config != null && bird.Config == birds[0].Config), "All five share the assigned Gull strategy asset");

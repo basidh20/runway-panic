@@ -87,7 +87,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                     a.enabled = b.enabled = false; // Only counter fixtures, not a timed AI run.
                     GullDebugStats.EnsureExists(); stats = GullDebugStats.Instance;
                     var original = stats; GullDebugStats.EnsureExists();
-                    Check(original != null && stats == GullDebugStats.Instance && UnityEngine.Object.FindObjectsByType<GullDebugStats>(FindObjectsSortMode.None).Length == 1, "Exactly one scene stats component");
+                    Check(original != null && stats == GullDebugStats.Instance && UnityEngine.Object.FindObjectsByType<GullDebugStats>().Length == 1, "Exactly one scene stats component");
                     stats.ResetStatistics(); stats.Visible = true;
                     Check(stats.ResolvedDrops == 0 && stats.HitRate == 0f && stats.AverageMissDistance == 0f, "Empty session metrics are finite zero values");
                     GullDebugStats.RecordTokenGrant(a); GullDebugStats.RecordTokenGrant(a);
