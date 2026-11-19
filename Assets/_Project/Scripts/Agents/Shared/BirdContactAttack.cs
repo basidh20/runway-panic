@@ -49,7 +49,30 @@ namespace RunwayPanic.Agents
                 ? cachedPlayerCollider.bounds.ClosestPoint(position)
                 : player.transform.position;
             float range = species.AttackRange;
-            return (closest - position).sqrMagnitude <= range * range;
+            return (closest - position).sqrMagnitude <= range * range && HasClearLine(position, closest);
+        }
+
+        private static readonly RaycastHit[] LineHits = new RaycastHit[8];
+
+        // A wall, a closed shelter door or a roof between the bird and the player stops the peck: the range test alone
+        // let a bird hit a player standing on the other side of a thin wall.
+        private bool HasClearLine(Vector3 from, Vector3 to)
+        {
+            Vector3 line = to - from;
+            float distance = line.magnitude;
+            if (distance < 0.05f)
+                return true;
+
+            int count = Physics.RaycastNonAlloc(from, line / distance, LineHits, distance, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                Collider hit = LineHits[i].collider;
+                if (hit == null || hit.transform.IsChildOf(transform) || RunwayPanic.AI.FlightGrid.IsAgentCollider(hit))
+                    continue; // this bird, other birds and the player do not block
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>Hits the player with the species' damage if in range and off cooldown. Returns true when it hit.</summary>
@@ -67,7 +90,8 @@ namespace RunwayPanic.Agents
                 return false;
 
             PlayerHealth player = ResolvePlayer();
-            if (player == null || !player.IsAlive || !IsPlayerInRange())
+            // No strike during the respawn grace period either: the bird would play its attack for nothing.
+            if (player == null || !player.IsAlive || player.IsInvulnerable || !IsPlayerInRange())
                 return false;
 
             nextAttackTime = Time.time + species.AttackCooldown;

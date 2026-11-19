@@ -1,4 +1,5 @@
 using System;
+using RunwayPanic.Core;
 using Unity.Profiling;
 using UnityEngine;
 
@@ -138,6 +139,18 @@ namespace RunwayPanic.Agents.Pigeon
 
             stateTime += Time.deltaTime;
             TickState(state);
+            AddFearSteering();
+        }
+
+        // The hawk's fear field (H6 herd mode) pushes flying pigeons away from it, as it already does crows. Not while
+        // diving (committed to the strike), roosting (sitting still) or dead.
+        private void AddFearSteering()
+        {
+            if (state == PigeonState.Dive || state == PigeonState.Roosting || state == PigeonState.Dead)
+                return;
+            Vector3 repulsion = FearRegistry.GetRepulsion(Motor.Position, BirdSpecies.Pigeon);
+            if (repulsion.sqrMagnitude > 0.0001f)
+                Motor.AddSteering(repulsion);
         }
 
         /// <summary>
@@ -152,6 +165,16 @@ namespace RunwayPanic.Agents.Pigeon
             state = next;
             stateTime = 0f;
             EnterState(next);
+        }
+
+        /// <summary>
+        /// Flying off at the end of a wave: leave the flock (the Dead state only frees the flock claims and makes the
+        /// flock's orders ignored) so the flock does not send this bird diving while it leaves.
+        /// </summary>
+        public override void Retreat()
+        {
+            ChangeState(PigeonState.Dead);
+            base.Retreat();
         }
 
         protected override void OnBirdDied()

@@ -22,6 +22,9 @@ namespace RunwayPanic.Agents.Hawk
         [Tooltip("Write every window opening (with the meter and learned weight) to the Console / Editor.log (prefix [HawkWeak]).")]
         [SerializeField] private bool logWindows = true;
 
+        // Window lines are evidence for the notes (Editor and development builds); a release build stays quiet.
+        private bool LogsEnabled => logWindows && (Application.isEditor || Debug.isDebugBuild);
+
         private readonly bool[] open = new bool[WindowCount];
         private readonly int[] openCount = new int[WindowCount];
         private readonly float[] closeTime = new float[WindowCount];
@@ -200,7 +203,7 @@ namespace RunwayPanic.Agents.Hawk
             Transform cam = hub.CameraTransform;
             if (cam == null)
             {
-                if (!warnedNoCamera && logWindows)
+                if (!warnedNoCamera && LogsEnabled)
                     Debug.LogWarning($"{LogPrefix} {name}: no camera from PlayerEventHub (Camera.main is null) - LookingAway can't be measured.", this);
                 warnedNoCamera = true;
                 lookAwayTime = 0f;
@@ -211,13 +214,13 @@ namespace RunwayPanic.Agents.Hawk
             float angle = Vector3.Angle(cam.forward, toHawk);
             if (angle > config.LookAwayAngle)
             {
-                if (lookAwayTime == 0f && logWindows)
+                if (lookAwayTime == 0f && LogsEnabled)
                     Debug.Log($"{LogPrefix} {name} look-away timer started (angle {angle:0}°, camera '{cam.name}')", this);
                 lookAwayTime += dt;
             }
             else
             {
-                if (lookAwayTime > 0f && lookAwayTime < config.LookAwayMinTime && logWindows)
+                if (lookAwayTime > 0f && lookAwayTime < config.LookAwayMinTime && LogsEnabled)
                     Debug.Log($"{LogPrefix} {name} look-away ended after {lookAwayTime:0.0}s (needs {config.LookAwayMinTime:0.0}s; angle now {angle:0}°)", this);
                 lookAwayTime = 0f;
             }
@@ -267,7 +270,7 @@ namespace RunwayPanic.Agents.Hawk
 
         private void LogOpening(WeaknessWindow window)
         {
-            if (logWindows)
+            if (LogsEnabled)
                 Debug.Log($"{LogPrefix} {name} open {window} (#{openCount[(int)window]}, weight {GetWeight(window):0.00}) meter {meter:0}", this);
         }
 

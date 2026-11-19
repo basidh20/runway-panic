@@ -129,11 +129,13 @@ namespace RunwayPanic.AI
             // Built here, not in Awake: by Start every collider in the scene is registered with physics.
             EnsureBuilt();
             SubscribeToBarricades();
+            SubscribeToDoors();
         }
 
         private void OnDestroy()
         {
             UnsubscribeFromBarricades();
+            UnsubscribeFromDoors();
             if (Instance == this)
                 Instance = null;
         }
@@ -499,6 +501,65 @@ namespace RunwayPanic.AI
             currentBounds.Expand(cellSize * 2f);
             RebuildRegion(previousBounds);
             RebuildRegion(currentBounds);
+        }
+
+        // ---------- Doors ----------
+        // The grid is baked once with every door closed. An opened door's panel then stands in cells the grid thinks are
+        // free (birds clip through it) and the doorway stays marked blocked. After each swing settles, the door's
+        // swing area is re-tested, so the cells match the panel where it really is.
+
+        private const float DoorSettleSeconds = 1.2f;
+        private Door[] doors;
+        private Bounds[] doorSwingAreas;
+        private Action[] doorHandlers;
+
+        private void SubscribeToDoors()
+        {
+            doors = FindObjectsByType<Door>();
+            doorSwingAreas = new Bounds[doors.Length];
+            doorHandlers = new Action[doors.Length];
+            for (int i = 0; i < doors.Length; i++)
+            {
+                int index = i;
+                doorSwingAreas[i] = DoorSwingArea(doors[i]);
+                doorHandlers[i] = () => StartCoroutine(RefreshDoorAfterSwing(index));
+                doors[i].Opened += doorHandlers[i];
+                doors[i].Closed += doorHandlers[i];
+            }
+        }
+
+        private void UnsubscribeFromDoors()
+        {
+            if (doors == null)
+                return;
+            for (int i = 0; i < doors.Length; i++)
+                if (doors[i] != null)
+                {
+                    doors[i].Opened -= doorHandlers[i];
+                    doors[i].Closed -= doorHandlers[i];
+                }
+            doors = null;
+        }
+
+        // Everywhere the panel can be: its closed bounds widened by its own width on every horizontal side.
+        private static Bounds DoorSwingArea(Door door)
+        {
+            Collider[] colliders = door.GetComponentsInChildren<Collider>();
+            if (colliders.Length == 0)
+                return new Bounds(door.transform.position, Vector3.one);
+            Bounds bounds = colliders[0].bounds;
+            for (int i = 1; i < colliders.Length; i++)
+                bounds.Encapsulate(colliders[i].bounds);
+            float width = Mathf.Max(bounds.size.x, bounds.size.z);
+            bounds.Expand(new Vector3(width * 2f, 0f, width * 2f));
+            return bounds;
+        }
+
+        private System.Collections.IEnumerator RefreshDoorAfterSwing(int index)
+        {
+            yield return new WaitForSeconds(DoorSettleSeconds);
+            if (doors != null && index < doors.Length && doors[index] != null)
+                RebuildRegion(doorSwingAreas[index]);
         }
 
         private void HandleBarricadeSettled(int index, Bounds footprint)
