@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Wave_4_Hawks
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.WaveData
   waveNumber: 4
-  title: Hawks
-  hint: Only the RPG stops a hawk. When it screams, look up!
-  duration: 120
+  title: All Species
+  hint: Every bird is back. Only the RPG stops a hawk - when it screams, look up!
+  duration: 130
   spawnInterval: 5
   firstSpawnDelay: 2
-  maxAlive: 5
+  maxAlive: 6
   clearBonus: 0
   spawnGroups:
   - species: {fileID: 11400000, guid: a1b64bc61b9c4db4da5156d2a1d72fd0, type: 2}
@@ -26,4 +26,6 @@ MonoBehaviour:
   - species: {fileID: 11400000, guid: 0f7b6716bba34f84db90ae1bf4322735, type: 2}
     count: 3
   - species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
+    count: 3
+  - species: {fileID: 11400000, guid: 0e99293d4f5d9dc42bd7894aeeeb57bf, type: 2}
     count: 3

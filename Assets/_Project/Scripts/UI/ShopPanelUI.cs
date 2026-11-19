@@ -3,6 +3,7 @@ using RunwayPanic.Core;
 using RunwayPanic.Data;
 using RunwayPanic.Player;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RunwayPanic.UI
@@ -29,6 +30,7 @@ namespace RunwayPanic.UI
         private readonly List<(ShopItem item, Button button, Text label)> rows = new List<(ShopItem, Button, Text)>();
         private GameManager subscribedGameManager;
         private CoinManager subscribedCoins;
+        private PlayerInventory subscribedInventory;
 
         private void Awake()
         {
@@ -54,6 +56,11 @@ namespace RunwayPanic.UI
             if (subscribedCoins != null)
                 subscribedCoins.CoinsChanged += HandleCoinsChanged;
 
+            // Labels such as FULL / OWNED depend on what the player carries, not only on coins.
+            subscribedInventory = subscribedCoins != null ? subscribedCoins.GetComponent<PlayerInventory>() : null;
+            if (subscribedInventory != null)
+                subscribedInventory.ItemCountChanged += HandleItemCountChanged;
+
             shop.ItemPurchased += HandlePurchased;
             shop.PurchaseFailed += HandlePurchaseFailed;
         }
@@ -64,6 +71,8 @@ namespace RunwayPanic.UI
                 subscribedGameManager.StateChanged -= HandleStateChanged;
             if (subscribedCoins != null)
                 subscribedCoins.CoinsChanged -= HandleCoinsChanged;
+            if (subscribedInventory != null)
+                subscribedInventory.ItemCountChanged -= HandleItemCountChanged;
             if (shop != null)
             {
                 shop.ItemPurchased -= HandlePurchased;
@@ -82,16 +91,43 @@ namespace RunwayPanic.UI
             titleText.text = wave > 0 ? $"SHOP  -  Wave {wave} cleared" : "SHOP";
             messageText.text = "Buy the right gun for the next birds.";
             Refresh();
+            FocusFirstButton();
         }
 
         private void HandleCoinsChanged(int coins) => Refresh();
 
+        private void HandleItemCountChanged(ItemType item, int count)
+        {
+            if (panelRoot.activeSelf)
+                Refresh();
+        }
+
+        // Keyboard and gamepad players need a selected button: the first thing they can buy, else "Next wave".
+        private void FocusFirstButton()
+        {
+            if (EventSystem.current == null)
+                return;
+            Selectable target = nextWaveButton;
+            foreach (var (_, button, _) in rows)
+                if (button.interactable)
+                {
+                    target = button;
+                    break;
+                }
+            if (target != null)
+                EventSystem.current.SetSelectedGameObject(target.gameObject);
+        }
+
         private void HandlePurchased(ShopItem item)
         {
             messageText.text = item.ItemKind == ShopItem.Kind.Weapon
-                ? $"Bought {item.DisplayName} - equipped. Switch guns with 1 / 2."
+                ? $"Bought {item.DisplayName} - equipped. Switch guns with 1-4 or the mouse wheel."
                 : $"Bought {item.DisplayName}.";
             Refresh();
+            // The bought row may have just become disabled (OWNED / FULL): keep a usable button selected.
+            if (EventSystem.current != null && (EventSystem.current.currentSelectedGameObject == null ||
+                !EventSystem.current.currentSelectedGameObject.GetComponent<Selectable>().interactable))
+                FocusFirstButton();
         }
 
         private void HandlePurchaseFailed(ShopItem item, ShopManager.PurchaseResult reason)
