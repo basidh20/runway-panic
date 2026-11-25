@@ -54,8 +54,8 @@ namespace RunwayPanic.Agents.Gull.EditorTools
             settings.FindProperty("count").intValue = 5;
             settings.FindProperty("spawnOnStart").boolValue = false;
             settings.ApplyModifiedPropertiesWithoutUndo();
-            if (UnityEngine.Object.FindObjectsByType<FlightGrid>(FindObjectsSortMode.None).Length != 1 ||
-                UnityEngine.Object.FindObjectsByType<BirdPoint>(FindObjectsSortMode.None).Count(point => point.Type == BirdPointType.KettleCenter) != 1)
+            if (UnityEngine.Object.FindObjectsByType<FlightGrid>().Length != 1 ||
+                UnityEngine.Object.FindObjectsByType<BirdPoint>().Count(point => point.Type == BirdPointType.KettleCenter) != 1)
                 throw new InvalidOperationException("Copied scene is missing its single flight grid or kettle centre. Review before using it.");
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Could not save Gull sandbox.");

@@ -62,8 +62,8 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                     kettle = GullKettle.Instance;
                     kettle.Configure(AssetDatabase.LoadAssetAtPath<GullStrategyConfig>(GullG1Setup.ConfigPath));
                     kettle.DispatchEnabled = false;
-                    UnityEngine.Object.FindObjectsByType<BirdTestSpawner>(FindObjectsSortMode.None).Single().Spawn();
-                    birds = UnityEngine.Object.FindObjectsByType<GullBrain>(FindObjectsSortMode.None);
+                    UnityEngine.Object.FindObjectsByType<BirdTestSpawner>().Single().Spawn();
+                    birds = UnityEngine.Object.FindObjectsByType<GullBrain>();
                     distant = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(GullG1Setup.PrefabPath), new Vector3(45, 12, 0), Quaternion.identity).GetComponent<GullBrain>();
                     distant.name = "G5_DistantGull";
                     // Keep this control outside the hearing radius without disabling its health/brain events.

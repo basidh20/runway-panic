@@ -63,8 +63,8 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                     kettle = GullKettle.Instance;
                     kettle.Configure(AssetDatabase.LoadAssetAtPath<GullStrategyConfig>(GullG1Setup.ConfigPath));
                     kettle.DispatchEnabled = false; // First observe all five orbiting before letting a turn depart.
-                    UnityEngine.Object.FindObjectsByType<BirdTestSpawner>(FindObjectsSortMode.None).Single().Spawn();
-                    birds = UnityEngine.Object.FindObjectsByType<GullBrain>(FindObjectsSortMode.None);
+                    UnityEngine.Object.FindObjectsByType<BirdTestSpawner>().Single().Spawn();
+                    birds = UnityEngine.Object.FindObjectsByType<GullBrain>();
                     Check(birds.Length == 5 && kettle.Centre == new Vector3(0, 10, 0) && kettle.GroundHeight == 0, "Five test Gulls and ground-relative runway kettle anchor");
                     Next(1);
                 }

@@ -75,6 +75,15 @@ namespace RunwayPanic.Agents
         }
 
         /// <summary>
+        /// The wave's time ran out and this bird is leaving the level (<see cref="BirdRetreat"/> flies it off).
+        /// Stop deciding; species let go of anything they hold (a crow drops its loot, a pigeon leaves its flock).
+        /// </summary>
+        public virtual void Retreat()
+        {
+            enabled = false;
+        }
+
+        /// <summary>
         /// Finds a path from the bird to <paramref name="target"/> and starts following it.
         /// Returns false when this frame's search budget is used up (keep the current path, try again next frame)
         /// or when there is no path (e.g. the target is inside a sealed shelter).

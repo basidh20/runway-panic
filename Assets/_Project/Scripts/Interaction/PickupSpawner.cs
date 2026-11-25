@@ -74,7 +74,21 @@ namespace RunwayPanic.Interaction
         /// <summary>Spawns pickups until <see cref="maxActive"/> are lying in the level (or no free marker is left).</summary>
         public void Refill()
         {
+            PruneDestroyed();
             while (occupied.Count < maxActive && TrySpawnOne()) { }
+        }
+
+        // A pickup can disappear without being collected (e.g. destroyed with a crow carrying it). Free its marker,
+        // otherwise the level would hold one pickup fewer for the rest of the game.
+        private void PruneDestroyed()
+        {
+            List<Transform> gone = null;
+            foreach (KeyValuePair<Transform, Pickup> pair in occupied)
+                if (pair.Value == null)
+                    (gone ??= new List<Transform>()).Add(pair.Key);
+            if (gone != null)
+                foreach (Transform point in gone)
+                    occupied.Remove(point);
         }
 
         private void HandleWaveStarted(int wave) => Refill();
@@ -100,9 +114,19 @@ namespace RunwayPanic.Interaction
 
         private IEnumerator RespawnAfterDelay()
         {
-            yield return new WaitForSeconds(respawnDelay);
+            // Counts only time spent in a running wave: idling in the shop (time keeps running there) or on a pause
+            // screen must not restock the level for free.
+            float waited = 0f;
+            while (waited < respawnDelay)
+            {
+                GameManager game = GameManager.Instance;
+                if (game == null || (game.CurrentState == GameState.Playing && game.IsWaveActive))
+                    waited += Time.deltaTime;
+                yield return null;
+            }
 
             // A wave-start refill may already have filled the level in the meantime.
+            PruneDestroyed();
             if (occupied.Count < maxActive)
                 TrySpawnOne();
         }

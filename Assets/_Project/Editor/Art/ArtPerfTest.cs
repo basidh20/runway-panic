@@ -287,7 +287,7 @@ namespace RunwayPanic.ArtTools
                 : new System.Collections.Generic.List<Transform>();
             int birds = children.Count(t => t.name.StartsWith("P_Bird_"));
             bool player = children.Any(t => t.name.StartsWith("P_Player"));
-            int skinned = Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
+            int skinned = Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsInactive.Exclude).Length;
             Vector2 gameView = Handles.GetMainGameViewSize();
 
             var sb = new StringBuilder();

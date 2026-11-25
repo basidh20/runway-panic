@@ -66,13 +66,13 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 if (stage == 0)
                 {
                     manager = FodManager.Instance;
-                    supplies = UnityEngine.Object.FindObjectsByType<FodSpawnPoint>(FindObjectsSortMode.None);
+                    supplies = UnityEngine.Object.FindObjectsByType<FodSpawnPoint>();
                     Check(supplies.Length == 8 && supplies.All(point => point.IsReady) && manager.Config.maxFodOnGround == 20,
                         "Eight ready supplies and one configured manager with the normal cap of 20");
                     Check(supplies[0].TryTake(out var probe) && !supplies[0].TryTake(out _), "One successful take starts the six-second cooldown; immediate repeat is refused");
                     if (probe != null) probe.Despawn();
-                    UnityEngine.Object.FindObjectsByType<BirdTestSpawner>(FindObjectsSortMode.None).Single().Spawn();
-                    birds = UnityEngine.Object.FindObjectsByType<GullBrain>(FindObjectsSortMode.None);
+                    UnityEngine.Object.FindObjectsByType<BirdTestSpawner>().Single().Spawn();
+                    birds = UnityEngine.Object.FindObjectsByType<GullBrain>();
                     Check(birds.Length == 5 && supplies[1].TryClaim(birds[0]) && !supplies[1].TryClaim(birds[1]), "A supply accepts one Gull claim and refuses a competing Gull");
                     supplies[1].ReleaseClaim(birds[0]);
                     if (!game.OpenShop()) throw new InvalidOperationException("Could not enter Shopping for the cooldown check.");
@@ -122,7 +122,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 }
                 else if (stage == 5 && EditorApplication.timeSinceStartup - stageBegan > .2)
                 {
-                    Check(UnityEngine.Object.FindObjectsByType<FodItem>(FindObjectsSortMode.None).Length == 0 &&
+                    Check(UnityEngine.Object.FindObjectsByType<FodItem>().Length == 0 &&
                         !FlightGrid.Instance.IsBlocked(FlightGrid.Instance.ClampToGrid(new Vector3(2, .8f, -5))),
                         "No debris survives into the shop; the former landed cell is clear");
                     foreach (var supply in supplies) supply.enabled = false;

@@ -83,7 +83,7 @@ namespace RunwayPanic.Weapons
             if (label == null)
                 return;
 
-            string title = species != null ? $"{species.SpeciesName}\nneeds {species.RequiredWeaponRarity}" : name;
+            string title = species != null ? $"{species.SpeciesName}\nneeds {species.RequiredWeaponRarity}+" : name;
             string status = IsAlive ? $"{CurrentHP:0.#}/{MaxHP:0.#} HP" : "DOWN";
             string hit = lastDamage > 0f ? $"\n-{lastDamage:0.#}" : string.Empty;
             label.text = $"{title}\n{status}{hit}";

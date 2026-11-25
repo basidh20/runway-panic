@@ -89,7 +89,7 @@ namespace RunwayPanic.Agents
 
         private void OnEnable()
         {
-            if (IsAlive)
+            if (IsAlive && !IsRetired)
                 BirdRegistry.Register(this);
         }
 
@@ -104,7 +104,7 @@ namespace RunwayPanic.Agents
         /// </summary>
         public void TakeDamage(float amount, WeaponRarity weaponRarity)
         {
-            if (!IsAlive || amount <= 0f)
+            if (!IsAlive || IsRetired || amount <= 0f)
                 return;
 
             float taken = species != null ? species.GetDamageTaken(amount, weaponRarity) : amount;
@@ -119,6 +119,24 @@ namespace RunwayPanic.Agents
         }
 
         /// <summary>Kills the bird outright (end of a wave, tests). Still pays the coin reward.</summary>
+        /// <summary>True after <see cref="Retire"/>: the bird is leaving the level and takes no part in the game.</summary>
+        public bool IsRetired { get; private set; }
+
+        /// <summary>
+        /// Takes a living bird out of the game without killing it (the wave's time ran out and it flies off): no
+        /// coins, no death event, no more damage, no collider, and other birds no longer count it.
+        /// </summary>
+        public void Retire()
+        {
+            if (!IsAlive || IsRetired)
+                return;
+
+            IsRetired = true;
+            if (bodyCollider != null)
+                bodyCollider.enabled = false;
+            BirdRegistry.Unregister(this);
+        }
+
         public void Kill()
         {
             if (!IsAlive)

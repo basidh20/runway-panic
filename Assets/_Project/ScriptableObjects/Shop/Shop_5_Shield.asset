@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Shop_5_Shield
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.ShopItem
   displayName: Shield
-  description: Halves damage for 10 s. Press F to use. Carry up to 2.
+  description: Blocks all damage for 10 s. Press F to use. Carry up to 2.
   icon: {fileID: 0}
   kind: 1
   weapon: {fileID: 0}

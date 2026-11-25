@@ -56,7 +56,8 @@ namespace RunwayPanic.Player
 
         private void Update()
         {
-            bool canAct = playerHealth == null || playerHealth.IsAlive;
+            // No doors while paused (Update still runs at time scale 0), in the shop or on an end screen.
+            bool canAct = PlayerInputGate.CanAct(playerHealth);
             SetTarget(canAct ? FindTarget() : null);
 
             // The Interact action uses a Hold interaction; checking the press itself makes a tap of E work.

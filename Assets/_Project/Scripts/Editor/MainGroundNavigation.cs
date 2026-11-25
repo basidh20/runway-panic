@@ -34,7 +34,7 @@ namespace RunwayPanic.EditorTools
             var environment = GameObject.Find("Environment");
             if (environment == null || environment.scene != scene)
                 throw new InvalidOperationException("Main Environment was not found in the active scene.");
-            var props = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsSortMode.None)
+            var props = UnityEngine.Object.FindObjectsByType<Transform>()
                 .Where(t => t.gameObject.scene == scene && !t.IsChildOf(environment.transform) &&
                             PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject) &&
                             FinalSceneryPrefabs.Contains(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(t.gameObject)))

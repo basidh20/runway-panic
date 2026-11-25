@@ -21,11 +21,24 @@ namespace RunwayPanic.Player
         /// <summary>Raised once when HP reaches zero.</summary>
         public event Action Died;
 
+        /// <summary>Raised when a hit is fully absorbed (shield up). No HP is lost and <see cref="Damaged"/> is not raised.</summary>
+        public event Action Blocked;
+
         public float MaxHP => maxHP;
         public float CurrentHP { get; private set; }
         public bool IsAlive => CurrentHP > 0f;
 
+        /// <summary>True during the short grace period after a respawn: all damage is ignored.</summary>
+        public bool IsInvulnerable => Time.time < invulnerableUntil;
+
         private PlayerShield shield;
+        private float invulnerableUntil = float.NegativeInfinity;
+
+        /// <summary>Ignores all damage for <paramref name="seconds"/> (respawn grace period).</summary>
+        public void SetInvulnerable(float seconds)
+        {
+            invulnerableUntil = Mathf.Max(invulnerableUntil, Time.time + Mathf.Max(0f, seconds));
+        }
 
         private void Awake()
         {
@@ -44,11 +57,18 @@ namespace RunwayPanic.Player
         /// </summary>
         public void TakeDamage(float amount, WeaponRarity weaponRarity)
         {
-            if (!IsAlive || amount <= 0f)
+            if (!IsAlive || amount <= 0f || IsInvulnerable)
                 return;
 
             if (shield != null)
                 amount *= shield.DamageMultiplier;
+
+            // Fully blocked (an active shield): no flash, no hurt sound, no hit reaction.
+            if (amount <= 0f)
+            {
+                Blocked?.Invoke();
+                return;
+            }
 
             float previousHP = CurrentHP;
             CurrentHP = Mathf.Max(0f, CurrentHP - amount);
