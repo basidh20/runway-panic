@@ -97,6 +97,10 @@ namespace RunwayPanic.Audio
             source.maxDistance = cue.MaxDistance;
             source.dopplerLevel = 0f;
             source.playOnAwake = false;
+            // The pause screen pauses the listener (gunfire, birds, rockets freeze). Music and ambience fade
+            // themselves while paused, and menu clicks must still be heard.
+            source.ignoreListenerPause = cue.Category == SoundCategory.Music || cue.Category == SoundCategory.Ambience ||
+                                         cue.Category == SoundCategory.UI;
         }
 
         private static SoundPool Pool

@@ -37,6 +37,10 @@ namespace RunwayPanic.Agents
         private const float HoverSpeed = 0.2f;
         // Speed factor when the target is straight behind the bird: slow down for sharp turns, like a car in a corner.
         private const float SharpTurnSpeedFactor = 0.4f;
+        // Land / Hold: within this distance the bird moves straight to the point (gain per second, top speed m/s).
+        private const float FlutterInDistance = 1.5f;
+        private const float FlutterInGain = 2.5f;
+        private const float FlutterInSpeed = 2.5f;
 
         [Tooltip("How this species flies: turn rate, banking, acceleration, flap speed (ScriptableObjects/Agents).")]
         [SerializeField] private BirdMotionProfile motionProfile;
@@ -403,6 +407,23 @@ namespace RunwayPanic.Agents
             }
 
             SteerToPoint(target, position, motion, maxSpeed, ref desiredDirection, ref targetSpeed);
+
+            // Landing and holding used to orbit a point beside the bird forever: the turn circle (radius v / ω) was
+            // wider than the distance left, and braking to √(2·a·d) kept v just high enough to stay on it.
+            if (mode == Mode.Land || mode == Mode.Hold)
+            {
+                float distance = toTarget.magnitude;
+                float turnRate = motion.MaxTurnRate * Mathf.Deg2Rad;
+                // 1. Slow down until the turn circle fits inside the distance left (diameter ≤ distance).
+                targetSpeed = Mathf.Min(targetSpeed, turnRate * distance * 0.5f);
+                // 2. The last metre or so: flutter straight in, whatever the heading (real birds hover in to land).
+                if (distance <= FlutterInDistance && distance > 1e-3f)
+                {
+                    targetSpeed = 0f;
+                    steering += Vector3.ClampMagnitude(toTarget * FlutterInGain, FlutterInSpeed);
+                }
+            }
+
             return false;
         }
 

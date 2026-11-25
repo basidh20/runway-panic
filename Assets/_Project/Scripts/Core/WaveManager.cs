@@ -28,6 +28,8 @@ namespace RunwayPanic.Core
         [SerializeField, Min(0f)] private float nextCountdown = 4f;
         [Tooltip("Seconds the \"wave cleared\" / \"time up\" moment lasts before the shop opens.")]
         [SerializeField, Min(0f)] private float endPause = 2.5f;
+        [Tooltip("When the time runs out, the surviving birds fly off and are removed after this many seconds.")]
+        [SerializeField, Min(0.5f)] private float flyOffTime = 5f;
 
         [Header("Spawning")]
         [Tooltip("Only markers in this group are used (the airport's spawn markers). Empty = every Spawn marker.")]
@@ -74,6 +76,9 @@ namespace RunwayPanic.Core
         public int Killed => killed;
 
         public IReadOnlyList<WaveData> Waves => waves;
+
+        /// <summary>True if the most recently ended wave was cleared (every bird killed), false if its time ran out.</summary>
+        public bool LastWaveCleared { get; private set; }
 
         private void Awake()
         {
@@ -218,15 +223,17 @@ namespace RunwayPanic.Core
             if (bonus > 0 && CoinManager.Instance != null)
                 CoinManager.Instance.AddCoins(bonus);
 
-            // Time up: the survivors fly off (no coins for them).
+            // Time up: the survivors fly off (no coins for them) and are removed once out of sight.
+            Vector3 playerPosition = PlayerPosition();
             foreach (BirdHealth bird in alive)
                 if (bird != null)
                 {
                     bird.Died -= HandleBirdDied;
-                    Destroy(bird.gameObject);
+                    BirdRetreat.Begin(bird, playerPosition, flyOffTime);
                 }
             alive.Clear();
             queue.Clear();
+            LastWaveCleared = cleared;
 
             Phase = WavePhase.Ending;
             endTimer = endPause;

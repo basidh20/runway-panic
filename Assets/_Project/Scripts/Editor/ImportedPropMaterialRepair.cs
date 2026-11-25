@@ -221,7 +221,7 @@ namespace RunwayPanic.EditorTools
         private static GameObject[] PlacedProps()
         {
             var scene = SceneManager.GetActiveScene();
-            return Object.FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+            return Object.FindObjectsByType<Transform>(FindObjectsInactive.Exclude)
                 .Where(t => t.gameObject.scene == scene && PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject)
                     && Targets.Contains(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(t.gameObject)))
                 .Select(t => t.gameObject).Distinct().ToArray();
@@ -289,7 +289,7 @@ namespace RunwayPanic.EditorTools
                 if (prop.name.StartsWith("TrafficCone") || prop.name.StartsWith("SM_aircraft_"))
                 {
                     float floor = 0f;
-                    foreach (var renderer in Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
+                    foreach (var renderer in Object.FindObjectsByType<MeshRenderer>())
                     {
                         if (renderer.name != "Apron_A" && renderer.name != "Apron_B" && renderer.name != "Entrance_Apron") continue;
                         Bounds surface = renderer.bounds;
@@ -356,7 +356,7 @@ namespace RunwayPanic.EditorTools
             if (EditorApplication.isPlayingOrWillChangePlaymode
                 || SceneManager.GetActiveScene().path != "Assets/_Project/Scenes/Main.unity") return;
             var report = new StringBuilder();
-            var player = Object.FindObjectsByType<CharacterController>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            var player = Object.FindObjectsByType<CharacterController>(FindObjectsInactive.Include)
                 .FirstOrDefault(c => c.gameObject.scene == SceneManager.GetActiveScene());
             report.AppendLine("Player height: " + (player != null ? player.height * player.transform.lossyScale.y : 1.8f));
             int index = 0;
@@ -376,7 +376,7 @@ namespace RunwayPanic.EditorTools
         private static GameObject[] PlacedTrucks()
         {
             var scene = SceneManager.GetActiveScene();
-            return Object.FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+            return Object.FindObjectsByType<Transform>(FindObjectsInactive.Exclude)
                 .Where(t => t.gameObject.scene == scene && PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject)
                     && FireTrucks.Contains(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(t.gameObject)))
                 .Select(t => t.gameObject).Distinct().OrderBy(t => t.name).ToArray();
@@ -417,7 +417,7 @@ namespace RunwayPanic.EditorTools
                 AssetDatabase.ImportAsset(path);
             }
 
-            var player = Object.FindObjectsByType<CharacterController>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            var player = Object.FindObjectsByType<CharacterController>(FindObjectsInactive.Include)
                 .FirstOrDefault(c => c.gameObject.scene == scene);
             float playerHeight = player != null ? player.height * player.transform.lossyScale.y : 1.8f;
             var offsets = new List<Vector3>();
@@ -429,7 +429,7 @@ namespace RunwayPanic.EditorTools
             Undo.SetCurrentGroupName("Scale and park fire trucks");
             Physics.SyncTransforms();
             var report = new StringBuilder();
-            var obstacles = Object.FindObjectsByType<Collider>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+            var obstacles = Object.FindObjectsByType<Collider>(FindObjectsInactive.Exclude)
                 .Where(c => c.enabled && !c.isTrigger && c.gameObject.scene == scene && c.name != "Ground_100x80"
                     && c.GetComponentInParent<CharacterController>() == null).ToArray();
             foreach (var truck in trucks)
@@ -444,7 +444,7 @@ namespace RunwayPanic.EditorTools
                     truck.transform.position = original + offset;
                     Bounds bounds = VisualBounds(truck);
                     float floor = 0f;
-                    foreach (var surface in Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
+                    foreach (var surface in Object.FindObjectsByType<MeshRenderer>())
                     {
                         if (surface.name != "Apron_A" && surface.name != "Apron_B" && surface.name != "Entrance_Apron") continue;
                         Bounds area = surface.bounds;

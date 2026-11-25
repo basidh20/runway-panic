@@ -23,9 +23,11 @@ namespace RunwayPanic.Data
         [SerializeField, Min(0)] private int coinReward = 5;
 
         [Header("Weapon Effectiveness")]
+        [Tooltip("The weakest gun tier that does full damage. That tier and every stronger one hit for 100%.")]
         [SerializeField] private WeaponRarity requiredWeaponRarity;
-        [Tooltip("Damage multiplier for hits from any rarity other than the required one.")]
-        [SerializeField, Range(0f, 1f)] private float wrongWeaponDamageMultiplier = 0.1f;
+        [Tooltip("Damage share from guns weaker than the required tier: element 0 = one tier weaker, 1 = two tiers, " +
+                 "2 = three tiers. E.g. a pigeon (needs Uncommon) hit by the pistol (Common) takes element 0.")]
+        [SerializeField] private float[] weakerWeaponMultipliers = { 0.5f, 0.25f, 0.1f };
 
         public string SpeciesName => speciesName;
         public BirdSpecies Species => species;
@@ -37,16 +39,24 @@ namespace RunwayPanic.Data
         public float AttackCooldown => attackCooldown;
         public int CoinReward => coinReward;
         public WeaponRarity RequiredWeaponRarity => requiredWeaponRarity;
-        public float WrongWeaponDamageMultiplier => wrongWeaponDamageMultiplier;
+
+        /// <summary>
+        /// Share of a hit's damage this species takes from a gun of <paramref name="weaponRarity"/>: 1 from the required
+        /// tier or any stronger one (a better gun never does worse), less for each tier the gun is weaker.
+        /// </summary>
+        public float GetDamageMultiplier(WeaponRarity weaponRarity)
+        {
+            int tiersWeaker = (int)requiredWeaponRarity - (int)weaponRarity;
+            if (tiersWeaker <= 0)
+                return 1f;
+            if (weakerWeaponMultipliers == null || weakerWeaponMultipliers.Length == 0)
+                return 0.1f;
+            return Mathf.Clamp01(weakerWeaponMultipliers[Mathf.Min(tiersWeaker, weakerWeaponMultipliers.Length) - 1]);
+        }
 
         /// <summary>
         /// Damage this species actually takes from a hit of the given rarity.
         /// </summary>
-        public float GetDamageTaken(float amount, WeaponRarity weaponRarity)
-        {
-            return weaponRarity == requiredWeaponRarity
-                ? amount
-                : amount * wrongWeaponDamageMultiplier;
-        }
+        public float GetDamageTaken(float amount, WeaponRarity weaponRarity) => amount * GetDamageMultiplier(weaponRarity);
     }
 }

@@ -73,3 +73,32 @@ summary and executable. This is build evidence, not gameplay-test evidence.
 Both platforms' standalone four-wave runtime tests remain pending. The Windows
 build has not been attempted. Record failures and teammate owners honestly;
 do not replace manual results with Editor observations.
+
+## Enhancement pass re-test (fix/enhancements, 19 November 2026)
+
+The enhancement branch changed gameplay code after the 21 October build, so the
+macOS build above no longer matches the source. Rebuild both players from the
+merged revision and tick each line in one normal run (Editor first, then each
+standalone player). Write the actual result next to each line.
+
+- [ ] Shop open: WASD, jump, Q, F, E and 1-4 do nothing; mouse clicks only buy.
+- [ ] Pause: Q, F, E, 1-4 and the mouse wheel do nothing; gunfire, birds and
+      rockets go silent; music ducks; menu clicks are heard.
+- [ ] Idle 60 s in the shop: no new pickups appear in the level.
+- [ ] Fire the last round, switch guns during the reload, switch back: the gun
+      reloads by itself (or on the next trigger pull).
+- [ ] Shield up, let a bird hit: no red flash, no hurt sound, HP unchanged.
+- [ ] Die with lives left: screen fades dark red, "YOU ARE DOWN" banner, cannot
+      shoot; after respawn "PROTECTED" shows ~3 s and birds cannot hurt.
+- [ ] 1-4 pick pistol / rifle / sniper / RPG by tier; mouse wheel cycles.
+- [ ] Walk the gun into a wall and a shelter door: it tucks back, no clipping.
+- [ ] Let a wave time out: survivors fly off (no pop); a crow carrying a pickup
+      drops it first; the level keeps its pickup count next wave.
+- [ ] Standing inside a closed shelter: birds outside cannot peck through walls.
+- [ ] Shoot a bird behind a falling dead bird: the shot reaches the live one.
+- [ ] Pigeons roost and crows land at their exit without circling.
+- [ ] Waves: 3 = crows + pigeons + gulls, 4 = all four species; surviving the
+      wave 4 timer shows "You held the runway", clearing it "All 4 waves cleared".
+- [ ] Shop with a gamepad: a button is selected and usable.
+
+Windows build: still not attempted. macOS rebuild: pending.

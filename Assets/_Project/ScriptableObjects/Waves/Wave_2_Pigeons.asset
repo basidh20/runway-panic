@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunwayPanic.Data.WaveData
   waveNumber: 2
   title: Pigeons
-  hint: Buy the Assault Rifle for pigeons. Switch guns with 1 / 2.
+  hint: Buy the Assault Rifle for pigeons. Switch guns with 1-4 or the mouse wheel.
   duration: 100
   spawnInterval: 2.5
   firstSpawnDelay: 1.5

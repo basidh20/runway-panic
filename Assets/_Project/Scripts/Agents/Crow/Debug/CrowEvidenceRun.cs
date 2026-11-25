@@ -187,8 +187,8 @@ namespace RunwayPanic.Agents.Crow
             WeaponData needed = guns.Find(g => g.Rarity == species.RequiredWeaponRarity);
             string neededName = needed != null ? needed.WeaponName : species.RequiredWeaponRarity.ToString();
             Line("## 0. The crow against the gull-progression stats");
-            Line($"Crow: **{species.MaxHP:0} HP**, needs the **{neededName}**; any other gun does " +
-                 $"{species.WrongWeaponDamageMultiplier:P0} damage. Speed {species.MoveSpeed} m/s, attack " +
+            Line($"Crow: **{species.MaxHP:0} HP**, needs the **{neededName}** or better; a gun one tier weaker does " +
+                 $"{species.GetDamageMultiplier(species.RequiredWeaponRarity - 1):P0} damage. Speed {species.MoveSpeed} m/s, attack " +
                  $"{species.AttackDamage} damage, {species.CoinReward} coins.");
             Line();
             Line("| Gun | Damage per hit on a crow | Hits to kill | Time to kill (fire rate, magazine, reload) |");

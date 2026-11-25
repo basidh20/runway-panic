@@ -81,9 +81,9 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 if (stage == 0)
                 {
                     if (now - began < 1) return;
-                    if (UnityEngine.Object.FindObjectsByType<BirdHealth>(FindObjectsSortMode.None).Length != 0)
+                    if (UnityEngine.Object.FindObjectsByType<BirdHealth>().Length != 0)
                         throw new InvalidOperationException("Start a fresh sandbox without pre-spawned birds.");
-                    var supplies = UnityEngine.Object.FindObjectsByType<FodSpawnPoint>(FindObjectsSortMode.None).OrderBy(p => p.name).ToArray();
+                    var supplies = UnityEngine.Object.FindObjectsByType<FodSpawnPoint>().OrderBy(p => p.name).ToArray();
                     if (supplies.Length < 8) throw new InvalidOperationException("Expected at least eight real FOD supply points.");
                     player = UnityEngine.Object.FindAnyObjectByType<PlayerHealth>();
                     controller = player.GetComponent<PlayerController>(); controllerWasEnabled = controller.enabled; controller.enabled = false;

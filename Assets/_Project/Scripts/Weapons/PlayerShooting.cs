@@ -42,6 +42,7 @@ namespace RunwayPanic.Weapons
         private readonly RaycastHit[] hitBuffer = new RaycastHit[MaxHits];
         private PlayerWeaponHolder weaponHolder;
         private PlayerCameraRig cameraRig;
+        private PlayerHealth health;
         private InputAction attackAction;
         private InputAction reloadAction;
         private float bloom;
@@ -65,6 +66,7 @@ namespace RunwayPanic.Weapons
         {
             weaponHolder = GetComponent<PlayerWeaponHolder>();
             cameraRig = GetComponent<PlayerCameraRig>();
+            health = GetComponent<PlayerHealth>();
             attackAction = GetComponent<PlayerInput>().actions?.FindAction(AttackActionName, false);
             // Optional: without a Reload action, guns still reload automatically when the magazine runs dry.
             reloadAction = GetComponent<PlayerInput>().actions?.FindAction(ReloadActionName, false);
@@ -83,8 +85,9 @@ namespace RunwayPanic.Weapons
                 bloom = Mathf.MoveTowards(bloom, 0f, current.Data.SpreadRecovery * Time.deltaTime);
 
             // UI clicks use the same mouse button as Attack. Gameplay weapon input is valid only during a live wave,
-            // never while a pause/shop/end screen has released the cursor for menu interaction.
-            if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
+            // never while a pause/shop/end screen has released the cursor for menu interaction, and never while dead
+            // (the respawn delay keeps the state at Playing).
+            if (!PlayerInputGate.CanAct(health))
                 return;
 
             if (reloadAction != null && reloadAction.WasPressedThisFrame())
@@ -257,6 +260,11 @@ namespace RunwayPanic.Weapons
             {
                 RaycastHit hit = hitBuffer[i];
                 if (hit.collider.transform.IsChildOf(transform) || hit.distance >= nearestDistance)
+                    continue;
+
+                // A bird that is already dead (falling body) is not cover: shots pass it to the live bird behind.
+                IDamageable damageable = hit.collider.GetComponentInParent<IDamageable>();
+                if (damageable != null && !damageable.IsAlive)
                     continue;
 
                 nearest = hit;

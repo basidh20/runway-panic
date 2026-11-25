@@ -54,7 +54,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
         {
             if (bird != null) { bird.gameObject.SetActive(false); UnityEngine.Object.Destroy(bird.gameObject); }
             FodManager.Instance.ClearAll(); GullKettle.Instance.Clear();
-            foreach (var supply in UnityEngine.Object.FindObjectsByType<FodSpawnPoint>(FindObjectsSortMode.None))
+            foreach (var supply in UnityEngine.Object.FindObjectsByType<FodSpawnPoint>())
             { supply.enabled = true; supply.ResetForWave(); }
             capsule.enabled = false; player.transform.position = new Vector3(0, .12f, 0); capsule.enabled = true;
             player.ResetHealth();
@@ -93,7 +93,7 @@ namespace RunwayPanic.Agents.Gull.EditorTools
                 if (trial < 0)
                 {
                     if (EditorApplication.timeSinceStartup - began < 1) return;
-                    if (UnityEngine.Object.FindObjectsByType<GullBrain>(FindObjectsSortMode.None).Length != 0)
+                    if (UnityEngine.Object.FindObjectsByType<GullBrain>().Length != 0)
                         throw new InvalidOperationException("Use a fresh Play session without pre-spawned Gulls.");
                     player = UnityEngine.Object.FindAnyObjectByType<PlayerHealth>();
                     controller = player.GetComponent<PlayerController>(); capsule = player.GetComponent<CharacterController>();

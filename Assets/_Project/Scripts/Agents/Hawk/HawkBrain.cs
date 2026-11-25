@@ -81,6 +81,9 @@ namespace RunwayPanic.Agents.Hawk
         [SerializeField] private AudioSource screamSource;
         [Tooltip("Write every mode/phase change, vantage choice and attack event to the Console / Editor.log (prefix [HawkFSM]).")]
         [SerializeField] private bool logTransitions = true;
+
+        // The FSM lines are evidence for the notes (Editor and development builds); a release build stays quiet.
+        private bool LogsEnabled => logTransitions && (Application.isEditor || Debug.isDebugBuild);
         [Tooltip("Editor and development builds only: this key gives the hawk a real 1-damage hit (never lethal), to test the " +
                  "withdrawal without shooting. Same key as the Agent Controller's TestPathFeeder. None = off.")]
         [SerializeField] private Key debugHitKey = Key.H;
@@ -244,7 +247,7 @@ namespace RunwayPanic.Agents.Hawk
             ActiveHawks.Remove(this);
 
             // One line of measured numbers per session (death, removal or leaving Play mode) for the notes.
-            if (started)
+            if (started && (Application.isEditor || Debug.isDebugBuild))
                 Debug.Log($"[HawkStats] {name}: {stats}", this);
         }
 
@@ -1281,13 +1284,13 @@ namespace RunwayPanic.Agents.Hawk
 
         private void LogTransition(string from, string to, float after)
         {
-            if (logTransitions && started)
+            if (LogsEnabled && started)
                 Debug.Log($"{LogPrefix} {name} {from} -> {to} after {after:0.00}s", this);
         }
 
         private void Log(string message)
         {
-            if (logTransitions)
+            if (LogsEnabled)
                 Debug.Log(message, this);
         }
 

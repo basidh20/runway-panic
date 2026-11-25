@@ -15,7 +15,7 @@ MonoBehaviour:
   waveNumber: 3
   title: Crows
   hint: One sniper shot drops a crow. Guard your pickups!
-  duration: 110
+  duration: 120
   spawnInterval: 3.5
   firstSpawnDelay: 1.5
   maxAlive: 6
@@ -25,3 +25,5 @@ MonoBehaviour:
     count: 8
   - species: {fileID: 11400000, guid: 0e99293d4f5d9dc42bd7894aeeeb57bf, type: 2}
     count: 5
+  - species: {fileID: 11400000, guid: f4a2ede88e10cac40a20b9a1ef4d7d94, type: 2}
+    count: 3

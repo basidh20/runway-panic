@@ -19,6 +19,7 @@ namespace RunwayPanic.Core
         public static void LoadMainMenu()
         {
             Time.timeScale = 1f;
+            AudioListener.pause = false;
             SceneManager.LoadScene(MainMenuScene);
         }
 
@@ -26,6 +27,7 @@ namespace RunwayPanic.Core
         public static AsyncOperation LoadGameAsync()
         {
             Time.timeScale = 1f;
+            AudioListener.pause = false;
             return SceneManager.LoadSceneAsync(GameScene);
         }
     }

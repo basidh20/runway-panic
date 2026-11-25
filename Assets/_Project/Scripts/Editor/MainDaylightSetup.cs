@@ -182,7 +182,7 @@ namespace RunwayPanic.EditorTools
             var scene = SceneManager.GetActiveScene();
             if (EditorApplication.isPlayingOrWillChangePlaymode || scene.path != MainPlayerIntegration.ScenePath || scene.isDirty)
                 throw new InvalidOperationException("Open saved Main outside Play mode first.");
-            if (UnityEngine.Object.FindObjectsByType<LightProbeGroup>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            if (UnityEngine.Object.FindObjectsByType<LightProbeGroup>(FindObjectsInactive.Include)
                 .Any(group => group.gameObject.scene == scene))
                 throw new InvalidOperationException("Main already contains a light probe group; review it before adding another.");
             var lighting = GameObject.Find("Lighting");
@@ -326,12 +326,12 @@ namespace RunwayPanic.EditorTools
                 lines.Add($"{group.Count()} renderer(s): {group.Key}");
 
             lines.Add("");
-            foreach (var light in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+            foreach (var light in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude)
                          .Where(l => l.gameObject.scene == scene && l.enabled))
                 lines.Add($"Light: {light.name} | {light.type} | {light.lightmapBakeType} | Shadows: {light.shadows}");
-            int probes = UnityEngine.Object.FindObjectsByType<LightProbeGroup>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+            int probes = UnityEngine.Object.FindObjectsByType<LightProbeGroup>(FindObjectsInactive.Exclude)
                 .Count(p => p.gameObject.scene == scene && p.enabled);
-            int reflections = UnityEngine.Object.FindObjectsByType<ReflectionProbe>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+            int reflections = UnityEngine.Object.FindObjectsByType<ReflectionProbe>(FindObjectsInactive.Exclude)
                 .Count(p => p.gameObject.scene == scene && p.enabled);
             lines.Add($"Active Light Probe Groups: {probes}; Reflection Probes: {reflections}");
             lines.Add($"Lightmaps currently loaded: {LightmapSettings.lightmaps.Length}");

@@ -72,7 +72,17 @@ namespace RunwayPanic.Weapons
         /// </summary>
         public bool TryFire()
         {
-            if (!enabled || !CanFire)
+            if (!enabled)
+                return false;
+
+            // An empty magazine that is not reloading (e.g. holstered mid-reload): pulling the trigger reloads it.
+            if (AmmoInMagazine == 0 && !IsReloading)
+            {
+                StartReload();
+                return false;
+            }
+
+            if (!CanFire)
                 return false;
 
             nextFireTime = Time.time + data.FireInterval;
@@ -106,6 +116,13 @@ namespace RunwayPanic.Weapons
             AmmoInMagazine = data.MagazineSize;
             AmmoChanged?.Invoke(AmmoInMagazine, data.MagazineSize);
             ReloadFinished?.Invoke();
+        }
+
+        protected virtual void OnEnable()
+        {
+            // Drawn with an empty magazine (holstered during its automatic reload): start reloading again at once.
+            if (data != null && AmmoInMagazine == 0)
+                StartReload();
         }
 
         protected virtual void OnDisable()

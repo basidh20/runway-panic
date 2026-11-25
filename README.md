@@ -1,6 +1,6 @@
 # Airport Bird Control: Runway Panic
 
-Third-person 3D shooting game (Unity) — SE3032 Graphics & Visualization × SE3062 Intelligent Systems group project, SLIIT.
+First-person 3D shooting game (Unity) — SE3032 Graphics & Visualization × SE3062 Intelligent Systems group project, SLIIT.
 You play an airport wildlife-control officer defending the runway from 4 species of AI-controlled birds across 4 timed waves.
 
 ## Getting started
@@ -19,6 +19,20 @@ You play an airport wildlife-control officer defending the runway from 4 species
 4. Open the repo root folder in **Unity Hub → Add → Add project from disk**. If Hub warns about a version mismatch, pick `6000.6.4f1` — do **not** upgrade.
 
 **Render pipeline:** URP 17.6.0. URP assets and input actions live in `Assets/_Project/Settings/`.
+
+## Controls
+
+| Action | Keyboard & mouse | Gamepad |
+|---|---|---|
+| Move / look | WASD / mouse | Left / right stick |
+| Sprint / jump | Left Shift / Space | Left stick press / A |
+| Shoot / aim | Left / right mouse | X / left trigger |
+| Reload | R | Right shoulder |
+| Pick a gun by tier (1 pistol, 2 rifle, 3 sniper, 4 RPG) | 1-4 | - |
+| Next / previous gun | Mouse wheel | D-pad right / left |
+| Medkit / shield | Q / F | D-pad up / down |
+| Use door | E | Y |
+| Pause | Esc | Start |
 
 ## Folder structure
 

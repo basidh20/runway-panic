@@ -108,7 +108,7 @@ namespace RunwayPanic.Agents.Gull
         private void OnWaveCompleted(int wave)
         {
             ClearAll(); // Includes carried/falling pieces, so nothing can land and damage someone in the shop.
-            foreach (var point in FindObjectsByType<FodSpawnPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None)) point.ResetForWave();
+            foreach (var point in FindObjectsByType<FodSpawnPoint>(FindObjectsInactive.Include)) point.ResetForWave();
         }
         private void BindGame()
         {

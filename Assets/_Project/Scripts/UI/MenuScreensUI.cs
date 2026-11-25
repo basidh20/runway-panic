@@ -104,8 +104,12 @@ namespace RunwayPanic.UI
                     ? $"The birds took the runway.\nYou reached wave {wave} of {totalWaves} with {coins} coins."
                     : "The birds took the runway.";
 
+            // The last wave can end by its timer with birds still flying: say so honestly.
+            bool lastCleared = WaveManager.Instance == null || WaveManager.Instance.LastWaveCleared;
             if (state == GameState.Victory && victoryDetail != null)
-                victoryDetail.text = $"All {totalWaves} waves cleared.\nThe airport is open again - {coins} coins left.";
+                victoryDetail.text = lastCleared
+                    ? $"All {totalWaves} waves cleared.\nThe airport is open again - {coins} coins left."
+                    : $"You held the runway through all {totalWaves} waves.\nThe last birds flew off - {coins} coins left.";
 
             GameObject shown = state == GameState.Paused ? pauseScreen
                 : state == GameState.GameOver ? gameOverScreen

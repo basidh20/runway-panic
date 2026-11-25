@@ -14,6 +14,18 @@ Template:
 
 ---
 
+## 2026-11-19 — to: Agent Controller + species owners — enhancement pass (`fix/enhancements`)
+- **What:** `Scripts/Agents/Movement/BirdMotor.cs`, `Scripts/Agents/Shared/{BirdHealth,BirdBrain,BirdContactAttack,BirdRetreat}.cs`, `Scripts/AI/FlightGrid.cs`, `Scripts/Core/WaveManager.cs`, `CrowBrain.TheftDrop.cs`, `PigeonBrain.cs`, hawk log flags.
+- **Details:**
+  - `LandAt` / `HoldPosition` orbit (entry of 17 Oct below) **fixed**: near the point the speed is capped to `turnRate × distance / 2` (the turn circle fits), and inside 1.5 m the bird flutters straight in. The crow's `vigilLandTimeout` workaround is kept as a safety net; remove it after a Play-mode check if crows now land.
+  - Time-up: surviving birds are no longer destroyed on the spot. `BirdRetreat.Begin` retires them (`BirdHealth.Retire`: no damage, no coins, no collider, unregistered), calls the new virtual `BirdBrain.Retreat()` and flies them off for 5 s. Overrides: the crow drops its loot (otherwise the pickup left the level with it and the spawner lost that slot); the pigeon enters `Dead` so its flock stops ordering it.
+  - Contact attacks now need a clear line (walls, closed shelter doors and barricades block a peck) and are skipped during the player's 3 s respawn grace period.
+  - `FlightGrid` re-tests each door's swing area 1.2 s after it opens or closes.
+  - Pigeons now steer away from the hawk's fear field (like crows already did), except while diving or roosting.
+  - Hawk `[HawkFSM]` / `[HawkWeak]` / `[HawkStats]` lines are written only in the Editor and development builds.
+- **Action needed:** a Play-mode check of landing (pigeon roosts, crow vigil), the fly-off and hawk H5–H7.
+- **Status:** done (code, compile-checked) — Play-mode check open
+
 ## 2026-10-18 — to: all — Pigeon P1: brain on `P_Bird_Pigeon`, flock coordinator, pigeon sandbox
 - **What:** `Scripts/Agents/Pigeon/` (`PigeonBrain`, `PigeonFlock`, `PigeonStrategyConfig`, `PigeonState`, `PigeonFlockMode`, `PigeonStats`), `ScriptableObjects/Birds/Strategy/PigeonStrategyConfig.asset`, `Prefabs/Birds/P_Bird_Pigeon.prefab` (`PigeonBrain` added on the variant only; `P_Bird_Base` unchanged), `Scenes/Sandbox/Sandbox_IS_Pigeon.unity` (a copy of Main), tool `Tools > IS > Pigeon > Set Up Pigeon Sandbox and Prefab`.
 - **Details:**

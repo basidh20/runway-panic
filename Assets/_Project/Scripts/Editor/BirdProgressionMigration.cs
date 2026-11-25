@@ -19,13 +19,19 @@ namespace RunwayPanic.EditorTools
         private static readonly string[] Guns = { "Tier1_Pistol", "Tier2_AssaultRifle", "Tier3_Sniper", "Tier4_RPG" };
         private static readonly BirdSpecies[] Ids = { BirdSpecies.Gull, BirdSpecies.Pigeon, BirdSpecies.Crow, BirdSpecies.Hawk };
         private static readonly int[] StableIds = { 3, 0, 1, 2 };
-        private static readonly float[] HP = { 30, 20, 60, 300 };
+        private static readonly float[] HP = { 30, 35, 60, 300 };
         private static readonly float[] Speeds = { 6, 4, 5.5f, 8 };
         private static readonly float[] Damage = { 6, 5, 8, 20 };
         private static readonly float[] Ranges = { 1.5f, 1.5f, 1.5f, 2 };
         private static readonly float[] Cooldowns = { 2, 1.5f, 1.2f, 2 };
         private static readonly int[] Coins = { 8, 10, 15, 25 };
-        private static readonly int[] Hits = { 3, 2, 1, 2 };
+        private static readonly int[] Hits = { 3, 3, 1, 2 };
+        // Tier-gap damage rule (19 Nov): the required tier and stronger = 100%; 1 / 2 / 3 tiers weaker = 50 / 25 / 10%.
+        private static readonly float[] WeakerMultipliers = { 1f, 0.5f, 0.25f, 0.1f };
+
+        private const string ShopRifle = "Uncommon. Rapid fire. Full damage on pigeons and gulls: 3 hits drop a pigeon.";
+        private const string ShopSniper = "Rare. One hit drops a crow, a pigeon or a gull.";
+        private const string ShopRpg = "Legendary. Full damage on every bird; two direct hits drop a hawk.";
 
         [MenuItem("Tools/Runway Panic/Apply Confirmed Bird Progression")]
         public static void Apply()
@@ -66,7 +72,6 @@ namespace RunwayPanic.EditorTools
                 data.FindProperty("attackCooldown").floatValue = Cooldowns[i];
                 data.FindProperty("coinReward").intValue = Coins[i];
                 data.FindProperty("requiredWeaponRarity").intValue = i;
-                data.FindProperty("wrongWeaponDamageMultiplier").floatValue = .1f;
                 data.ApplyModifiedProperties();
                 EditorUtility.SetDirty(bird);
                 var weapon = new SerializedObject(AssetDatabase.LoadAssetAtPath<WeaponData>(GunPath(i)));
@@ -75,9 +80,7 @@ namespace RunwayPanic.EditorTools
             }
             string[] descriptions =
             {
-                "Uncommon. Rapid fire. Full damage against pigeons.",
-                "Rare. One well-aimed hit can defeat a crow.",
-                "Legendary. Full damage against hawks; two direct hits at full health."
+                ShopRifle, ShopSniper, ShopRpg
             };
             for (int i = 1; i < 4; i++)
             {
@@ -113,10 +116,13 @@ namespace RunwayPanic.EditorTools
                 for (int j = 0; j < 4; j++)
                 {
                     var otherGun = AssetDatabase.LoadAssetAtPath<WeaponData>(GunPath(j));
-                    float expected = otherGun.Damage * (i == j ? 1 : .1f);
+                    float expected = otherGun.Damage * WeakerMultipliers[Mathf.Max(0, i - j)];
                     check(Mathf.Approximately(bird.GetDamageTaken(otherGun.Damage, otherGun.Rarity), expected), Birds[i] + " / " + otherGun.WeaponName + " damage = " + expected);
                 }
                 check(Mathf.CeilToInt(bird.MaxHP / bird.GetDamageTaken(gun.Damage, gun.Rarity)) == Hits[i], Birds[i] + " intended full-health direct-hit count = " + Hits[i]);
+                if (i > 0)
+                    check(AssetDatabase.LoadAssetAtPath<ShopItem>(ShopPath(i)).Description == new[] { ShopRifle, ShopSniper, ShopRpg }[i - 1],
+                        gun.WeaponName + " shop copy describes the tier-gap rule");
                 if (i > 0)
                     check(!AssetDatabase.LoadAssetAtPath<ShopItem>(ShopPath(i)).Description.ToLowerInvariant().Contains("eagle"), gun.WeaponName + " shop copy uses confirmed species");
             }
